@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/services/identity/">
+    <Project Path="services/identity/Vaultly.Identity.Api/Vaultly.Identity.Api.csproj" />
+    <Project Path="services/identity/Vaultly.Identity.Application/Vaultly.Identity.Application.csproj" />
+    <Project Path="services/identity/Vaultly.Identity.Application.Tests/Vaultly.Identity.Application.Tests.csproj" />
+    <Project Path="services/identity/Vaultly.Identity.Domain/Vaultly.Identity.Domain.csproj" />
+    <Project Path="services/identity/Vaultly.Identity.Domain.Tests/Vaultly.Identity.Domain.Tests.csproj" />
+    <Project Path="services/identity/Vaultly.Identity.Infrastructure/Vaultly.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/Vaultly.SharedKernel/Vaultly.SharedKernel.csproj" />
+  </Folder>
+</Solution>
