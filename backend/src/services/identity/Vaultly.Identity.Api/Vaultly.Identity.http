@@ -1,0 +1,14 @@
+@Vaultly.Identity_HostAddress = http://localhost:5096
+
+GET {{Vaultly.Identity_HostAddress}}/.well-known/openid-configuration
+Accept: application/json
+
+###
+
+GET {{Vaultly.Identity_HostAddress}}/.well-known/jwks.json
+Accept: application/json
+
+###
+
+GET {{Vaultly.Identity_HostAddress}}/login
+Accept: application/json
