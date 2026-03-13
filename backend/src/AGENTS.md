@@ -1,6 +1,9 @@
 ## Commands
  - from backend/src directory `dotnet build` - build solution
  - from backend/src directory `dotnet test` - run tests for solution
+ 
+## Skills
+ - all skills are in `./.agents/skills` directory
 
 ## C# Instructions
 - Always use the latest version C#, currently C# 14 features.
@@ -15,7 +18,7 @@
 - Write code with good maintainability practices, including comments on why certain design decisions were made.
 - Handle edge cases and write clear exception handling.
 - For libraries or external dependencies, mention their usage and purpose in comments.
-- Always build and run tests after changes to verify everything works.
+- Always build and run tests after changes to functionality. Do not run build or tests if changes made do not effect functionality.
 
 ## Logging and Monitoring
 - Write usefull logs using Serilog
