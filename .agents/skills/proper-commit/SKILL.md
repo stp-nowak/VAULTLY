@@ -100,8 +100,7 @@ If the commit is not linked to an issue, do not add any issue reference at all.
 
 ### 6. Never include a Copilot co-author trailer by default
 
-Do not add `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` unless a human
-explicitly asks for it.
+Do not add `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
 
 ## Branch naming
 
