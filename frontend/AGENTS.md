@@ -4,6 +4,8 @@
 - **React 19** + **TypeScript** (strict mode)
 - **Vite** (bundler + dev server)
 - **TanStack Router** (file-based routing)
+- `pnpm` as package managing
+- Sass for styles (do not use any css libraries like Tailwind)
 
 ---
 

@@ -1,0 +1,22 @@
+.statusNotice {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  padding: 0.9rem 1rem;
+  color: var(--text);
+}
+
+.info {
+  background: rgba(242, 200, 143, 0.08);
+}
+
+.error {
+  background: rgba(255, 142, 142, 0.1);
+  border-color: rgba(255, 142, 142, 0.24);
+  color: #ffd4d4;
+}
+
+.success {
+  background: rgba(159, 227, 191, 0.08);
+  border-color: rgba(159, 227, 191, 0.2);
+  color: #d7f7e5;
+}

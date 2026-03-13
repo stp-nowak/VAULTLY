@@ -1,0 +1,26 @@
+.screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.card {
+  width: min(100%, 38rem);
+  padding: 2.5rem;
+  border-radius: 2rem;
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(30, 21, 35, 0.92), rgba(14, 10, 18, 0.94));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}

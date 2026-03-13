@@ -1,0 +1,1 @@
+export { LogoutCard } from './LogoutCard';

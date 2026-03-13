@@ -1,0 +1,50 @@
+.card {
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(30, 21, 35, 0.92), rgba(14, 10, 18, 0.94));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.settingsList {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.settingsRow {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.875rem 1rem;
+
+  span {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  strong {
+    display: block;
+    margin-top: 0.35rem;
+    word-break: break-word;
+  }
+}
