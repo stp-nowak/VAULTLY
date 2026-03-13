@@ -141,14 +141,17 @@ Before creating a commit:
 5. Add a body summarizing the change
 6. Do not repeat the same issue reference in the body
 7. Do not add a Copilot co-author trailer unless explicitly requested
+8. Split body summarizing into multiple lines if it exceeds +- 60 chars. Preref splitting at sentance boundry.
 
 ## Example
 
 ```text
 docs: add commit-writing repo skill
 
-Add a repository-level Copilot skill that documents the project's commit message format and links
-to it from the root AGENTS guide.
+Set up the Vite + React 19 + TypeScript frontend project with TanStack Router and TanStack Query.
+Includes PKCE-based OAuth2 authentication shell with login, callback, and app routes, auth context/provider, identity API client, and shared UI components (Button, StatusNotice).
+Adds vitest + MSW testing infrastructure and co-locates SCSS modules per component.
+Updates AGENTS.md to document pnpm and Sass as required tooling.
 ```
 
 ## When to pause and ask
