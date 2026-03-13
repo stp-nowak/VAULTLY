@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record CodeVerifier
 {
+    public const int MaxLength = 128;
+
     /// <summary>
     /// Creates a new code verifier value object.
     /// </summary>
@@ -15,9 +17,9 @@ public sealed record CodeVerifier
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 128)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("Code verifier must be 128 characters or fewer.");
+            throw new InvalidValueException($"Code verifier must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;
@@ -36,6 +38,8 @@ public sealed record CodeVerifier
 
 public sealed record Nonce
 {
+    public const int MaxLength = 128;
+
     /// <summary>
     /// Creates a new nonce value object.
     /// </summary>
@@ -47,9 +51,9 @@ public sealed record Nonce
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 128)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("Nonce must be 128 characters or fewer.");
+            throw new InvalidValueException($"Nonce must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;

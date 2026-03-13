@@ -24,7 +24,8 @@ using Vaultly.Identity.Domain.Constants;
 using Vaultly.Identity.Infrastructure;
 using Vaultly.Identity.Infrastructure.Options;
 using Vaultly.Identity.Infrastructure.Security;
-using Vaultly.SharedKernel;
+
+const string DevelopmentCorsPolicyName = "DevelopmentAllowAll";
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddOptionalDotEnvFile(Path.Combine(builder.Environment.ContentRootPath, ".env"));
@@ -58,6 +59,21 @@ builder.Services.AddSingleton(rsaKeyProvider);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(DevelopmentCorsPolicyName, policyBuilder =>
+        {
+            policyBuilder
+                .SetIsOriginAllowed(_ => true)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+    });
+}
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -83,12 +99,22 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    Log.Information("Enabled permissive CORS policy for development requests.");
 }
 
 app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors(DevelopmentCorsPolicyName);
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+var endpointErrorHandler = new EndpointErrorHandler(Log.ForContext<EndpointErrorHandler>());
+
+// Resolves the redirect URI from supported query string parameter names.
 string? GetRedirectUri(HttpContext httpContext)
 {
     var redirectUri = httpContext.Request.Query["redirectUri"].ToString();
@@ -102,180 +128,159 @@ string? GetRedirectUri(HttpContext httpContext)
 }
 
 app.MapGet("/login", async (HttpContext httpContext, ISender sender) =>
-{
-    var redirectUri = GetRedirectUri(httpContext);
-    var providers = await sender.Send(new GetEnabledProvidersQuery(), httpContext.RequestAborted);
-
-    if (providers.Count == 1)
+    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /login", async () =>
     {
-        if (string.IsNullOrWhiteSpace(redirectUri))
+        var redirectUri = GetRedirectUri(httpContext);
+        var providers = await sender.Send(new GetEnabledProvidersQuery(), httpContext.RequestAborted);
+
+        if (providers.Count == 1)
         {
-            return Results.BadRequest(new { error = "Redirect URI is required." });
+            if (string.IsNullOrWhiteSpace(redirectUri))
+            {
+                return endpointErrorHandler.BadRequest(httpContext, "GET /login", "Redirect URI is required.");
+            }
+
+            var url = QueryHelpers.AddQueryString(providers[0].AuthorizeUrl, new Dictionary<string, string?>
+            {
+                ["redirectUri"] = redirectUri
+            });
+            return Results.Redirect(url);
         }
 
-        var url = QueryHelpers.AddQueryString(providers[0].AuthorizeUrl, new Dictionary<string, string?>
+        return Results.Ok(new
         {
-            ["redirectUri"] = redirectUri
+            providers = providers.Select(provider => new
+            {
+                id = provider.Id,
+                name = provider.Name,
+                authorize_url = string.IsNullOrWhiteSpace(redirectUri)
+                    ? provider.AuthorizeUrl
+                    : QueryHelpers.AddQueryString(provider.AuthorizeUrl, "redirectUri", redirectUri)
+            })
         });
-        return Results.Redirect(url);
-    }
-
-    return Results.Ok(new
-    {
-        providers = providers.Select(provider => new
-        {
-            id = provider.Id,
-            name = provider.Name,
-            authorize_url = string.IsNullOrWhiteSpace(redirectUri)
-                ? provider.AuthorizeUrl
-                : QueryHelpers.AddQueryString(provider.AuthorizeUrl, "redirectUri", redirectUri)
-        })
-    });
-});
+    }));
 
 app.MapGet("/google/authorize", async (HttpContext httpContext, ISender sender) =>
-{
-    var redirectUri = GetRedirectUri(httpContext);
-    try
+    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /google/authorize", async () =>
     {
+        var redirectUri = GetRedirectUri(httpContext);
         var redirectUrl = await sender.Send(
             new BuildAuthorizeUrlQuery(ProviderIds.Google.Value, redirectUri),
             httpContext.RequestAborted);
         return Results.Redirect(redirectUrl);
-    }
-    catch (DomainException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
+    }));
 
 app.MapGet("/google/callback", async (HttpContext httpContext, ISender sender) =>
-{
-    var code = httpContext.Request.Query["code"].ToString();
-    var state = httpContext.Request.Query["state"].ToString();
-    var error = httpContext.Request.Query["error"].ToString();
-
-    if (!string.IsNullOrWhiteSpace(error))
+    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /google/callback", async () =>
     {
-        return Results.BadRequest(new { error });
-    }
+        var code = httpContext.Request.Query["code"].ToString();
+        var state = httpContext.Request.Query["state"].ToString();
+        var error = httpContext.Request.Query["error"].ToString();
 
-    if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
-    {
-        return Results.BadRequest(new { error = "Missing code or state." });
-    }
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            return endpointErrorHandler.BadRequest(
+                httpContext,
+                "GET /google/callback",
+                "OAuth provider returned an error.",
+                new { error });
+        }
 
-    var userAgent = httpContext.Request.Headers.UserAgent.ToString();
-    var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
+        {
+            return endpointErrorHandler.BadRequest(httpContext, "GET /google/callback", "Missing code or state.");
+        }
 
-    try
-    {
+        var userAgent = httpContext.Request.Headers.UserAgent.ToString();
+        var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+
         var callbackResult = await sender.Send(
             new HandleOAuthCallbackCommand(ProviderIds.Google.Value, code, state, userAgent, ipAddress),
             httpContext.RequestAborted);
         return Results.Redirect(callbackResult.RedirectUrl);
-    }
-    catch (DomainException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
+    }));
 
 app.MapPost("/token", async (HttpContext httpContext, ISender sender, TokenRequest request) =>
-{
-    try
+    await endpointErrorHandler.ExecuteAsync(httpContext, "POST /token", async () =>
     {
         var result = await sender.Send(new ExchangeAuthCodeCommand(request.Code), httpContext.RequestAborted);
         AuthCookies.SetRefreshToken(httpContext.Response, result.RefreshToken, result.RefreshTokenExpiresAt, result.CookieDomain);
         return Results.Ok(new TokenResponse(result.AccessToken, result.ExpiresInSeconds, result.SessionId, result.User));
-    }
-    catch (DomainException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
+    }));
 
 app.MapPost("/refresh", async (HttpContext httpContext, ISender sender) =>
-{
-    if (!AuthCookies.TryGetRefreshToken(httpContext.Request, out var refreshToken))
+    await endpointErrorHandler.ExecuteAsync(httpContext, "POST /refresh", async () =>
     {
-        return Results.Unauthorized();
-    }
+        if (!AuthCookies.TryGetRefreshToken(httpContext.Request, out var refreshToken))
+        {
+            return endpointErrorHandler.Unauthorized(httpContext, "POST /refresh", "Refresh token cookie is missing.");
+        }
 
-    var result = await sender.Send(new RefreshSessionCommand(refreshToken), httpContext.RequestAborted);
-    if (!result.Success)
-    {
-        AuthCookies.ClearRefreshToken(httpContext.Response, result.CookieDomain);
-        return Results.Unauthorized();
-    }
+        var result = await sender.Send(new RefreshSessionCommand(refreshToken), httpContext.RequestAborted);
+        if (!result.Success)
+        {
+            AuthCookies.ClearRefreshToken(httpContext.Response, result.CookieDomain);
+            return endpointErrorHandler.Unauthorized(httpContext, "POST /refresh", "Refresh token is invalid or expired.");
+        }
 
-    AuthCookies.SetRefreshToken(httpContext.Response, result.RefreshToken!, result.RefreshTokenExpiresAt!.Value, result.CookieDomain);
-    return Results.Ok(new TokenResponse(result.AccessToken!, result.ExpiresInSeconds, result.SessionId!.Value, result.User!));
-});
+        AuthCookies.SetRefreshToken(httpContext.Response, result.RefreshToken!, result.RefreshTokenExpiresAt!.Value, result.CookieDomain);
+        return Results.Ok(new TokenResponse(result.AccessToken!, result.ExpiresInSeconds, result.SessionId!.Value, result.User!));
+    }));
 
 app.MapPost("/logout", async (HttpContext httpContext, ISender sender, IOptions<IdentityOptions> options) =>
-{
-    string? refreshToken = null;
-    if (AuthCookies.TryGetRefreshToken(httpContext.Request, out var token))
+    await endpointErrorHandler.ExecuteAsync(httpContext, "POST /logout", async () =>
     {
-        refreshToken = token;
-    }
+        string? refreshToken = null;
+        if (AuthCookies.TryGetRefreshToken(httpContext.Request, out var token))
+        {
+            refreshToken = token;
+        }
 
-    await sender.Send(new LogoutCommand(refreshToken), httpContext.RequestAborted);
+        await sender.Send(new LogoutCommand(refreshToken), httpContext.RequestAborted);
 
-    AuthCookies.ClearRefreshToken(httpContext.Response, options.Value.RefreshTokenCookieDomain);
-    return Results.NoContent();
-});
+        AuthCookies.ClearRefreshToken(httpContext.Response, options.Value.RefreshTokenCookieDomain);
+        return Results.NoContent();
+    }));
 
 app.MapGet("/sessions", async (HttpContext httpContext, ISender sender) =>
-{
-    var userId = httpContext.User.GetUserId();
-    var currentSessionId = httpContext.User.GetSessionId();
-    if (userId is null || currentSessionId is null)
+    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /sessions", async () =>
     {
-        return Results.Unauthorized();
-    }
+        var userId = httpContext.User.GetUserId();
+        var currentSessionId = httpContext.User.GetSessionId();
+        if (userId is null || currentSessionId is null)
+        {
+            return endpointErrorHandler.Unauthorized(httpContext, "GET /sessions", "Required session claims are missing.");
+        }
 
-    var sessions = await sender.Send(
-        new GetSessionsQuery(userId.Value, currentSessionId.Value),
-        httpContext.RequestAborted);
+        var sessions = await sender.Send(
+            new GetSessionsQuery(userId.Value, currentSessionId.Value),
+            httpContext.RequestAborted);
 
-    return Results.Ok(new { sessions });
-}).RequireAuthorization();
+        return Results.Ok(new { sessions });
+    })).RequireAuthorization();
 
 app.MapDelete("/sessions/{id:guid}", async (HttpContext httpContext, ISender sender, IOptions<IdentityOptions> options, Guid id) =>
-{
-    var userId = httpContext.User.GetUserId();
-    if (userId is null)
+    await endpointErrorHandler.ExecuteAsync(httpContext, "DELETE /sessions/{id}", async () =>
     {
-        return Results.Unauthorized();
-    }
+        var userId = httpContext.User.GetUserId();
+        if (userId is null)
+        {
+            return endpointErrorHandler.Unauthorized(httpContext, "DELETE /sessions/{id}", "User claim is missing.");
+        }
 
-    var revoked = await sender.Send(new RevokeSessionCommand(userId.Value, id), httpContext.RequestAborted);
-    if (!revoked)
-    {
-        return Results.NotFound();
-    }
+        var revoked = await sender.Send(new RevokeSessionCommand(userId.Value, id), httpContext.RequestAborted);
+        if (!revoked)
+        {
+            return endpointErrorHandler.NotFound(httpContext, "DELETE /sessions/{id}", "Session was not found for the current user.");
+        }
 
-    if (httpContext.User.GetSessionId() == id)
-    {
-        AuthCookies.ClearRefreshToken(httpContext.Response, options.Value.RefreshTokenCookieDomain);
-    }
+        if (httpContext.User.GetSessionId() == id)
+        {
+            AuthCookies.ClearRefreshToken(httpContext.Response, options.Value.RefreshTokenCookieDomain);
+        }
 
-    return Results.NoContent();
-}).RequireAuthorization();
+        return Results.NoContent();
+    })).RequireAuthorization();
 
 app.MapGet("/.well-known/openid-configuration", (IOptions<IdentityOptions> options) =>
 {

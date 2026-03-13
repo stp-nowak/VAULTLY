@@ -5,9 +5,9 @@ using Vaultly.SharedKernel;
 namespace Vaultly.Identity.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core unit of work implementation.
+/// Unit of work implementation backed by the identity DbContext.
 /// </summary>
-public sealed class EfUnitOfWork(IdentityDbContext dbContext, IMediator mediator) : IUnitOfWork
+public sealed class UnitOfWork(IdentityDbContext dbContext, IMediator mediator) : IUnitOfWork
 {
     private readonly IdentityDbContext _dbContext = dbContext;
     private readonly IMediator _mediator = mediator;
@@ -17,13 +17,13 @@ public sealed class EfUnitOfWork(IdentityDbContext dbContext, IMediator mediator
     /// </summary>
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        
         var aggregates = _dbContext.ChangeTracker
             .Entries<AggregateRoot>()
             .Select(entry => entry.Entity)
             .Where(entity => entity.DomainEvents.Count > 0)
             .ToList();
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
         foreach (var aggregate in aggregates)
         {

@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record EmailAddress
 {
+    public const int MaxLength = 320;
+
     /// <summary>
     /// Creates a new email address value object.
     /// </summary>
@@ -15,6 +17,11 @@ public sealed record EmailAddress
         }
 
         var trimmed = value.Trim();
+        if (trimmed.Length > MaxLength)
+        {
+            throw new InvalidValueException($"Email must be {MaxLength} characters or fewer.");
+        }
+
         if (!trimmed.Contains('@'))
         {
             throw new InvalidValueException($"Email '{value}' is invalid.");

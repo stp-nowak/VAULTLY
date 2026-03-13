@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record UserAgent
 {
+    public const int MaxLength = 512;
+
     /// <summary>
     /// Creates a new user agent value object.
     /// </summary>
@@ -15,9 +17,9 @@ public sealed record UserAgent
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 512)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("User agent must be 512 characters or fewer.");
+            throw new InvalidValueException($"User agent must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;
@@ -42,6 +44,8 @@ public sealed record UserAgent
 
 public sealed record IpAddress
 {
+    public const int MaxLength = 64;
+
     /// <summary>
     /// Creates a new IP address value object.
     /// </summary>
@@ -53,9 +57,9 @@ public sealed record IpAddress
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 64)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("IP address must be 64 characters or fewer.");
+            throw new InvalidValueException($"IP address must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;

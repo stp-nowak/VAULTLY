@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record RedirectUri
 {
+    public const int MaxLength = 2048;
+
     /// <summary>
     /// Creates a new redirect URI value object.
     /// </summary>
@@ -19,7 +21,13 @@ public sealed record RedirectUri
             throw new InvalidValueException("Redirect URI must be an absolute URI.");
         }
 
-        Value = uri.AbsoluteUri;
+        var normalizedValue = uri.AbsoluteUri;
+        if (normalizedValue.Length > MaxLength)
+        {
+            throw new InvalidValueException($"Redirect URI must be {MaxLength} characters or fewer.");
+        }
+
+        Value = normalizedValue;
     }
 
     /// <summary>

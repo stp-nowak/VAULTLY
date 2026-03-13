@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record ProviderId
 {
+    public const int MaxLength = 50;
+
     /// <summary>
     /// Creates a new provider identifier value object.
     /// </summary>
@@ -15,9 +17,9 @@ public sealed record ProviderId
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 50)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("Provider id must be 50 characters or fewer.");
+            throw new InvalidValueException($"Provider id must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed.ToLowerInvariant();

@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record CodeHash
 {
+    public const int MaxLength = 128;
+
     /// <summary>
     /// Creates a new auth code hash value object.
     /// </summary>
@@ -15,9 +17,9 @@ public sealed record CodeHash
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 128)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("Auth code hash must be 128 characters or fewer.");
+            throw new InvalidValueException($"Auth code hash must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;
