@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record OAuthStateValue
 {
+    public const int MaxLength = 128;
+
     /// <summary>
     /// Creates a new OAuth state value object.
     /// </summary>
@@ -15,9 +17,9 @@ public sealed record OAuthStateValue
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 128)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("OAuth state must be 128 characters or fewer.");
+            throw new InvalidValueException($"OAuth state must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;

@@ -9,7 +9,7 @@ using Vaultly.Identity.Domain.Constants;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.Infrastructure.Options;
 
-namespace Vaultly.Identity.Infrastructure;
+namespace Vaultly.Identity.Infrastructure.ExternalServices;
 
 // IHttpClientFactory (System.Net.Http) is used so that HttpClient lifetime is managed by the DI container.
 public sealed class GoogleOAuthClient(IHttpClientFactory httpClientFactory, IOptions<GoogleOAuthOptions> options)

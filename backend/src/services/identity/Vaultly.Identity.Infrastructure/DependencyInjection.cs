@@ -4,7 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
+using Vaultly.Identity.Infrastructure.ExternalServices;
 using Vaultly.Identity.Infrastructure.Persistence;
+using Vaultly.Identity.Infrastructure.Persistence.Repositories;
 using Vaultly.Identity.Infrastructure.Security;
 using Vaultly.SharedKernel;
 
@@ -25,10 +27,10 @@ public static class DependencyInjection
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("IdentityDb")));
 
-        services.AddScoped<IOAuthStateRepository, EfOAuthStateRepository>();
-        services.AddScoped<IUserRepository, EfUserRepository>();
-        services.AddScoped<ISessionRepository, EfSessionRepository>();
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IOAuthStateRepository, OAuthStateRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<IExternalOAuthProvider, GoogleOAuthClient>();
 

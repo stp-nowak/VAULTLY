@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Entities;
 using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.SharedKernel;
 
 namespace Vaultly.Identity.Infrastructure.Persistence;
 
@@ -22,18 +23,22 @@ public sealed class IdentityDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Domain events are dispatched through the unit of work and must never be mapped as persisted entities.
+        modelBuilder.Ignore<DomainEvent>();
+
         modelBuilder.Entity<User>(entity =>
         {
+            entity.Ignore(x => x.DomainEvents);
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id)
                 .HasConversion(id => id.Value, value => UserId.From(value));
             entity.Property(x => x.Email)
                 .HasConversion(email => email.Value, value => new EmailAddress(value))
-                .HasMaxLength(320)
+                .HasMaxLength(EmailAddress.MaxLength)
                 .IsRequired();
             entity.Property(x => x.Name)
                 .HasConversion(name => name.Value, value => new PersonName(value))
-                .HasMaxLength(200)
+                .HasMaxLength(PersonName.MaxLength)
                 .IsRequired();
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasMany(x => x.ExternalIdentities)
@@ -52,25 +57,26 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(id => id.Value, value => UserId.From(value));
             entity.Property(x => x.ProviderId)
                 .HasConversion(id => id.Value, value => new ProviderId(value))
-                .HasMaxLength(50)
+                .HasMaxLength(ProviderId.MaxLength)
                 .IsRequired();
             entity.Property(x => x.ProviderUserId)
                 .HasConversion(id => id.Value, value => new ProviderUserId(value))
-                .HasMaxLength(200)
+                .HasMaxLength(ProviderUserId.MaxLength)
                 .IsRequired();
             entity.Property(x => x.Email)
                 .HasConversion(email => email.Value, value => new EmailAddress(value))
-                .HasMaxLength(320)
+                .HasMaxLength(EmailAddress.MaxLength)
                 .IsRequired();
             entity.Property(x => x.Name)
                 .HasConversion(name => name.Value, value => new PersonName(value))
-                .HasMaxLength(200)
+                .HasMaxLength(PersonName.MaxLength)
                 .IsRequired();
             entity.HasIndex(x => new { x.ProviderId, x.ProviderUserId }).IsUnique();
         });
 
         modelBuilder.Entity<Session>(entity =>
         {
+            entity.Ignore(x => x.DomainEvents);
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id)
                 .HasConversion(id => id.Value, value => SessionId.From(value));
@@ -78,18 +84,18 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(id => id.Value, value => UserId.From(value));
             entity.Property(x => x.AuthMethod)
                 .HasConversion(method => method.Value, value => new AuthMethod(value))
-                .HasMaxLength(50)
+                .HasMaxLength(AuthMethod.MaxLength)
                 .IsRequired();
             entity.Property(x => x.UserAgent)
                 .HasConversion(
                     value => value == null ? null : value.Value,
                     value => value == null ? null : new UserAgent(value))
-                .HasMaxLength(512);
+                .HasMaxLength(UserAgent.MaxLength);
             entity.Property(x => x.IpAddress)
                 .HasConversion(
                     value => value == null ? null : value.Value,
                     value => value == null ? null : new IpAddress(value))
-                .HasMaxLength(64);
+                .HasMaxLength(IpAddress.MaxLength);
             entity.HasIndex(x => x.UserId);
             entity.HasMany(x => x.RefreshTokens)
                 .WithOne()
@@ -112,7 +118,7 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(id => id.Value, value => SessionId.From(value));
             entity.Property(x => x.TokenHash)
                 .HasConversion(hash => hash.Value, value => new TokenHash(value))
-                .HasMaxLength(128)
+                .HasMaxLength(TokenHash.MaxLength)
                 .IsRequired();
             // Explicit ValueConverter required to disambiguate nullable HasConversion overloads in EF Core 10.
             // id.Value.Value: outer .Value unwraps Nullable<RefreshTokenId>, inner .Value is the Guid.
@@ -134,7 +140,7 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(id => id.Value, value => SessionId.From(value));
             entity.Property(x => x.CodeHash)
                 .HasConversion(hash => hash.Value, value => new CodeHash(value))
-                .HasMaxLength(128)
+                .HasMaxLength(CodeHash.MaxLength)
                 .IsRequired();
             entity.HasIndex(x => x.CodeHash).IsUnique();
             entity.HasIndex(x => x.SessionId);
@@ -142,27 +148,27 @@ public sealed class IdentityDbContext : DbContext
 
         modelBuilder.Entity<OAuthState>(entity =>
         {
+            entity.Ignore(x => x.DomainEvents);
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id)
                 .HasConversion(id => id.Value, value => OAuthStateId.From(value));
             entity.Property(x => x.State)
                 .HasConversion(state => state.Value, value => new OAuthStateValue(value))
-                .HasMaxLength(128)
+                .HasMaxLength(OAuthStateValue.MaxLength)
                 .IsRequired();
             entity.Property(x => x.CodeVerifier)
                 .HasConversion(verifier => verifier.Value, value => new CodeVerifier(value))
-                .HasMaxLength(128)
+                .HasMaxLength(CodeVerifier.MaxLength)
                 .IsRequired();
             entity.Property(x => x.Nonce)
                 .HasConversion(nonce => nonce.Value, value => new Nonce(value))
-                .HasMaxLength(128)
+                .HasMaxLength(Nonce.MaxLength)
                 .IsRequired();
             entity.Property(x => x.RedirectUri)
-                .HasColumnName("ReturnUrl")
                 .HasConversion(
                     url => url == null ? null : url.Value,
                     value => value == null ? null : new RedirectUri(value))
-                .HasMaxLength(2048);
+                .HasMaxLength(RedirectUri.MaxLength);
             entity.HasIndex(x => x.State).IsUnique();
         });
     }

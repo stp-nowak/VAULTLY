@@ -4,12 +4,12 @@ using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.ValueObjects;
 
-namespace Vaultly.Identity.Infrastructure.Persistence;
+namespace Vaultly.Identity.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// EF Core repository for session aggregates.
+/// Repository for session aggregates backed by the identity DbContext.
 /// </summary>
-public sealed class EfSessionRepository(IdentityDbContext dbContext) : ISessionRepository
+public sealed class SessionRepository(IdentityDbContext dbContext) : ISessionRepository
 {
     private readonly IdentityDbContext _dbContext = dbContext;
 

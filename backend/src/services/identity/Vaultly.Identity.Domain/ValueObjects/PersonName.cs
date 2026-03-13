@@ -4,6 +4,8 @@ namespace Vaultly.Identity.Domain.ValueObjects;
 
 public sealed record PersonName
 {
+    public const int MaxLength = 200;
+
     /// <summary>
     /// Creates a new person name value object.
     /// </summary>
@@ -15,9 +17,9 @@ public sealed record PersonName
         }
 
         var trimmed = value.Trim();
-        if (trimmed.Length > 200)
+        if (trimmed.Length > MaxLength)
         {
-            throw new InvalidValueException("Name must be 200 characters or fewer.");
+            throw new InvalidValueException($"Name must be {MaxLength} characters or fewer.");
         }
 
         Value = trimmed;

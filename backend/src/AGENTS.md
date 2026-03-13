@@ -18,7 +18,7 @@
 - Write code with good maintainability practices, including comments on why certain design decisions were made.
 - Handle edge cases and write clear exception handling.
 - For libraries or external dependencies, mention their usage and purpose in comments.
-- Always build and run tests after changes to functionality. Do not run build or tests if changes made do not effect functionality.
+- Always build and run tests after changes to backend functionality. Do not run build or tests if changes made do not effect backend functionality.
 
 ## Logging and Monitoring
 - Write usefull logs using Serilog

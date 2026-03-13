@@ -4,12 +4,12 @@ using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.ValueObjects;
 
-namespace Vaultly.Identity.Infrastructure.Persistence;
+namespace Vaultly.Identity.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// EF Core repository for OAuth state aggregates.
+/// Repository for OAuth state aggregates backed by the identity DbContext.
 /// </summary>
-public sealed class EfOAuthStateRepository(IdentityDbContext dbContext) : IOAuthStateRepository
+public sealed class OAuthStateRepository(IdentityDbContext dbContext) : IOAuthStateRepository
 {
     private readonly IdentityDbContext _dbContext = dbContext;
 
