@@ -1,0 +1,28 @@
+.contentStack {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 60rem;
+}
+
+.contentHero {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.25rem 0 0.5rem;
+
+  h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+  }
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 1rem;
+}
