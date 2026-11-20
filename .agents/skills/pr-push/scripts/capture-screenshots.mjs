@@ -35,11 +35,12 @@ try {
         const mocks = { ...(config.mocks ?? {}), ...(scenario.mocks ?? {}) };
         for (const [pattern, mock] of Object.entries(mocks)) {
           await page.route(pattern, (route) =>
-            route.fulfill({
-              body: mock.body === undefined ? '' : JSON.stringify(mock.body),
-              contentType: 'application/json',
-              status: mock.status ?? 200,
-            }),
+            route.fulfill(
+              // Like the real web API: JSON only when there is a body (e.g. 401 has none).
+              mock.body === undefined
+                ? { status: mock.status ?? 200 }
+                : { body: JSON.stringify(mock.body), contentType: 'application/json', status: mock.status ?? 200 },
+            ),
           );
         }
 
