@@ -137,22 +137,41 @@
 ## 🏗️ Microservices Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│              API Gateway (YARP in C#)                    │
-└───┬─────┬──────┬──────┬──────┬──────┬──────┬───────────┘
-    │     │      │      │      │      │      │
-Identity Bank  Trans- Budget  Goal  Alert  Billing
-Service  Sync  action  Svc    Svc    Svc    Svc
-         Svc   Svc
-    │     │      │      │      │      │      │
-   PG    PG     PG     PG     PG   Redis   PG
-                                   +PG   +Stripe
-                              RabbitMQ (event bus)
+            ┌──────────────────────────────┐
+            │ ./web/src/web  React SPA     │   browser: HttpOnly session cookie only
+            └──────────────┬───────────────┘
+                           │ same-origin /api/* + X-CSRF
+            ┌──────────────▼───────────────┐
+            │ ./web/src/api  Web API (BFF) │── Redis: tokens per session (encrypted)
+            └──────┬────────────────┬──────┘
+                   │ OAuth code /   │ Bearer JWT
+                   │ refresh        │
+┌──────────────────▼───┐   ┌────────▼────────────────────────────────────┐
+│ ./auth               │   │            API Gateway (YARP in C#)         │
+│ Identity Service     │   └───┬──────┬──────┬──────┬──────┬──────┬──────┘
+│ (standalone, own     │       │      │      │      │      │      │
+│  solution & kernel)  │     Bank  Trans- Budget  Goal  Alert  Billing   ./backend
+│ JWKS / OIDC discovery│     Sync  action  Svc    Svc    Svc    Svc
+└──────────┬───────────┘     Svc   Svc
+           │                   │      │      │      │      │      │
+          PG                  PG     PG     PG     PG   Redis   PG
+                                                         +PG   +Stripe
+           └──────────────── RabbitMQ (integration events) ─────────┘
 ```
+
+**Repository layout**
+- `./web` — web app. `src/web`: React SPA, Feature-Sliced Design with a `domain` layer instead of `entities`
+  (one `domain/<context>` slice per backend bounded context, e.g. `domain/identity` ↔ `./auth`).
+  `src/api`: C# web API (backend-for-frontend) — browser gets only an HttpOnly session cookie, tokens live in Redis,
+  `/api/*` is forwarded to the gateway with the session's bearer token.
+- `./backend` — domain microservices; each is a bounded context in **tactical DDD + CQRS**
+  (`Domain` / `Application` with `Commands` + `Queries` / `Infrastructure` / `Api`).
+- `./auth` — Identity service, **completely separate** from `./backend` (own solution, shared kernel, DB),
+  same tactical DDD + CQRS rules. Backend services only validate its JWTs via JWKS and consume its events.
 
 | Service | Responsibility | DB |
 |---|---|---|
-| **Identity** | Auth, users, sessions, 2FA | Postgres |
+| **Identity** (`./auth`) | Auth, users, sessions, 2FA | Postgres |
 | **Bank Sync** | Plaid/TrueLayer connection, webhooks, account balances | Postgres |
 | **Transaction** | Transaction store, categorization, search, enrichment | Postgres |
 | **Budget** | Budget rules, consumption tracking, rollover | Postgres |
@@ -167,7 +186,7 @@ Service  Sync  action  Svc    Svc    Svc    Svc
 
 ---
 
-**Important**: Banckend architecture should follow DDD.
+**Important**: Backend (`./backend`) and auth (`./auth`) follow tactical DDD with CQRS. Frontend follows Feature-Sliced Design with a `domain` layer instead of `entities`.
 
 ### 🔴 Phase 1 — Foundation (Weeks 1–3)
 *Goal: Docker running, auth solid, user can register*
@@ -175,7 +194,7 @@ Service  Sync  action  Svc    Svc    Svc    Svc
 **Infrastructure**
 - Docker Compose — all service containers, Postgres instances, RabbitMQ, Redis
 - YARP API Gateway with routing config
-- Shared C# solution structure (one `.sln`, one project per service)
+- Backend C# solution (`backend/src/Vaultly.slnx`, one project set per service) + separate auth solution (`auth/src/Vaultly.Auth.slnx`)
 - Shared NuGet packages (JWT helpers, RabbitMQ base, middleware)
 - CI pipeline (GitHub Actions — build + test on PR)
 
