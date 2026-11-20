@@ -1,0 +1,42 @@
+name: Web API
+
+# Runs only when Web API (or this workflow) changes. Other projects have their own workflows,
+# so builds of different projects run in parallel.
+on:
+  pull_request:
+    paths:
+      - 'web/src/api/**'
+      - '.github/workflows/web-api.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'web/src/api/**'
+      - '.github/workflows/web-api.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web/src/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore Vaultly.Web.Api.slnx
+      - run: dotnet build Vaultly.Web.Api.slnx --no-restore --configuration Release
+      - run: dotnet test Vaultly.Web.Api.slnx --no-build --configuration Release

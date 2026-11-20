@@ -2,10 +2,16 @@
 
 Personal Finance &amp; Budget Intelligence Platform
 
-## Backend configuration
+## Repository layout
+
+- `web/` - web app: `src/web` React SPA (Feature-Sliced Design with a `domain` layer) + `src/api` C# web API (backend-for-frontend, session cookie, tokens in Redis)
+- `backend/` - domain microservices, tactical DDD + CQRS
+- `auth/` - standalone identity/auth service, tactical DDD + CQRS
+
+## Auth service configuration
 
 The identity API supports both `appsettings*.json` and a local `.env` file.
 
-Use `backend\src\services\identity\Vaultly.Identity.Api\.env.example` as the starting point for a local `.env` file. The `.env` file is optional, but when the same key exists in both places, the `.env` value overrides `appsettings.json`.
+Use `auth\src\Vaultly.Identity.Api\.env.example` as the starting point for a local `.env` file. The `.env` file is optional, but when the same key exists in both places, the `.env` value overrides `appsettings.json`.
 
 Use native .NET hierarchical keys in `.env`, such as `Identity__Issuer` and `ConnectionStrings__IdentityDb`.
