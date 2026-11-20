@@ -27,13 +27,13 @@ async function parseResponseBody(response: Response): Promise<unknown> {
     return null;
   }
 
-  const contentType = response.headers.get('content-type');
-  if (isJsonResponse(contentType)) {
-    return response.json();
+  // Read as text first: error responses (e.g. 401) may declare JSON but carry an empty body.
+  const text = await response.text();
+  if (!text) {
+    return null;
   }
 
-  const text = await response.text();
-  return text || null;
+  return isJsonResponse(response.headers.get('content-type')) ? (JSON.parse(text) as unknown) : text;
 }
 
 function extractErrorMessage(payload: unknown, fallback: string): string {

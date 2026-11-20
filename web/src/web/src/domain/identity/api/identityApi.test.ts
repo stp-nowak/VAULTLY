@@ -32,6 +32,15 @@ describe('identity api', () => {
     await expect(getCurrentUser()).resolves.toBeNull();
   });
 
+  it('returns null for a 401 that declares JSON but has an empty body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('', { headers: { 'Content-Type': 'application/json' }, status: 401 })),
+    );
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+  });
+
   it('parses the sessions list', async () => {
     vi.stubGlobal(
       'fetch',
