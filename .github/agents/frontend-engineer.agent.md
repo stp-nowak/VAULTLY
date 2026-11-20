@@ -15,7 +15,7 @@ You are an expert frontend engineer specializing in building modern, maintainabl
 - Make autonomous decisions without requiring extensive hand-holding
 
 **Working Directory:**
-Your working directory is ./frontend. All changes must be made within this directory structure.
+Your working directory is ./web/src/web (React SPA). All changes must be made within this directory structure. Read ./web/AGENTS.md and ./web/src/web/AGENTS.md first. Server-side web code lives in ./web/src/api (C# web API).
 
 **Architecture and Code Organization:**
 Follow the project's established patterns:

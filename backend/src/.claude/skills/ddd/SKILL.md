@@ -70,20 +70,30 @@ ServiceName/
 │   ├── Services/                   # Domain services (stateless logic spanning aggregates)
 │   └── Exceptions/                 # Domain-specific exceptions
 │
-├── Application/                    # Orchestration layer. Depends on Domain only.
-│   ├── UseCases/
-│   │   └── FeatureName/
-│   │       ├── FeatureNameCommand.cs   (or Query)
-│   │       └── FeatureNameHandler.cs
+├── Application/                    # Orchestration layer (CQRS). Depends on Domain only.
+│   ├── Messaging/                  # CQRS markers on top of MediatR: ICommand, ICommand<T>, IQuery<T>,
+│   │                               #   ICommandHandler<,>, IQueryHandler<,>
+│   ├── Commands/                   # WRITE side — one folder per use case
+│   │   └── SubmitOrder/
+│   │       ├── SubmitOrderCommand.cs
+│   │       └── SubmitOrderHandler.cs
+│   ├── Queries/                    # READ side — one folder per use case
+│   │   └── GetOrderSummary/
+│   │       ├── GetOrderSummaryQuery.cs
+│   │       └── GetOrderSummaryHandler.cs
 │   ├── EventHandlers/              # Handles domain or integration events
-│   └── Interfaces/                 # ← Repository interfaces AND external service abstractions live here
-│       ├── Repositories/           #   e.g. IOrderRepository, ICustomerRepository
+│   ├── Models/                     # DTOs / read models / command results
+│   ├── Common/                     # Internal helpers shared by handlers (no business rules)
+│   └── Interfaces/                 # ← Ports implemented by Infrastructure
+│       ├── Repositories/           #   WRITE side: load/save aggregates, e.g. IOrderRepository
+│       ├── ReadServices/           #   READ side: return DTOs, e.g. IOrderReadService
 │       └── Services/               #   e.g. IEmailService, IStorageService
 │
 ├── Infrastructure/                 # Implements Application interfaces. Depends on Domain + Application.
 │   ├── Persistence/
 │   │   ├── DbContext.cs
-│   │   ├── Repositories/           # Implements IRepository interfaces from Application
+│   │   ├── Repositories/           # Implements IRepository interfaces from Application (tracked aggregates)
+│   │   ├── ReadServices/           # Implements read services (AsNoTracking projections to DTOs)
 │   │   └── Migrations/
 │   ├── Messaging/                  # RabbitMQ, Kafka publishers/consumers
 │   └── ExternalServices/           # Third-party API clients
@@ -447,32 +457,56 @@ public class OrderRepository : IOrderRepository
 
 ---
 
-## Application Layer (Use Cases)
+## Application Layer (Use Cases, CQRS)
 
-The application layer orchestrates the domain. It:
-- Receives a command or query
-- Loads aggregate(s) from repository
-- Calls domain methods
-- Saves via repository
-- Does NOT contain business logic
-
-Use MediatR for command/query handling (CQRS pattern).
+The application layer orchestrates the domain and is split into a **write side (commands)** and a
+**read side (queries)**. MediatR is the dispatcher, but handlers implement the CQRS marker interfaces from
+`Application/Messaging/`, never raw `IRequest` / `IRequestHandler`.
 
 ```csharp
-// Application/UseCases/SubmitOrder/SubmitOrderCommand.cs
-public record SubmitOrderCommand(Guid OrderId, Guid UserId) : IRequest<SubmitOrderResult>;
+// Application/Messaging/
+public interface ICommand : IRequest;                                     // command without result
+public interface ICommand<out TResponse> : IRequest<TResponse>;           // command with result (ids, tokens)
+public interface IQuery<out TResponse> : IRequest<TResponse>;             // side-effect free read
+public interface ICommandHandler<in TCommand> : IRequestHandler<TCommand> where TCommand : ICommand;
+public interface ICommandHandler<in TCommand, TResponse> : IRequestHandler<TCommand, TResponse>
+    where TCommand : ICommand<TResponse>;
+public interface IQueryHandler<in TQuery, TResponse> : IRequestHandler<TQuery, TResponse>
+    where TQuery : IQuery<TResponse>;
+```
 
-// Application/UseCases/SubmitOrder/SubmitOrderHandler.cs
-public class SubmitOrderHandler : IRequestHandler<SubmitOrderCommand, SubmitOrderResult>
+### Command (write side) rules
+- Name in the imperative: `SubmitOrderCommand`, `RevokeSessionCommand`. Lives in `Commands/<UseCase>/`.
+- Flow: load aggregate(s) via **repository** → call domain methods → `IUnitOfWork.SaveChangesAsync`.
+- All business rules are enforced inside aggregates; the handler only orchestrates.
+- Modify **one aggregate per transaction** where possible; react to others via domain events.
+- Return only what the caller needs (id, token, small result record) — never an aggregate.
+- Anything that writes state is a command, even if it "returns a URL" (e.g. starting an OAuth flow
+  that persists an `OAuthState` is `StartExternalLoginCommand`, not a query).
+
+### Query (read side) rules
+- Name as a question: `GetOrderSummaryQuery`, `GetSessionsQuery`. Lives in `Queries/<UseCase>/`.
+- Depends on **read services** (`Interfaces/ReadServices/I*ReadService`), never on repositories or `IUnitOfWork`.
+- Read services return **DTOs / read models**, built with `AsNoTracking()` projections in Infrastructure.
+- Queries have no side effects: no `SaveChangesAsync`, no domain events, no aggregate method calls.
+- Repositories serve the write side only — do not add "list/search" methods to them for queries.
+
+These rules are guarded by convention tests (see `CqrsConventionTests` in the Identity service): every MediatR
+request is an `ICommand`/`IQuery`, commands live in `Commands/`, queries in `Queries/`, and query handlers do
+not depend on repositories or `IUnitOfWork`.
+
+### Command example
+
+```csharp
+// Application/Commands/SubmitOrder/SubmitOrderCommand.cs
+public sealed record SubmitOrderCommand(Guid OrderId, Guid UserId) : ICommand<SubmitOrderResult>;
+
+// Application/Commands/SubmitOrder/SubmitOrderHandler.cs
+public sealed class SubmitOrderHandler(IOrderRepository orders, IUnitOfWork unitOfWork)
+    : ICommandHandler<SubmitOrderCommand, SubmitOrderResult>
 {
-    private readonly IOrderRepository _orders;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public SubmitOrderHandler(IOrderRepository orders, IUnitOfWork unitOfWork)
-    {
-        _orders = orders;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IOrderRepository _orders = orders;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<SubmitOrderResult> Handle(SubmitOrderCommand cmd, CancellationToken ct)
     {
@@ -687,6 +721,9 @@ Before writing domain code, answer these questions:
 | Giant aggregates | Performance issues, merge conflicts, complexity | Keep aggregates small, split if >4 entities |
 | Business logic in application layer | Logic scattered, not reusable | Push all rules into domain methods |
 | Raw primitives in domain (`string`, `decimal`, `Guid`) | No validation, no meaning | Wrap in value objects |
+| Query handler using repositories / aggregates | Read side coupled to write model, risk of side effects | Use a read service returning DTOs |
+| "Query" that writes state | Hidden side effects, breaks CQRS | Model it as a command |
+| Raw `IRequest`/`IRequestHandler` in Application | Commands and queries indistinguishable | Use `ICommand`/`IQuery` markers from `Messaging/` |
 
 ---
 
@@ -700,7 +737,10 @@ Entity           → Has identity, changes over time, lives inside aggregate
 Value Object     → Defined by values, immutable, replace primitives
 Domain Event     → Something meaningful happened (past tense)
 Domain Service   → Stateless logic spanning multiple aggregates
-Repository       → Interface in Application, implementation in Infrastructure
+Repository       → WRITE side: interface in Application, implementation in Infrastructure
+Command          → State change; handler loads aggregate via repository, saves via IUnitOfWork
+Query            → Side-effect free read; handler uses a read service returning DTOs
+Read Service     → READ side port (Application) + AsNoTracking projection (Infrastructure)
 Application Svc  → Orchestrates use cases, no business logic
 Integration Evt  → Cross-service communication via message bus
 Local Projection → Minimal copy of foreign context data, kept fresh by events

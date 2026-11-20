@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Vaultly.Web.Api/Vaultly.Web.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Vaultly.Web.Api.Tests/Vaultly.Web.Api.Tests.csproj" />
+  </Folder>
+</Solution>
