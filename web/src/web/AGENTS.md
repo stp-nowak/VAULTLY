@@ -234,6 +234,6 @@ For specific topics, refer to the dedicated skill files:
 
 | Topic | File |
 |---|---|
-| React performance and architecture | `.agents\skills\react-best-practices\SKILL.md` |
-| Writing tests | `.agents\skills\test-writer\SKILL.md` |
-| Frontend design direction | `.agents\skills\frontend-design\SKILL.md` |
+| React performance and architecture | `.claude/skills/react-best-practices/SKILL.md` |
+| Writing tests | `.claude/skills/test-writer/SKILL.md` |
+| Frontend design direction | `.claude/skills/frontend-design/SKILL.md` |

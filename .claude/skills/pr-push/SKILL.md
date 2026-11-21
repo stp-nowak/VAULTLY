@@ -23,7 +23,7 @@ Run the steps in order. Do not skip verification or screenshots to save time.
 3. Working tree must be clean or contain only changes that belong to this PR. Never sweep unrelated files in.
 4. The work must be linked to an issue. Find it from the branch name (`feature/issue-<n>-...`) or ask.
    If there is no issue yet and the user wants one, create it first (`gh issue create --label enhancement`).
-5. Commits follow `./.agents/skills/proper-commit/SKILL.md`. Commit any remaining changes with that skill.
+5. Commits follow `./.claude/skills/proper-commit/SKILL.md`. Commit any remaining changes with that skill.
 
 ## 2. Verify every touched project
 
