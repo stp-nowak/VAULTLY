@@ -1,6 +1,7 @@
 # Vaultly Identity — client integration
 
-Vaultly Identity is an OAuth 2.0 / OpenID Connect authorization server with its own login UI. Applications never
+Vaultly Identity is an OAuth 2.0 / OpenID Connect authorization server with its own login UI. For the end-to-end
+picture (web app, BFF, Redis, diagrams) see [`docs/architecture/authentication.md`](../../docs/architecture/authentication.md). Applications never
 show a sign-in form: they redirect the browser to the Identity service and receive an authorization code back.
 
 ## Clients

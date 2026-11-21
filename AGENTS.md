@@ -11,6 +11,7 @@ Mono repo:
   - `./auth/web` its own login UI (React SPA, Keycloak-style) built on `@vaultly/ui`
 
 ### General Instructions
+- Authentication/authorization across web, web API and auth service is described in `./docs/architecture/authentication.md`; keep it in sync when changing the flow
 - **Comments: as few as possible.** Do not write comments that explain what the code does — make the code
   (names, small functions, types) say it. Add a comment only for something genuinely non-obvious: a protocol or
   security constraint, a workaround, a surprising "why". The only routine exception: a short `<summary>`/JSDoc on

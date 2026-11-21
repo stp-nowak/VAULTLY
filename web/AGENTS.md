@@ -10,6 +10,8 @@ web/
 ```
 
 ## Security model (non-negotiable)
+Full flow with diagrams: `../docs/architecture/authentication.md`.
+
 - The browser holds **only an HttpOnly session cookie** (`Secure`, `SameSite=Strict`, opaque random id).
   No access/refresh tokens, no PKCE, no token storage in JavaScript.
 - `web/src/api` is a confidential OIDC client of the Identity service (`./auth`): it redirects to `/authorize`
