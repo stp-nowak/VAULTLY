@@ -8,6 +8,10 @@ Personal Finance &amp; Budget Intelligence Platform
 - `backend/` - domain microservices, tactical DDD + CQRS
 - `auth/` - standalone identity/auth service (OAuth 2.0/OIDC, SSO), tactical DDD + CQRS, with its own login UI in `auth/web`
 
+## Documentation
+
+- [Authentication & authorization flow](docs/architecture/authentication.md) — end-to-end sign-in, SSO, token refresh and sign-out with diagrams
+
 ## Auth service configuration
 
 The identity API supports both `appsettings*.json` and a local `.env` file.
