@@ -1,18 +1,21 @@
 name: Auth service
 
-# Runs only when the Auth service C# code (or this workflow) changes; the login UI (auth/web) has auth-web.yml. Other projects have their own workflows,
+# Runs only when the Auth service C# code (or this workflow) changes; the login UI (auth/web) has auth-web.yml
+# and documentation (auth/docs) needs no build. Other projects have their own workflows,
 # so builds of different projects run in parallel.
 on:
   pull_request:
     paths:
       - 'auth/**'
       - '!auth/web/**'
+      - '!auth/docs/**'
       - '.github/workflows/auth.yml'
   push:
     branches: [main]
     paths:
       - 'auth/**'
       - '!auth/web/**'
+      - '!auth/docs/**'
       - '.github/workflows/auth.yml'
   workflow_dispatch:
 
