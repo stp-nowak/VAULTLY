@@ -1,55 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
-
-import { StatusNotice } from '@/shared/ui/StatusNotice';
+import { Card, Eyebrow, InfoTile, StatusNotice } from '@vaultly/ui';
 
 import { sessionsQueryOptions } from '../api/identityQueries';
 import { useAuth } from '../model/authContext';
-
-import styles from './SessionSummary.module.scss';
 
 export function SessionSummary() {
   const auth = useAuth();
   const sessionsQuery = useQuery(sessionsQueryOptions(auth.isAuthenticated ? auth.sessionId : null));
 
   return (
-    <section className={styles.card}>
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Identity status</p>
-          <h2>Current session</h2>
-        </div>
+    <Card aria-labelledby="sessions-heading">
+      <div>
+        <Eyebrow>Security</Eyebrow>
+        <h2 className="text-2xl" id="sessions-heading">
+          Active sessions
+        </h2>
       </div>
 
-      {sessionsQuery.isLoading ? <StatusNotice>Loading session details…</StatusNotice> : null}
+      {sessionsQuery.isLoading ? <StatusNotice>Loading your sessions…</StatusNotice> : null}
       {sessionsQuery.isError ? (
         <StatusNotice tone="error">
-          {sessionsQuery.error instanceof Error ? sessionsQuery.error.message : 'Unable to load session details.'}
+          {sessionsQuery.error instanceof Error ? sessionsQuery.error.message : 'Unable to load your sessions.'}
         </StatusNotice>
       ) : null}
 
       {sessionsQuery.data?.length ? (
-        <ul className={styles.sessionList}>
+        <ul className="grid gap-3.5">
           {sessionsQuery.data.map((session) => (
-            <li className={styles.sessionCard} key={session.id}>
-              <p className={styles.sessionTitle}>{session.isCurrent ? 'Current browser session' : 'Vaultly session'}</p>
-              <dl className={styles.sessionDetails}>
-                <div>
-                  <dt>Last used</dt>
-                  <dd>{new Date(session.lastUsedAt).toLocaleString()}</dd>
-                </div>
-                <div>
-                  <dt>Created</dt>
-                  <dd>{new Date(session.createdAt).toLocaleString()}</dd>
-                </div>
-                <div>
-                  <dt>Agent</dt>
-                  <dd>{session.userAgent ?? 'Unavailable'}</dd>
-                </div>
+            <li className="rounded-[1.25rem] border border-line bg-surface p-4" key={session.id}>
+              <p className="mb-3 font-bold">{session.isCurrent ? 'This browser' : 'Other device'}</p>
+              <dl className="grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-3">
+                <InfoTile label="Last used" value={new Date(session.lastUsedAt).toLocaleString()} />
+                <InfoTile label="Signed in" value={new Date(session.createdAt).toLocaleString()} />
+                <InfoTile label="Device" value={session.userAgent ?? 'Unknown'} />
               </dl>
             </li>
           ))}
         </ul>
       ) : null}
-    </section>
+    </Card>
   );
 }

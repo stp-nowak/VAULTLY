@@ -1,0 +1,45 @@
+name: UI package
+
+# Runs when the shared design system (or workspace setup) changes. Consumers (web-spa, auth-web) have their own
+# workflows that also watch packages/ui, so a UI change re-validates every app that uses it, in parallel.
+on:
+  pull_request:
+    paths:
+      - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ui.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ui.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm version comes from "packageManager" in the root package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @vaultly/ui lint
+      - run: pnpm --filter @vaultly/ui typecheck
+      - run: pnpm --filter @vaultly/ui test

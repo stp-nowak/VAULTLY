@@ -7,7 +7,7 @@ authentication is an HttpOnly session cookie managed by the web API. See `../../
 
 - React 19, TypeScript (`strict: true`), Vite
 - TanStack Router + TanStack Query
-- Sass modules
+- Tailwind CSS v4 + `@vaultly/ui` (shared design system in `packages/ui`)
 - Vitest + React Testing Library + MSW
 - Architecture: Feature-Sliced Design with a `domain` layer instead of `entities` (see `AGENTS.md`)
 
@@ -19,10 +19,12 @@ Optional `.env.local` (see `.env.example`):
 
 ## Commands
 
+Dependencies are installed once for the whole pnpm workspace (repository root):
+
 ```powershell
-pnpm install
-pnpm dev      # http://localhost:5173, requires the web API running
-pnpm lint
-pnpm test
-pnpm build
+pnpm install                       # from the repository root
+pnpm --filter @vaultly/web dev     # http://localhost:5173, requires the web API running
+pnpm --filter @vaultly/web lint
+pnpm --filter @vaultly/web test
+pnpm --filter @vaultly/web build
 ```

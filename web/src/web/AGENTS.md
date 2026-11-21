@@ -8,7 +8,7 @@
 - **Vite** (bundler + dev server)
 - **TanStack Router** (file-based routing)
 - `pnpm` as package managing
-- Tailwind for styles
+- Tailwind CSS v4 + shared design system `@vaultly/ui` (`packages/ui`), consumed through the root pnpm workspace
 
 ---
 
@@ -46,7 +46,6 @@ src/
 │       ├── ui/               # Display components of the domain (cards, badges, lists)
 │       └── index.ts          # Public API
 └── shared/                   # Business-agnostic code, no slices — only segments
-    ├── ui/                   # Primitive UI (Button, StatusNotice, ...)
     ├── api/                  # HTTP client (fetchJson, HttpError)
     ├── config/               # Env/app configuration
     ├── lib/                  # Generic helpers
@@ -62,7 +61,7 @@ Layers, highest to lowest: `app → pages → widgets → features → domain �
   Move shared code down a layer (usually to `domain` or `shared`).
 - Import other slices **only through their public API**: `@/domain/identity`, never `@/domain/identity/model/...`.
 - Inside a slice use **relative imports**; across slices/layers use the `@/` alias.
-- `shared` and `app` have no slices — import their segments directly (`@/shared/ui/Button`, `@/shared/config`).
+- `shared` and `app` have no slices — import their segments directly (`@/shared/api`, `@/shared/test`); primitive UI comes from `@vaultly/ui`.
 - If a `domain` slice genuinely needs another one (e.g. `budget` references `transaction`), use the FSD
   cross-import notation `domain/transaction/@x/budget.ts` instead of a deep import.
 
@@ -198,10 +197,16 @@ export const Route = createFileRoute('/users/$userId')({
 
 ## Styling
 
-- Use a consistent approach project-wide (Tailwind CSS recommended with the stack)
-- Avoid inline styles except for dynamic values
-- Use CSS variables / design tokens for colors, spacing, typography
-- Keep className logic clean with `clsx` or `tailwind-merge`
+- **Tailwind CSS v4 only** — no Sass, no CSS modules, no other CSS libraries. Global CSS is just
+  `app/styles/index.css` (`@import 'tailwindcss'; @import '@vaultly/ui/styles.css';`).
+- Colors, fonts, shadows and base styles come from the shared design system **`@vaultly/ui`** (`packages/ui`).
+  Use its tokens (`bg-canvas`, `text-muted`, `border-line`, `text-accent`, `font-display`, `shadow-panel`, …);
+  never hard-code hex values or redefine tokens in the app. Need a new token? Add it to `packages/ui/src/styles.css`.
+- Primitive UI (`Button`, `Card`, `Eyebrow`, `InfoTile`, `StatusNotice`, `CenteredScreen`) is imported from
+  `@vaultly/ui` — do not recreate primitives in `shared/ui`. A primitive needed by more than one app belongs in the package.
+- Compose conditional classes with `cn` from `@vaultly/ui` (clsx + tailwind-merge; later classes win).
+- Avoid inline styles except for truly dynamic values; prefer arbitrary values (`max-w-[42rem]`) sparingly.
+- User-facing copy only: no implementation details (tokens, cookies, APIs, issue numbers) in the UI.
 
 ---
 

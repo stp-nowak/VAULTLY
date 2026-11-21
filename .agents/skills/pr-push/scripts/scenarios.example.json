@@ -16,7 +16,7 @@
     {
       "name": "dashboard",
       "path": "/app",
-      "waitFor": "text=Current session",
+      "waitFor": "text=Active sessions",
       "mocks": {
         "**/api/auth/user": {
           "body": {

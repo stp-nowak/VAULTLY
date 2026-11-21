@@ -27,7 +27,8 @@ Detect touched projects with `git diff --name-only <base>...HEAD` and run their 
 
 | Path | Commands (from that directory) |
 |---|---|
-| `web/src/web/**` | `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm test`, `pnpm build` |
+| `packages/ui/**` | from repo root: `pnpm install --frozen-lockfile`, `pnpm --filter @vaultly/ui lint`, `… typecheck`, `… test` |
+| `web/src/web/**` (or `packages/ui/**`) | from repo root: `pnpm --filter @vaultly/web lint`, `… test`, `… build` |
 | `web/src/api/**` | `dotnet build Vaultly.Web.Api.slnx`, `dotnet test Vaultly.Web.Api.slnx` |
 | `auth/**` | from `auth/src`: `dotnet build Vaultly.Auth.slnx`, `dotnet test Vaultly.Auth.slnx` |
 | `backend/**` | from `backend/src`: `dotnet build`, `dotnet test` |
@@ -44,12 +45,12 @@ If anything fails, fix it (or stop and report). Record the results — they go i
 
 ## 4. Screenshots (mandatory when the UI changed)
 
-UI changed = any change under `web/src/web/src/**` that affects rendered output (`.tsx`, `.scss`, routes,
-copy). Capture **every new or changed view**, including meaningful states (empty, error, loading if visible,
+UI changed = any change under `web/src/web/src/**` or `packages/ui/**` that affects rendered output (`.tsx`,
+styles, tokens, routes, copy). Capture **every new or changed view**, including meaningful states (empty, error, loading if visible,
 authenticated vs. not). Desktop is required; add mobile (390×844) when layout changed.
 
-1. Build and serve the production SPA (no dev tools overlay):
-   `cd web/src/web && npx --yes pnpm@10 build && npx --yes pnpm@10 preview --port 4173 --strictPort` (background).
+1. Build and serve the production SPA (no dev tools overlay), from the repo root:
+   `npx --yes pnpm@10 --filter @vaultly/web build && npx --yes pnpm@10 --filter @vaultly/web preview --port 4173 --strictPort` (background).
 2. Install the capture tool outside the repo (do not add it to `package.json`):
    `npm install --prefix <scratchpad>/pr-shots playwright-core@1.49.1`
    and copy `scripts/capture-screenshots.mjs` from this skill into `<scratchpad>/pr-shots/`.

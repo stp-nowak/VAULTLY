@@ -1,8 +1,6 @@
-import { useAuth } from '@/domain/identity';
-import { Button } from '@/shared/ui/Button';
-import { StatusNotice } from '@/shared/ui/StatusNotice';
+import { Button, Card, CenteredScreen, Eyebrow, StatusNotice } from '@vaultly/ui';
 
-import styles from './LoginPanel.module.scss';
+import { useAuth } from '@/domain/identity';
 
 /** Error codes the web API puts on `/login?error=` when the OAuth callback fails. */
 const loginErrorMessages: Record<string, string> = {
@@ -20,14 +18,10 @@ export function LoginPanel({ error, returnUrl }: LoginPanelProps) {
   const callbackError = error ? (loginErrorMessages[error] ?? loginErrorMessages.login_failed) : null;
 
   return (
-    <main className={styles.screen}>
-      <section className={styles.card}>
-        <p className={styles.eyebrow}>Vaultly</p>
-        <h1>Sign in to continue.</h1>
-        <p className={styles.lede}>
-          Sign-in is handled by the Vaultly web API. Your browser only keeps a secure, HttpOnly session cookie — access
-          tokens never reach this page.
-        </p>
+    <CenteredScreen>
+      <Card size="hero">
+        <Eyebrow>Vaultly</Eyebrow>
+        <h1 className="text-3xl">Sign in to continue.</h1>
 
         {callbackError ? <StatusNotice tone="error">{callbackError}</StatusNotice> : null}
         {auth.errorMessage ? <StatusNotice tone="error">{auth.errorMessage}</StatusNotice> : null}
@@ -35,7 +29,7 @@ export function LoginPanel({ error, returnUrl }: LoginPanelProps) {
         <Button disabled={auth.status === 'checking'} onClick={() => auth.login(returnUrl)}>
           Continue with Google
         </Button>
-      </section>
-    </main>
+      </Card>
+    </CenteredScreen>
   );
 }
