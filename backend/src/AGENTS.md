@@ -9,7 +9,7 @@
  - from backend/src directory `dotnet test` - run tests for solution
 
 ## Skills
- - all skills are in `./.agents/skills` directory
+ - all skills are in `./.claude/skills` directory
 
 ## Architecture: tactical DDD + CQRS
  - Every service is a bounded context split into `Domain`, `Application`, `Infrastructure`, `Api` projects

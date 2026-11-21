@@ -1,4 +1,0 @@
-interface:
-  display_name: "NUnit Test Writer"
-  short_description: "Write strong NUnit tests for C#"
-  default_prompt: "Use $test-writer to draft NUnit tests for this C# code."

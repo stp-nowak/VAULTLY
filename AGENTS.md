@@ -21,5 +21,5 @@ Mono repo:
 - When doing any changes in the shared UI package read `./packages/ui/AGENTS.md`
 - When doing any changes in backend read `./backend/src/AGENTS.md`
 - When doing any changes in auth service read `./auth/AGENTS.md` (login UI: `./auth/web/AGENTS.md`)
-- When preparing a commit, read `./.agents/skills/proper-commit/SKILL.md`
+- When preparing a commit, read `./.claude/skills/proper-commit/SKILL.md`
 - CI: one workflow per project in `.github/workflows/` (ui, web-spa, web-api, auth, auth-web, backend), each triggered only by changes in its paths; they run in parallel

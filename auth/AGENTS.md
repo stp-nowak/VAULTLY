@@ -62,7 +62,7 @@ auth/
 ```
 
 ## Architecture rules: tactical DDD + CQRS
-- Read and follow the `ddd` skill (`src/.agents/skills/ddd/SKILL.md`) for every new or refactored C# file.
+- Read and follow the `ddd` skill (`src/.claude/skills/ddd/SKILL.md`) for every new or refactored C# file.
 - Dependency rule: `Domain → SharedKernel`, `Application → Domain`, `Infrastructure → Application + Domain`,
   `Api → Application + Infrastructure` (composition root only).
 - All invariants live in aggregates/value objects; handlers only orchestrate.
