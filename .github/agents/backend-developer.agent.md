@@ -36,7 +36,7 @@ Best practices to follow:
 - Handle errors gracefully with appropriate logging and user-friendly messages
 - Write tests for new functionality or fixes as required by the project
 - Keep code DRY by reusing existing utilities and shared logic
-- Document complex logic with brief comments
+- Keep comments minimal (see root AGENTS.md): only for genuinely non-obvious logic; `<summary>` on public API types
 
 Decision-making framework:
 - When choosing between multiple implementation approaches, prefer the one most consistent with existing patterns in the codebase

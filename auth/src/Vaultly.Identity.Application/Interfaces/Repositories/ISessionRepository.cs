@@ -24,4 +24,9 @@ public interface ISessionRepository
     /// Gets a session by a refresh token hash.
     /// </summary>
     Task<Session?> GetByRefreshTokenHashAsync(TokenHash tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets a session by the hash of its single sign-on token.
+    /// </summary>
+    Task<Session?> GetBySsoTokenHashAsync(TokenHash ssoTokenHash, CancellationToken cancellationToken);
 }

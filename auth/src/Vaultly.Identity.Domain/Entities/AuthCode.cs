@@ -4,9 +4,6 @@ namespace Vaultly.Identity.Domain.Entities;
 
 public sealed class AuthCode
 {
-    /// <summary>
-    /// Required by EF Core.
-    /// </summary>
     private AuthCode()
     {
     }
@@ -17,25 +14,37 @@ public sealed class AuthCode
     public DateTimeOffset ExpiresAt { get; private set; }
     public DateTimeOffset? UsedAt { get; private set; }
 
+    /// <summary>Client the code was issued to; only that client can redeem it.</summary>
+    public ClientId ClientId { get; private set; } = null!;
+
+    /// <summary>Redirect URI of the authorization request; must be repeated verbatim at the token endpoint.</summary>
+    public RedirectUri RedirectUri { get; private set; } = null!;
+
+    /// <summary>PKCE challenge the redeeming client must satisfy with its code verifier.</summary>
+    public CodeChallenge CodeChallenge { get; private set; } = null!;
+
     public bool IsUsed => UsedAt.HasValue;
 
-    /// <summary>
-    /// Issues a new auth code entity.
-    /// </summary>
-    internal static AuthCode Issue(SessionId sessionId, CodeHash codeHash, DateTimeOffset expiresAt)
+    internal static AuthCode Issue(
+        SessionId sessionId,
+        CodeHash codeHash,
+        DateTimeOffset expiresAt,
+        ClientId clientId,
+        RedirectUri redirectUri,
+        CodeChallenge codeChallenge)
     {
         return new AuthCode
         {
             Id = AuthCodeId.New(),
             SessionId = sessionId,
             CodeHash = codeHash,
-            ExpiresAt = expiresAt
+            ExpiresAt = expiresAt,
+            ClientId = clientId,
+            RedirectUri = redirectUri,
+            CodeChallenge = codeChallenge
         };
     }
 
-    /// <summary>
-    /// Marks the auth code as used.
-    /// </summary>
     internal void MarkUsed(DateTimeOffset now)
     {
         if (UsedAt is null)
@@ -44,8 +53,5 @@ public sealed class AuthCode
         }
     }
 
-    /// <summary>
-    /// Determines whether the auth code is expired.
-    /// </summary>
     internal bool IsExpired(DateTimeOffset now) => ExpiresAt <= now;
 }

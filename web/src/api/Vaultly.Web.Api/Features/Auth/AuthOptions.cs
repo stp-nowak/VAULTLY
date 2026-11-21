@@ -3,45 +3,50 @@ using System.ComponentModel.DataAnnotations;
 namespace Vaultly.Web.Api.Features.Auth;
 
 /// <summary>
-/// Configuration of the Auth feature (section <c>Auth</c>).
+/// Configuration of the Auth feature (section <c>Auth</c>). The web API is a confidential OIDC client of the
+/// Identity service.
 /// </summary>
 public sealed class AuthOptions
 {
-    /// <summary>Configuration section name.</summary>
     public const string SectionName = "Auth";
 
-    /// <summary>Base URL of the Identity service (<c>./auth</c>), reachable from the web API.</summary>
     [Required, Url]
     public string IdentityBaseUrl { get; init; } = string.Empty;
 
+    [Required]
+    public string ClientId { get; init; } = string.Empty;
+
+    /// <summary>Provide through the environment/secret store (<c>Auth__ClientSecret</c>), never in committed config.</summary>
+    [Required]
+    public string ClientSecret { get; init; } = string.Empty;
+
     /// <summary>
-    /// Origin under which the browser reaches the web API (same origin as the SPA). Used to build the OAuth callback
-    /// URL, which must be allowed in the Identity service <c>AllowedRedirectUris</c>.
+    /// Origin under which the browser reaches this API (same origin as the SPA). Callback and post-logout URLs built
+    /// from it must be registered for the client in the Identity service.
     /// </summary>
     [Required, Url]
     public string PublicOrigin { get; init; } = string.Empty;
 
-    /// <summary>Name of the HttpOnly session cookie. Use the <c>__Host-</c> prefix outside local development.</summary>
+    /// <summary>Use the <c>__Host-</c> prefix outside local development.</summary>
     [Required]
     public string SessionCookieName { get; init; } = "__Host-vaultly-session";
 
-    /// <summary>Name of the short-lived cookie that correlates login start with the OAuth callback.</summary>
     [Required]
     public string LoginCookieName { get; init; } = "__Host-vaultly-login";
 
-    /// <summary>How long a started login may take before the callback is rejected.</summary>
     [Range(1, 60)]
     public int LoginTimeoutMinutes { get; init; } = 10;
 
-    /// <summary>Access tokens expiring within this window are refreshed before use.</summary>
     [Range(0, 600)]
     public int AccessTokenRefreshSkewSeconds { get; init; } = 60;
 
-    /// <summary>SPA path used after login when no valid local return URL was provided.</summary>
     [Required]
     public string DefaultReturnPath { get; init; } = "/app";
 
-    /// <summary>SPA login page; failed callbacks redirect here with an <c>error</c> query parameter.</summary>
+    /// <summary>SPA page that shows sign-in errors (<c>?error=</c>).</summary>
     [Required]
     public string LoginPagePath { get; init; } = "/login";
+
+    [Required]
+    public string PostLogoutRedirectPath { get; init; } = "/";
 }

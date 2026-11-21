@@ -29,9 +29,6 @@ public sealed class SessionCookie(IOptions<AuthOptions> options)
     public void Delete(HttpResponse response)
         => response.Cookies.Delete(_options.SessionCookieName, Build(SameSiteMode.Strict, expiresAt: null));
 
-    /// <summary>
-    /// Shared cookie flags. Path "/" and no Domain keep the cookie compatible with the <c>__Host-</c> prefix.
-    /// </summary>
     internal static CookieOptions Build(SameSiteMode sameSite, DateTimeOffset? expiresAt)
         => new()
         {
@@ -47,7 +44,7 @@ public sealed class SessionCookie(IOptions<AuthOptions> options)
 /// <summary>
 /// Data correlating a login start with its OAuth callback.
 /// </summary>
-public sealed record LoginState(string State, string ReturnUrl, DateTimeOffset ExpiresAt);
+public sealed record LoginState(string State, string CodeVerifier, string ReturnUrl, DateTimeOffset ExpiresAt);
 
 /// <summary>
 /// Short-lived, encrypted cookie holding <see cref="LoginState"/>. Binding the callback's <c>state</c> to this cookie

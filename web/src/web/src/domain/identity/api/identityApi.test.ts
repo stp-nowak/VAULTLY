@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildLoginUrl, getCurrentUser, listSessions } from './identityApi';
+import { buildLoginUrl, getCurrentUser, listSessions, logout } from './identityApi';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' }, status });
@@ -57,6 +57,20 @@ describe('identity api', () => {
 
     expect(sessions).toHaveLength(1);
     expect(sessions[0]).toMatchObject({ id: 's-1', isCurrent: true, userAgent: null });
+  });
+
+  it('returns the Identity service logout URL after ending the session', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ logoutUrl: 'https://identity.example.com/logout?client_id=vaultly-web' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(logout()).resolves.toBe('https://identity.example.com/logout?client_id=vaultly-web');
+    expect((fetchMock.mock.calls[0] as [string, RequestInit])[1].method).toBe('POST');
+  });
+
+  it('rejects a logout response without an absolute logout URL', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ logoutUrl: '//evil.example' })));
+
+    await expect(logout()).rejects.toThrow('Logout response was invalid.');
   });
 
   it('builds a login URL that never contains tokens, only the local return path', () => {

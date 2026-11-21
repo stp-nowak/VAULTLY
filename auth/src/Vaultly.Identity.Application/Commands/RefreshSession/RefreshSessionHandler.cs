@@ -2,21 +2,22 @@ using Microsoft.Extensions.Options;
 
 using Serilog;
 
+using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Commands.RefreshSession;
 
 /// <summary>
-/// Handles refresh token rotation and access token issuance.
+/// Handles the refresh_token grant with rotation.
 /// </summary>
 public sealed class RefreshSessionHandler(
+    IClientRegistry clientRegistry,
     ISessionRepository sessionRepository,
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
@@ -26,8 +27,9 @@ public sealed class RefreshSessionHandler(
     IClock clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger)
-    : ICommandHandler<RefreshSessionCommand, RefreshResult>
+    : ICommandHandler<RefreshSessionCommand, TokenResult>
 {
+    private readonly IClientRegistry _clientRegistry = clientRegistry;
     private readonly ISessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -38,14 +40,14 @@ public sealed class RefreshSessionHandler(
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<RefreshSessionHandler>();
 
-    /// <summary>
-    /// Refreshes the session for the provided refresh token.
-    /// </summary>
-    public async Task<RefreshResult> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
+    public async Task<TokenResult> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
     {
+        var client = _clientRegistry.Authenticate(request.ClientId, request.ClientSecret)
+            ?? throw OAuthProtocolException.InvalidClient();
+
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            return RefreshResult.Failed(_identityOptions.RefreshTokenCookieDomain);
+            throw OAuthProtocolException.InvalidRequest("refresh_token is required.");
         }
 
         var now = _clock.UtcNow;
@@ -53,15 +55,14 @@ public sealed class RefreshSessionHandler(
         var session = await _sessionRepository.GetByRefreshTokenHashAsync(tokenHash, cancellationToken);
         if (session is null)
         {
-            _logger.Warning("Refresh token lookup failed");
-            return RefreshResult.Failed(_identityOptions.RefreshTokenCookieDomain);
+            _logger.Warning("Refresh token lookup failed for client {ClientId}", client.Id.Value);
+            throw OAuthProtocolException.InvalidGrant("Refresh token is invalid.");
         }
 
-        string plainRefreshToken;
         try
         {
-            plainRefreshToken = _tokenGenerator.GenerateToken(64);
-            var rotatedToken = session.RotateRefreshToken(
+            var plainRefreshToken = _tokenGenerator.GenerateToken(64);
+            var rotated = session.RotateRefreshToken(
                 tokenHash,
                 new TokenHash(_tokenHasher.HashToken(plainRefreshToken)),
                 now,
@@ -72,22 +73,13 @@ public sealed class RefreshSessionHandler(
             var user = await _userRepository.GetByIdAsync(session.UserId, cancellationToken)
                 ?? throw new InvalidOperationException("User not found.");
 
-            var accessToken = _jwtTokenService.CreateAccessToken(user, session, now);
-            var userDto = new AuthenticatedUserDto(user.Id.Value, user.Email.Value, user.Name.Value);
-
             _logger.Information(
-                "Rotated refresh token for session {SessionId} and user {UserId}",
+                "Rotated refresh token for session {SessionId}, user {UserId}, client {ClientId}",
                 session.Id.Value,
-                user.Id.Value);
+                user.Id.Value,
+                client.Id.Value);
 
-            return RefreshResult.Succeeded(
-                accessToken,
-                _identityOptions.AccessTokenTtlMinutes * 60,
-                plainRefreshToken,
-                rotatedToken.ExpiresAt,
-                session.Id.Value,
-                userDto,
-                _identityOptions.RefreshTokenCookieDomain);
+            return TokenResults.Create(_jwtTokenService, _identityOptions, user, session, plainRefreshToken, rotated, now);
         }
         catch (DomainException)
         {
@@ -95,11 +87,10 @@ public sealed class RefreshSessionHandler(
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.Warning(
-                "Refresh token rotation failed for session {SessionId} and user {UserId}",
-                session.Id.Value,
-                session.UserId.Value);
+                "Refresh token rotation failed for session {SessionId}; session revoked",
+                session.Id.Value);
 
-            return RefreshResult.Failed(_identityOptions.RefreshTokenCookieDomain);
+            throw OAuthProtocolException.InvalidGrant("Refresh token is invalid or expired.");
         }
     }
 }

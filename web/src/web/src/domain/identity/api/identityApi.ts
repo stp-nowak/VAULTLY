@@ -1,7 +1,7 @@
 import { fetchJson, HttpError } from '@/shared/api';
 
 import type { AuthSession, CurrentUser } from '../model/types';
-import { parseCurrentUser, parseSessionsResponse } from './parsers';
+import { parseCurrentUser, parseLogoutResponse, parseSessionsResponse } from './parsers';
 
 /** Auth endpoints of the web API (web/src/api, feature Auth). */
 export const authRoutes = {
@@ -37,7 +37,10 @@ export async function listSessions(): Promise<AuthSession[]> {
   return parseSessionsResponse(await fetchJson<unknown>(authRoutes.sessions));
 }
 
-/** Ends the session on the server and clears the session cookie. */
-export async function logout(): Promise<void> {
-  await fetchJson<null>(authRoutes.logout, { method: 'POST' });
+/**
+ * Ends the session on the server and returns the Identity service logout URL. The browser must navigate there so the
+ * auth service can clear its own SSO cookie.
+ */
+export async function logout(): Promise<string> {
+  return parseLogoutResponse(await fetchJson<unknown>(authRoutes.logout, { method: 'POST' }));
 }

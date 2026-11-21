@@ -1,7 +1,6 @@
 using MediatR;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -10,23 +9,16 @@ using Serilog;
 using Vaultly.Identity.Api;
 using Vaultly.Identity.Api.Configuration;
 using Vaultly.Identity.Application;
-using Vaultly.Identity.Application.Commands.ExchangeAuthCode;
-using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
-using Vaultly.Identity.Application.Commands.Logout;
-using Vaultly.Identity.Application.Commands.RefreshSession;
 using Vaultly.Identity.Application.Commands.RevokeSession;
-using Vaultly.Identity.Application.Commands.StartExternalLogin;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Application.Queries.GetEnabledProviders;
 using Vaultly.Identity.Application.Queries.GetSessions;
-using Vaultly.Identity.Domain.Constants;
 using Vaultly.Identity.Infrastructure;
 using Vaultly.Identity.Infrastructure.Options;
 using Vaultly.Identity.Infrastructure.Security;
 
-const string DevelopmentCorsPolicyName = "DevelopmentAllowAll";
-
+// Vaultly Identity: OAuth 2.0 / OIDC authorization server (authorization code + PKCE, SSO session) that also hosts
+// its own login UI (auth/web). Client applications only redirect to /authorize and call /token server-to-server.
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddOptionalDotEnvFile(Path.Combine(builder.Environment.ContentRootPath, ".env"));
 
@@ -43,6 +35,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.Configure<IdentityOptions>(builder.Configuration.GetSection("Identity"));
 builder.Services.Configure<GoogleOAuthOptions>(builder.Configuration.GetSection("Google"));
+builder.Services.Configure<LoginUiOptions>(builder.Configuration.GetSection(LoginUiOptions.SectionName));
 
 var identityOptions = builder.Configuration.GetSection("Identity").Get<IdentityOptions>()
                       ?? throw new InvalidOperationException("Identity configuration is missing.");
@@ -59,26 +52,13 @@ builder.Services.AddSingleton(rsaKeyProvider);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy(DevelopmentCorsPolicyName, policyBuilder =>
-        {
-            policyBuilder
-                .SetIsOriginAllowed(_ => true)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        });
-    });
-}
-
+// No CORS: browsers only navigate to this service (or reach it same-origin via the login UI); clients call it
+// server-to-server.
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = true;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -99,148 +79,19 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    Log.Information("Enabled permissive CORS policy for development requests.");
 }
-
-app.UseHttpsRedirection();
-
-if (app.Environment.IsDevelopment())
+else
 {
-    app.UseCors(DevelopmentCorsPolicyName);
+    app.UseHttpsRedirection();
 }
 
+app.UseLoginUiStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
 var endpointErrorHandler = new EndpointErrorHandler(Log.ForContext<EndpointErrorHandler>());
 
-// Resolves the redirect URI from supported query string parameter names.
-string? GetRedirectUri(HttpContext httpContext)
-{
-    var redirectUri = httpContext.Request.Query["redirectUri"].ToString();
-    if (!string.IsNullOrWhiteSpace(redirectUri))
-    {
-        return redirectUri;
-    }
-
-    var legacyRedirectUri = httpContext.Request.Query["redirect_uri"].ToString();
-    return string.IsNullOrWhiteSpace(legacyRedirectUri) ? null : legacyRedirectUri;
-}
-
-app.MapGet("/login", async (HttpContext httpContext, ISender sender) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /login", async () =>
-    {
-        var redirectUri = GetRedirectUri(httpContext);
-        var providers = await sender.Send(new GetEnabledProvidersQuery(), httpContext.RequestAborted);
-
-        if (providers.Count == 1)
-        {
-            if (string.IsNullOrWhiteSpace(redirectUri))
-            {
-                return endpointErrorHandler.BadRequest(httpContext, "GET /login", "Redirect URI is required.");
-            }
-
-            var url = QueryHelpers.AddQueryString(providers[0].AuthorizeUrl, new Dictionary<string, string?>
-            {
-                ["redirectUri"] = redirectUri
-            });
-            return Results.Redirect(url);
-        }
-
-        return Results.Ok(new
-        {
-            providers = providers.Select(provider => new
-            {
-                id = provider.Id,
-                name = provider.Name,
-                authorize_url = string.IsNullOrWhiteSpace(redirectUri)
-                    ? provider.AuthorizeUrl
-                    : QueryHelpers.AddQueryString(provider.AuthorizeUrl, "redirectUri", redirectUri)
-            })
-        });
-    }));
-
-app.MapGet("/google/authorize", async (HttpContext httpContext, ISender sender) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /google/authorize", async () =>
-    {
-        var redirectUri = GetRedirectUri(httpContext);
-        var redirectUrl = await sender.Send(
-            new StartExternalLoginCommand(ProviderIds.Google.Value, redirectUri),
-            httpContext.RequestAborted);
-        return Results.Redirect(redirectUrl);
-    }));
-
-app.MapGet("/google/callback", async (HttpContext httpContext, ISender sender) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /google/callback", async () =>
-    {
-        var code = httpContext.Request.Query["code"].ToString();
-        var state = httpContext.Request.Query["state"].ToString();
-        var error = httpContext.Request.Query["error"].ToString();
-
-        if (!string.IsNullOrWhiteSpace(error))
-        {
-            return endpointErrorHandler.BadRequest(
-                httpContext,
-                "GET /google/callback",
-                "OAuth provider returned an error.",
-                new { error });
-        }
-
-        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
-        {
-            return endpointErrorHandler.BadRequest(httpContext, "GET /google/callback", "Missing code or state.");
-        }
-
-        var userAgent = httpContext.Request.Headers.UserAgent.ToString();
-        var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
-
-        var callbackResult = await sender.Send(
-            new HandleOAuthCallbackCommand(ProviderIds.Google.Value, code, state, userAgent, ipAddress),
-            httpContext.RequestAborted);
-        return Results.Redirect(callbackResult.RedirectUrl);
-    }));
-
-app.MapPost("/token", async (HttpContext httpContext, ISender sender, TokenRequest request) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "POST /token", async () =>
-    {
-        var result = await sender.Send(new ExchangeAuthCodeCommand(request.Code), httpContext.RequestAborted);
-        AuthCookies.SetRefreshToken(httpContext.Response, result.RefreshToken, result.RefreshTokenExpiresAt, result.CookieDomain);
-        return Results.Ok(new TokenResponse(result.AccessToken, result.ExpiresInSeconds, result.SessionId, result.User));
-    }));
-
-app.MapPost("/refresh", async (HttpContext httpContext, ISender sender) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "POST /refresh", async () =>
-    {
-        if (!AuthCookies.TryGetRefreshToken(httpContext.Request, out var refreshToken))
-        {
-            return endpointErrorHandler.Unauthorized(httpContext, "POST /refresh", "Refresh token cookie is missing.");
-        }
-
-        var result = await sender.Send(new RefreshSessionCommand(refreshToken), httpContext.RequestAborted);
-        if (!result.Success)
-        {
-            AuthCookies.ClearRefreshToken(httpContext.Response, result.CookieDomain);
-            return endpointErrorHandler.Unauthorized(httpContext, "POST /refresh", "Refresh token is invalid or expired.");
-        }
-
-        AuthCookies.SetRefreshToken(httpContext.Response, result.RefreshToken!, result.RefreshTokenExpiresAt!.Value, result.CookieDomain);
-        return Results.Ok(new TokenResponse(result.AccessToken!, result.ExpiresInSeconds, result.SessionId!.Value, result.User!));
-    }));
-
-app.MapPost("/logout", async (HttpContext httpContext, ISender sender, IOptions<IdentityOptions> options) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "POST /logout", async () =>
-    {
-        string? refreshToken = null;
-        if (AuthCookies.TryGetRefreshToken(httpContext.Request, out var token))
-        {
-            refreshToken = token;
-        }
-
-        await sender.Send(new LogoutCommand(refreshToken), httpContext.RequestAborted);
-
-        AuthCookies.ClearRefreshToken(httpContext.Response, options.Value.RefreshTokenCookieDomain);
-        return Results.NoContent();
-    }));
+app.MapOAuthEndpoints();
 
 app.MapGet("/sessions", async (HttpContext httpContext, ISender sender) =>
     await endpointErrorHandler.ExecuteAsync(httpContext, "GET /sessions", async () =>
@@ -259,7 +110,7 @@ app.MapGet("/sessions", async (HttpContext httpContext, ISender sender) =>
         return Results.Ok(new { sessions });
     })).RequireAuthorization();
 
-app.MapDelete("/sessions/{id:guid}", async (HttpContext httpContext, ISender sender, IOptions<IdentityOptions> options, Guid id) =>
+app.MapDelete("/sessions/{id:guid}", async (HttpContext httpContext, ISender sender, Guid id) =>
     await endpointErrorHandler.ExecuteAsync(httpContext, "DELETE /sessions/{id}", async () =>
     {
         var userId = httpContext.User.GetUserId();
@@ -269,33 +120,30 @@ app.MapDelete("/sessions/{id:guid}", async (HttpContext httpContext, ISender sen
         }
 
         var revoked = await sender.Send(new RevokeSessionCommand(userId.Value, id), httpContext.RequestAborted);
-        if (!revoked)
-        {
-            return endpointErrorHandler.NotFound(httpContext, "DELETE /sessions/{id}", "Session was not found for the current user.");
-        }
-
-        if (httpContext.User.GetSessionId() == id)
-        {
-            AuthCookies.ClearRefreshToken(httpContext.Response, options.Value.RefreshTokenCookieDomain);
-        }
-
-        return Results.NoContent();
+        return revoked
+            ? Results.NoContent()
+            : endpointErrorHandler.NotFound(httpContext, "DELETE /sessions/{id}", "Session was not found for the current user.");
     })).RequireAuthorization();
 
 app.MapGet("/.well-known/openid-configuration", (IOptions<IdentityOptions> options) =>
 {
     var config = options.Value;
+    var baseUrl = config.PublicBaseUrl.TrimEnd('/');
     return Results.Ok(new
     {
         issuer = config.Issuer,
-        authorization_endpoint = $"{config.PublicBaseUrl.TrimEnd('/')}/login",
-        token_endpoint = $"{config.PublicBaseUrl.TrimEnd('/')}/token",
-        jwks_uri = $"{config.PublicBaseUrl.TrimEnd('/')}/.well-known/jwks.json",
+        authorization_endpoint = $"{baseUrl}/authorize",
+        token_endpoint = $"{baseUrl}/token",
+        revocation_endpoint = $"{baseUrl}/revoke",
+        end_session_endpoint = $"{baseUrl}/logout",
+        jwks_uri = $"{baseUrl}/.well-known/jwks.json",
         response_types_supported = new[] { "code" },
+        grant_types_supported = new[] { "authorization_code", "refresh_token" },
+        code_challenge_methods_supported = new[] { "S256" },
         subject_types_supported = new[] { "public" },
         id_token_signing_alg_values_supported = new[] { "RS256" },
         scopes_supported = new[] { "openid", "email", "profile" },
-        token_endpoint_auth_methods_supported = new[] { "none" }
+        token_endpoint_auth_methods_supported = new[] { "client_secret_basic", "client_secret_post" }
     });
 });
 
@@ -305,4 +153,11 @@ app.MapGet("/.well-known/jwks.json", (IJwtKeyProvider keyProvider) =>
     return Results.Ok(new { keys = new[] { jwk } });
 });
 
+app.MapLoginUi();
+
 app.Run();
+
+/// <summary>
+/// Entry point; public partial so integration tests can host the API with <c>WebApplicationFactory</c>.
+/// </summary>
+public partial class Program;

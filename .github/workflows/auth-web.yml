@@ -1,0 +1,47 @@
+name: Auth web
+
+# Runs when the auth sign-in SPA, the shared UI package or the workspace setup (or this workflow) changes. Other projects have their own workflows,
+# so builds of different projects run in parallel.
+on:
+  pull_request:
+    paths:
+      - 'auth/web/**'
+      - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/auth-web.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'auth/web/**'
+      - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/auth-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm version comes from "packageManager" in the root package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @vaultly/auth-web lint
+      - run: pnpm --filter @vaultly/auth-web test
+      - run: pnpm --filter @vaultly/auth-web build

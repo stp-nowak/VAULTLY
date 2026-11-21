@@ -32,15 +32,15 @@
 - Always use the latest version C#, currently C# 14 features.
 - Keep all projects targeting `net10.0` with nullable reference types enabled, matching the existing service and test projects.
 - Prefer primary constructors
-- Write clear and concise comments for each function.
+- Comments: follow the root `AGENTS.md` rule — minimal; `<summary>` only on public API types/members where it adds
+  information; inline comments only for genuinely non-obvious reasons.
 - Use test-driven Development
 - Use ddd skill when creating new C# files or refactoring existing ones
 
 ## General Instructions
 - Make only high confidence suggestions when reviewing code changes.
-- Write code with good maintainability practices, including comments on why certain design decisions were made.
+- Write maintainable, self-explanatory code; explain a design decision in a comment only when the code cannot.
 - Handle edge cases and write clear exception handling.
-- For libraries or external dependencies, mention their usage and purpose in comments.
 - Always build and run tests after changes to backend functionality. Do not run build or tests if changes made do not effect backend functionality.
 
 ## Logging and Monitoring

@@ -1,50 +1,27 @@
 namespace Vaultly.Identity.Application.Models;
 
 /// <summary>
-/// Represents the result of a successful OAuth callback handling.
+/// Where to send the browser after <c>/authorize</c>: back to the client (with a code or an error) or to the login UI.
 /// </summary>
-public sealed record AuthCallbackResult(string RedirectUrl);
+public sealed record AuthorizationResult(string RedirectUrl);
 
 /// <summary>
-/// Represents the result of exchanging an auth code for tokens.
+/// Result of a completed external login: redirect back to the client plus the new SSO session for the cookie.
 /// </summary>
-public sealed record ExchangeResult(
+public sealed record AuthCallbackResult(string RedirectUrl, string SsoToken, DateTimeOffset SsoExpiresAt);
+
+/// <summary>
+/// Tokens issued by the token endpoint (authorization_code and refresh_token grants).
+/// </summary>
+public sealed record TokenResult(
     string AccessToken,
     int ExpiresInSeconds,
     string RefreshToken,
-    DateTimeOffset RefreshTokenExpiresAt,
+    int RefreshExpiresInSeconds,
     Guid SessionId,
-    AuthenticatedUserDto User,
-    string? CookieDomain);
+    AuthenticatedUserDto User);
 
 /// <summary>
-/// Represents the result of a refresh token rotation attempt.
+/// Where to send the browser after the SSO session ended.
 /// </summary>
-public sealed record RefreshResult(
-    bool Success,
-    string? AccessToken,
-    int ExpiresInSeconds,
-    string? RefreshToken,
-    DateTimeOffset? RefreshTokenExpiresAt,
-    Guid? SessionId,
-    AuthenticatedUserDto? User,
-    string? CookieDomain)
-{
-    /// <summary>
-    /// Creates a failed refresh result.
-    /// </summary>
-    public static RefreshResult Failed(string? cookieDomain) => new(false, null, 0, null, null, null, null, cookieDomain);
-
-    /// <summary>
-    /// Creates a successful refresh result.
-    /// </summary>
-    public static RefreshResult Succeeded(
-        string accessToken,
-        int expiresInSeconds,
-        string refreshToken,
-        DateTimeOffset refreshTokenExpiresAt,
-        Guid sessionId,
-        AuthenticatedUserDto user,
-        string? cookieDomain)
-        => new(true, accessToken, expiresInSeconds, refreshToken, refreshTokenExpiresAt, sessionId, user, cookieDomain);
-}
+public sealed record EndSessionResult(string RedirectUrl);

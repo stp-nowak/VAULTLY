@@ -17,11 +17,11 @@ Vaultly.Web.Api/
 │   ├── Csrf/                    #   X-CSRF header middleware (+ AllowWithoutCsrfHeader opt-out)
 │   └── Hosting/                 #   Redis cache, Data Protection key ring in Redis, TimeProvider
 └── Features/
-    ├── Auth/                    # Login/callback/logout, session cookie, tokens in Redis, Identity client
+    ├── Auth/                    # OIDC confidential client (authorize + PKCE, callback, logout), session cookie, tokens in Redis
     │   ├── AuthFeature.cs       #   DI + endpoint registration of the feature
     │   ├── AuthEndpoints.cs     #   /api/auth/{login,callback,user,sessions,logout}
     │   ├── AuthOptions.cs       #   section "Auth"
-    │   ├── IdentityService/     #   HTTP client of ./auth (token exchange, refresh, logout, sessions)
+    │   ├── IdentityService/     #   HTTP client of ./auth (/token, /revoke with client secret, /sessions)
     │   └── Sessions/            #   WebSession, IWebSessionStore (Redis), cookies, UserSessionService, refresh lock
     └── Web/                     # Everything else the SPA needs
         ├── WebFeature.cs        #   DI + static SPA hosting + endpoint registration
@@ -39,7 +39,7 @@ Vaultly.Web.Api/
   Session ids are bearer credentials too — never log them (log `AuthSessionId`/`UserId` instead).
 - Every `/api` endpoint requires `X-CSRF: 1`; opt out only for top-level GET navigations (`AllowWithoutCsrfHeader`).
 - New config goes into the owning feature's options class with data-annotation validation (`ValidateOnStart`).
-- C#: latest language version, `net10.0`, nullable enabled, primary constructors, XML comments on members,
+- C#: latest language version, `net10.0`, nullable enabled, primary constructors, minimal comments (root rule),
   Serilog for logging, NUnit + Moq tests (integration tests via `WebApiFactory`, Redis replaced by memory cache).
 - Known limitation: token refresh is serialised per session **within one instance** (`SessionRefreshLock`).
   Run one instance or use sticky sessions until a Redis-based lock is added.

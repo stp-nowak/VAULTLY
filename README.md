@@ -6,7 +6,7 @@ Personal Finance &amp; Budget Intelligence Platform
 
 - `web/` - web app: `src/web` React SPA (Feature-Sliced Design with a `domain` layer) + `src/api` C# web API (backend-for-frontend, session cookie, tokens in Redis)
 - `backend/` - domain microservices, tactical DDD + CQRS
-- `auth/` - standalone identity/auth service, tactical DDD + CQRS
+- `auth/` - standalone identity/auth service (OAuth 2.0/OIDC, SSO), tactical DDD + CQRS, with its own login UI in `auth/web`
 
 ## Auth service configuration
 

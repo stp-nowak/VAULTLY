@@ -15,6 +15,8 @@ namespace Vaultly.Web.Api.Tests.Features.Auth;
 [TestFixture]
 public sealed class AuthEndpointsTests
 {
+    private const string CallbackUrl = "https://app.vaultly.local/api/auth/callback";
+
     private WebApiFactory _factory = null!;
     private HttpClient _client = null!;
 
@@ -33,25 +35,47 @@ public sealed class AuthEndpointsTests
     }
 
     [Test]
-    public async Task Login_RedirectsToIdentityServiceWithCallbackStateAndSetsLoginCookie()
+    public async Task Login_RedirectsToAuthorizeWithPkceAndSetsEncryptedLoginCookie()
     {
         var response = await _client.GetAsync("/api/auth/login?returnUrl=/app/budgets");
 
         var location = response.Headers.Location!;
-        var redirectUri = QueryHelpers.ParseQuery(location.Query)["redirectUri"].ToString();
-        var callbackState = QueryHelpers.ParseQuery(new Uri(redirectUri).Query)["state"].ToString();
+        var query = QueryHelpers.ParseQuery(location.Query);
         var loginCookie = TestData.SetCookies(response).Single(x => x.Name == "__Host-vaultly-login");
 
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
-            Assert.That(location.GetLeftPart(UriPartial.Path), Is.EqualTo("https://identity.vaultly.local/login"));
-            Assert.That(redirectUri, Does.StartWith("https://app.vaultly.local/api/auth/callback?state="));
-            Assert.That(callbackState, Has.Length.GreaterThanOrEqualTo(40));
+            Assert.That(location.GetLeftPart(UriPartial.Path), Is.EqualTo("https://identity.vaultly.local/authorize"));
+            Assert.That(query["response_type"].ToString(), Is.EqualTo("code"));
+            Assert.That(query["client_id"].ToString(), Is.EqualTo("vaultly-web"));
+            Assert.That(query["redirect_uri"].ToString(), Is.EqualTo(CallbackUrl));
+            Assert.That(query["code_challenge_method"].ToString(), Is.EqualTo("S256"));
+            Assert.That(query["code_challenge"].ToString(), Has.Length.EqualTo(43));
+            Assert.That(query["state"].ToString(), Has.Length.GreaterThanOrEqualTo(40));
             Assert.That(loginCookie.HttpOnly, Is.True);
-            Assert.That(loginCookie.Secure, Is.True);
-            Assert.That(loginCookie.Value.ToString(), Does.Not.Contain(callbackState), "login state must be encrypted");
+            Assert.That(loginCookie.Value.ToString(), Does.Not.Contain(query["state"].ToString()), "login state must be encrypted");
         });
+    }
+
+    [Test]
+    public async Task Callback_ExchangesCodeWithVerifierMatchingTheChallenge()
+    {
+        string? verifier = null;
+        _factory.Identity
+            .Setup(x => x.ExchangeCodeAsync("code-1", It.IsAny<string>(), CallbackUrl, It.IsAny<CancellationToken>()))
+            .Callback<string, string, string, CancellationToken>((_, codeVerifier, _, _) => verifier = codeVerifier)
+            .ReturnsAsync(TestData.Tokens(DateTimeOffset.UtcNow));
+
+        var login = await _client.GetAsync("/api/auth/login");
+        var query = QueryHelpers.ParseQuery(login.Headers.Location!.Query);
+        await SendAsync(
+            HttpMethod.Get,
+            $"/api/auth/callback?code=code-1&state={Uri.EscapeDataString(query["state"].ToString())}",
+            TestData.CookieHeader(login),
+            csrf: false);
+
+        Assert.That(AuthEndpoints.CreateCodeChallenge(verifier!), Is.EqualTo(query["code_challenge"].ToString()));
     }
 
     [Test]
@@ -97,7 +121,9 @@ public sealed class AuthEndpointsTests
             Assert.That(callback.Headers.Location!.OriginalString, Is.EqualTo("/login?error=invalid_state"));
             Assert.That(TestData.SetCookies(callback).Any(x => x.Name == "__Host-vaultly-session" && x.Value.Length > 0), Is.False);
         });
-        _factory.Identity.Verify(x => x.ExchangeCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _factory.Identity.Verify(
+            x => x.ExchangeCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Test]
@@ -138,21 +164,24 @@ public sealed class AuthEndpointsTests
     }
 
     [Test]
-    public async Task Logout_EndsIdentitySessionAndInvalidatesCookie()
+    public async Task Logout_RevokesTokensInvalidatesCookieAndReturnsSsoLogoutUrl()
     {
         SetupCodeExchange();
-        _factory.Identity.Setup(x => x.LogoutAsync("refresh-1", It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _factory.Identity.Setup(x => x.RevokeAsync("refresh-1", It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var (_, sessionCookie) = await LoginAndCallbackAsync("/app");
 
         var logout = await SendAsync(HttpMethod.Post, "/api/auth/logout", sessionCookie);
+        var logoutUrl = new Uri(JsonDocument.Parse(await logout.Content.ReadAsStringAsync()).RootElement.GetProperty("logoutUrl").GetString()!);
         var user = await SendAsync(HttpMethod.Get, "/api/auth/user", sessionCookie);
 
         Assert.Multiple(() =>
         {
-            Assert.That(logout.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+            Assert.That(logout.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(logoutUrl.GetLeftPart(UriPartial.Path), Is.EqualTo("https://identity.vaultly.local/logout"));
+            Assert.That(QueryHelpers.ParseQuery(logoutUrl.Query)["post_logout_redirect_uri"].ToString(), Is.EqualTo("https://app.vaultly.local/"));
             Assert.That(user.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "old cookie must not resurrect the session");
         });
-        _factory.Identity.Verify(x => x.LogoutAsync("refresh-1", It.IsAny<CancellationToken>()), Times.Once);
+        _factory.Identity.Verify(x => x.RevokeAsync("refresh-1", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -197,7 +226,7 @@ public sealed class AuthEndpointsTests
     /// </summary>
     private void SetupCodeExchange()
         => _factory.Identity
-            .Setup(x => x.ExchangeCodeAsync("code-1", It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExchangeCodeAsync("code-1", It.IsAny<string>(), CallbackUrl, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TestData.Tokens(DateTimeOffset.UtcNow));
 
     /// <summary>
@@ -206,8 +235,7 @@ public sealed class AuthEndpointsTests
     private async Task<(HttpResponseMessage Callback, string SessionCookie)> LoginAndCallbackAsync(string returnUrl)
     {
         var login = await _client.GetAsync($"/api/auth/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
-        var redirectUri = QueryHelpers.ParseQuery(login.Headers.Location!.Query)["redirectUri"].ToString();
-        var state = QueryHelpers.ParseQuery(new Uri(redirectUri).Query)["state"].ToString();
+        var state = QueryHelpers.ParseQuery(login.Headers.Location!.Query)["state"].ToString();
 
         var callback = await SendAsync(
             HttpMethod.Get,

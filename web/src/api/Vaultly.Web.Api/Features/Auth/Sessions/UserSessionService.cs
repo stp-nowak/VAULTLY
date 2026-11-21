@@ -109,12 +109,12 @@ public sealed class UserSessionService(
         {
             try
             {
-                await _identity.LogoutAsync(session.RefreshToken, cancellationToken);
+                await _identity.RevokeAsync(session.RefreshToken, cancellationToken);
             }
             catch (Exception exception) when (exception is HttpRequestException or IdentityServiceException)
             {
                 // Local sign-out must still succeed; the Identity session expires with its refresh token.
-                _logger.LogWarning(exception, "Identity logout failed for session {AuthSessionId}", session.AuthSessionId);
+                _logger.LogWarning(exception, "Identity token revocation failed for session {AuthSessionId}", session.AuthSessionId);
             }
 
             _logger.LogInformation("Signed out user {UserId}", session.User.Id);
@@ -134,10 +134,6 @@ public sealed class UserSessionService(
         _cookie.Delete(context.Response);
     }
 
-    /// <summary>
-    /// Rotates tokens under a per-session lock. Refresh tokens are single-use, so parallel requests must not refresh
-    /// concurrently; the session is re-read after acquiring the lock because another request may have refreshed it.
-    /// </summary>
     private async Task<WebSession?> RefreshAsync(HttpContext context, string sessionId, CancellationToken cancellationToken)
     {
         using var _ = await _refreshLock.AcquireAsync(sessionId, cancellationToken);

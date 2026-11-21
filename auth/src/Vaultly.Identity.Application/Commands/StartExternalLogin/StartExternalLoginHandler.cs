@@ -8,6 +8,7 @@ using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
 
@@ -18,6 +19,7 @@ namespace Vaultly.Identity.Application.Commands.StartExternalLogin;
 /// </summary>
 public sealed class StartExternalLoginHandler(
     IOAuthStateRepository oauthStateRepository,
+    IAuthorizationRequestRepository authorizationRequestRepository,
     IUnitOfWork unitOfWork,
     IEnumerable<IExternalOAuthProvider> providers,
     ITokenGenerator tokenGenerator,
@@ -26,6 +28,7 @@ public sealed class StartExternalLoginHandler(
     ILogger logger) : ICommandHandler<StartExternalLoginCommand, string>
 {
     private readonly IOAuthStateRepository _oauthStateRepository = oauthStateRepository;
+    private readonly IAuthorizationRequestRepository _authorizationRequestRepository = authorizationRequestRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IReadOnlyDictionary<ProviderId, IExternalOAuthProvider> _providers = providers.ToDictionary(x => x.Id);
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
@@ -33,9 +36,6 @@ public sealed class StartExternalLoginHandler(
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<StartExternalLoginHandler>();
 
-    /// <summary>
-    /// Builds the authorization URL for the requested provider.
-    /// </summary>
     public async Task<string> Handle(StartExternalLoginCommand request, CancellationToken cancellationToken)
     {
         var provider = OAuthFlowUtilities.GetProvider(_providers, new ProviderId(request.ProviderId));
@@ -46,14 +46,19 @@ public sealed class StartExternalLoginHandler(
         }
 
         var now = _clock.UtcNow;
-        var redirectUri = OAuthFlowUtilities.ValidateRedirectUri(request.RedirectUri, _identityOptions);
+
+        // The login UI may be reopened from history: only a pending request can start a provider login.
+        var authorizationRequest = await _authorizationRequestRepository.GetByIdAsync(
+            AuthorizationRequestId.From(request.AuthorizationRequestId),
+            cancellationToken) ?? throw new AuthorizationRequestNotFoundException();
+        authorizationRequest.EnsurePending(now);
 
         var state = OAuthState.Create(
             new OAuthStateValue(_tokenGenerator.GenerateToken(32)),
             new CodeVerifier(_tokenGenerator.GenerateToken(64)),
             new Nonce(_tokenGenerator.GenerateToken(32)),
             now.AddMinutes(_identityOptions.OAuthStateTtlMinutes),
-            redirectUri);
+            authorizationRequest.Id);
 
         _oauthStateRepository.Add(state);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -70,7 +75,10 @@ public sealed class StartExternalLoginHandler(
             ["nonce"] = state.Nonce.Value
         });
 
-        _logger.Information("Built OAuth authorize URL for provider {ProviderId}", provider.Id.Value);
+        _logger.Information(
+            "Starting {ProviderId} login for authorization request {AuthorizationRequestId}",
+            provider.Id.Value,
+            authorizationRequest.Id.Value);
         return authorizeUrl;
     }
 }

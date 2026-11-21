@@ -20,7 +20,9 @@ public sealed class SessionTests
             new AuthMethod("password"),
             UserAgent.FromNullable("unit-test"),
             IpAddress.FromNullable("127.0.0.1"),
-            now);
+            new TokenHash("sso-token"),
+            now,
+            now.AddHours(12));
 
         Assert.That(session.DomainEvents.OfType<SessionStartedDomainEvent>().Single().SessionId, Is.EqualTo(session.Id));
     }
@@ -34,7 +36,9 @@ public sealed class SessionTests
             new AuthMethod("password"),
             UserAgent.FromNullable("unit-test"),
             IpAddress.FromNullable("127.0.0.1"),
-            now);
+            new TokenHash("sso-token"),
+            now,
+            now.AddHours(12));
 
         var existingHash = new TokenHash("missing-token");
         var newHash = new TokenHash("new-token");
@@ -53,7 +57,9 @@ public sealed class SessionTests
             new AuthMethod("password"),
             UserAgent.FromNullable("unit-test"),
             IpAddress.FromNullable("127.0.0.1"),
-            now);
+            new TokenHash("sso-token"),
+            now,
+            now.AddHours(12));
         session.ClearDomainEvents();
 
         session.RevokeWithTokens(now.AddMinutes(5));
@@ -71,7 +77,9 @@ public sealed class SessionTests
             new AuthMethod("password"),
             UserAgent.FromNullable("unit-test"),
             IpAddress.FromNullable("127.0.0.1"),
-            now);
+            new TokenHash("sso-token"),
+            now,
+            now.AddHours(12));
         session.ClearDomainEvents();
 
         var existing = session.IssueRefreshToken(new TokenHash("existing-token"), now, now.AddDays(7));

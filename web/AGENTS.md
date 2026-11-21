@@ -12,16 +12,21 @@ web/
 ## Security model (non-negotiable)
 - The browser holds **only an HttpOnly session cookie** (`Secure`, `SameSite=Strict`, opaque random id).
   No access/refresh tokens, no PKCE, no token storage in JavaScript.
-- `web/src/api` performs the OAuth login against the Identity service (`./auth`), stores the tokens **in Redis**
+- `web/src/api` is a confidential OIDC client of the Identity service (`./auth`): it redirects to `/authorize`
+  (PKCE), exchanges the code with its client secret, stores the tokens **in Redis**
   per session (key = SHA-256 of the session id, payload encrypted with Data Protection) and refreshes them.
 - The SPA calls **only same-origin `/api/*`** with `X-CSRF: 1` (`fetchJson` in `src/web/src/shared/api` does it).
   `/api/auth/*` is handled by the Auth feature, every other `/api/*` is forwarded to the backend gateway with
   `Authorization: Bearer <token from Redis>`; cookies are stripped before forwarding.
-- Login is a full-page navigation to `/api/auth/login?returnUrl=/path`; failures come back as `/login?error=<code>`.
+- The SPA has **no sign-in screen**: unauthenticated routes do a full-page navigation to `/api/auth/login?returnUrl=…`,
+  which leads to the Identity service's own login UI (`auth/web`). Failures come back as `/login?error=<code>`.
+- Logout: `POST /api/auth/logout` revokes the tokens and returns `logoutUrl`; the SPA navigates there so the Identity
+  service ends its SSO session, then the browser returns to `/`.
 
 ## Local development
 1. Redis: `docker run -p 6379:6379 redis:7` (or leave `ConnectionStrings:Redis` empty in Development for an in-memory fallback).
-2. Identity service: `dotnet run --project auth/src/Vaultly.Identity.Api` (http://localhost:5096).
+2. Identity service: `dotnet run --project auth/src/Vaultly.Identity.Api` (http://localhost:5096) and its login UI
+   `pnpm --filter @vaultly/auth-web dev` (http://localhost:5174).
 3. Web API: `dotnet run --project web/src/api/Vaultly.Web.Api` (http://localhost:5180).
 4. SPA: `pnpm install` (repo root, once), then `pnpm --filter @vaultly/web dev` (http://localhost:5173, proxies `/api` → 5180).
 

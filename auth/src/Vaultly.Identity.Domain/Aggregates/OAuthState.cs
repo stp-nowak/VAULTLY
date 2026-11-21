@@ -7,9 +7,6 @@ namespace Vaultly.Identity.Domain.Aggregates;
 
 public sealed class OAuthState : AggregateRoot
 {
-    /// <summary>
-    /// Required by EF Core.
-    /// </summary>
     private OAuthState()
     {
     }
@@ -19,7 +16,9 @@ public sealed class OAuthState : AggregateRoot
     public CodeVerifier CodeVerifier { get; private set; } = null!;
     public Nonce Nonce { get; private set; } = null!;
     public DateTimeOffset ExpiresAt { get; private set; }
-    public RedirectUri? RedirectUri { get; private set; }
+
+    /// <summary>Authorization request this external login continues.</summary>
+    public AuthorizationRequestId AuthorizationRequestId { get; private set; }
 
     /// <summary>
     /// Creates a new OAuth state aggregate.
@@ -29,7 +28,7 @@ public sealed class OAuthState : AggregateRoot
         CodeVerifier codeVerifier,
         Nonce nonce,
         DateTimeOffset expiresAt,
-        RedirectUri? redirectUri)
+        AuthorizationRequestId authorizationRequestId)
     {
         var oauthState = new OAuthState
         {
@@ -38,7 +37,7 @@ public sealed class OAuthState : AggregateRoot
             CodeVerifier = codeVerifier,
             Nonce = nonce,
             ExpiresAt = expiresAt,
-            RedirectUri = redirectUri
+            AuthorizationRequestId = authorizationRequestId
         };
 
         oauthState.RaiseDomainEvent(new OAuthStateCreatedDomainEvent(oauthState.Id, oauthState.State, oauthState.ExpiresAt));

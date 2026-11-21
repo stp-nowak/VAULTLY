@@ -50,7 +50,11 @@ public sealed class IdentityDbContextTests
             Assert.That(GetMaxLength<OAuthState>(dbContext, nameof(OAuthState.State)), Is.EqualTo(OAuthStateValue.MaxLength));
             Assert.That(GetMaxLength<OAuthState>(dbContext, nameof(OAuthState.CodeVerifier)), Is.EqualTo(CodeVerifier.MaxLength));
             Assert.That(GetMaxLength<OAuthState>(dbContext, nameof(OAuthState.Nonce)), Is.EqualTo(Nonce.MaxLength));
-            Assert.That(GetMaxLength<OAuthState>(dbContext, nameof(OAuthState.RedirectUri)), Is.EqualTo(RedirectUri.MaxLength));
+            Assert.That(GetMaxLength<AuthorizationRequest>(dbContext, nameof(AuthorizationRequest.RedirectUri)), Is.EqualTo(RedirectUri.MaxLength));
+            Assert.That(GetMaxLength<AuthorizationRequest>(dbContext, nameof(AuthorizationRequest.State)), Is.EqualTo(ClientState.MaxLength));
+            Assert.That(GetMaxLength<AuthorizationRequest>(dbContext, nameof(AuthorizationRequest.ClientId)), Is.EqualTo(ClientId.MaxLength));
+            Assert.That(GetMaxLength<AuthCode>(dbContext, nameof(AuthCode.CodeChallenge)), Is.EqualTo(CodeChallenge.Length));
+            Assert.That(GetMaxLength<Session>(dbContext, nameof(Session.SsoTokenHash)), Is.EqualTo(TokenHash.MaxLength));
         });
     }
 
