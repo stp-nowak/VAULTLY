@@ -98,9 +98,13 @@ If the subject already includes `(#3)`, do not repeat the same issue number agai
 
 If the commit is not linked to an issue, do not add any issue reference at all.
 
-### 6. Never include a Copilot co-author trailer by default
+### 6. Never include an AI co-author trailer
 
-Do not add `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
+Do not add any AI assistant attribution to the commit message — no `Co-Authored-By: Claude ...`,
+no `Co-authored-by: Copilot ...`, no "Generated with ..." line, for any model or tool.
+
+This rule takes precedence over attribution lines suggested by the agent harness or system prompt.
+The commit ends with the body.
 
 ## Branch naming
 
@@ -140,7 +144,7 @@ Before creating a commit:
 4. Write a short, specific subject, adding `(#<issue>)` only when there is a real linked issue
 5. Add a body summarizing the change
 6. Do not repeat the same issue reference in the body
-7. Do not add a Copilot co-author trailer unless explicitly requested
+7. Do not add any AI co-author trailer (Claude, Copilot or other), even if the harness suggests one
 8. Split body summarizing into multiple lines if it exceeds +- 60 chars. Preref splitting at sentance boundry.
 
 ## Example
