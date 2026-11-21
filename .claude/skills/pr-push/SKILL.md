@@ -16,10 +16,14 @@ Run the steps in order. Do not skip verification or screenshots to save time.
 ## 1. Preconditions
 
 1. `gh auth status` must show a logged-in account. If not, ask the user to run `! gh auth login` and stop.
-2. Working tree must be clean or contain only changes that belong to this PR. Never sweep unrelated files in.
-3. The work must be linked to an issue. Find it from the branch name (`feature/issue-<n>-...`) or ask.
+   If `GITHUB_TOKEN`/`GH_TOKEN` is set it overrides the `gh` login; run gh as `env -u GITHUB_TOKEN -u GH_TOKEN gh …`.
+2. Screenshots are uploaded with `--attach`, which needs **GitHub CLI 2.99.0 or newer**. Check that
+   `gh pr create --help` and `gh pr edit --help` list `--attach`. If not, stop and ask the user to upgrade gh
+   (Windows: `! winget upgrade --id GitHub.cli`). Never create or edit a PR description without its images.
+3. Working tree must be clean or contain only changes that belong to this PR. Never sweep unrelated files in.
+4. The work must be linked to an issue. Find it from the branch name (`feature/issue-<n>-...`) or ask.
    If there is no issue yet and the user wants one, create it first (`gh issue create --label enhancement`).
-4. Commits follow `./.agents/skills/proper-commit/SKILL.md`. Commit any remaining changes with that skill.
+5. Commits follow `./.agents/skills/proper-commit/SKILL.md`. Commit any remaining changes with that skill.
 
 ## 2. Verify every touched project
 
@@ -59,27 +63,16 @@ authenticated vs. not). Desktop is required; add mobile (390×844) when layout c
    calls per scenario with realistic data — never real user data or real tokens.
 4. Run `node <scratchpad>/pr-shots/capture-screenshots.mjs <scenarios.json>` and **open every PNG with Read to
    check it** (correct view, no error overlay, no blank page). Re-shoot if anything is off.
-5. Publish images to the orphan branch `pr-assets` (keeps binaries out of the code history):
-
-   ```bash
-   BRANCH=$(git branch --show-current)
-   WT=<scratchpad>/pr-assets
-   git fetch origin pr-assets 2>/dev/null \
-     && git worktree add "$WT" -B pr-assets origin/pr-assets \
-     || { git worktree add --detach "$WT" && git -C "$WT" switch --orphan pr-assets; }
-   mkdir -p "$WT/$BRANCH" && cp <shots>/*.png "$WT/$BRANCH/"
-   git -C "$WT" add "$BRANCH" && git -C "$WT" commit -m "chore: add screenshots for $BRANCH"
-   git -C "$WT" push origin pr-assets && git worktree remove "$WT"
-   ```
-
-   Embed as `![Login](https://github.com/<owner>/<repo>/blob/pr-assets/<branch>/<file>.png?raw=true)`
-   (`gh repo view --json nameWithOwner -q .nameWithOwner` gives `<owner>/<repo>`).
+5. Keep everything for this PR in one **image folder** outside the repo: `<scratchpad>/pr-shots/shots/<branch-or-pr>/`
+   — the PNGs and, later, `body.md`. Use short, stable file names (`login-desktop.png`, `dashboard-mobile.png`);
+   they become the alt text fallback and the reference names in the description.
 
 If the UI did not change, write "No UI changes" in the Screenshots section — do not delete the section.
 
 ## 5. Write the description
 
-Use this template (write to a temp file, pass with `--body-file`). Write for a reviewer who knows the repo but
+Use this template. Write it to `body.md` **inside the image folder** — `./<file>.png` references in a
+`--body-file` resolve relative to that file's directory, and `gh` rewrites each one to the uploaded asset URL. Write for a reviewer who knows the repo but
 not this change. Be concrete: name folders, endpoints, components. Keep "Before" and "After" parallel so each
 row reads as a direct comparison.
 
@@ -111,7 +104,7 @@ Closes #<issue>   <!-- or "Part of #<issue>" -->
 ## Screenshots
 | View | Screenshot |
 |---|---|
-| <view, state> | ![<view>](<url>) |
+| <view, state> | ![<view, state>](./<file>.png) |
 <!-- or: No UI changes. -->
 
 ## How to test
@@ -126,14 +119,38 @@ Closes #<issue>   <!-- or "Part of #<issue>" -->
 
 ## 6. Push and open the PR
 
+Run from the **image folder** (where `body.md` and the PNGs are). That folder is outside the repo, so always pass
+`--repo <owner>/<repo>` and `--head <branch>`; `gh` cannot infer them there.
+
 ```bash
-git push -u origin "$(git branch --show-current)"
-gh pr create --base <base> --head "$(git branch --show-current)" \
-  --title "<proper-commit style subject, e.g. feat: ... (#6)>" \
-  --body-file <scratchpad>/pr-body.md --assignee @me --label <same labels as the issue>
+git push -u origin "$(git branch --show-current)"            # from the repository
+cd <scratchpad>/pr-shots/shots/<branch>
+gh pr create --repo <owner>/<repo> --base <base> --head <branch> \
+  --title "<proper-commit style subject, e.g. feat: ... (#8)>" \
+  --body-file body.md --assignee @me --label <same labels as the issue> \
+  --attach './login-desktop.png#Login, desktop' \
+  --attach './dashboard-mobile.png#Dashboard, mobile'
 ```
 
+- One `--attach` per file (max 50); a glob after one flag fails. Optional alt text after `#`; a reference
+  already in the body keeps the alt text written there.
+- Every `./file.png` in `body.md` must have a matching `--attach`, otherwise it stays a broken relative link.
+- If some uploads fail, gh still creates/updates the PR, exits non-zero and prints the URL — fix and re-run the edit.
+- Verify: `gh pr view <PR URL> --json body --jq .body` must contain **no** `](./` and the screenshot rows must
+  point at `https://github.com/user-attachments/...`.
+- `<owner>/<repo>`: `gh repo view --json nameWithOwner -q .nameWithOwner` (run inside the repository).
+
 End the body with the attribution line required by the session (if any).
+
+### Updating screenshots of an existing PR
+
+1. Re-shoot only the changed views into the image folder.
+2. Fetch the current description there — always by the PR's **full URL**, not its number (the folder is outside
+   the repo): `gh pr view <PR URL> --json body --jq .body > body.md`
+3. Change **only the screenshot table**: point new or retaken rows at local files (`![…](./file.png)`), remove rows
+   the PR no longer covers, keep every other row and every other section exactly as it is.
+4. Show the user the diff of the description and save it **only after they confirm**.
+5. `gh pr edit <PR URL> --body-file body.md --attach ./a.png --attach ./b.png` (one flag per file), then verify as above.
 
 ## 7. Link the PR to the issue
 
@@ -156,4 +173,5 @@ open questions).
 - Never push to `develop`/`main` directly and never force-push someone else's branch.
 - Never put secrets, tokens, cookies or real personal data in descriptions or screenshots.
 - Screenshots must come from the code in this PR (build the current branch), not from mocks drawn by hand.
-- If the PR is updated later, update the description and re-shoot changed views (`gh pr edit --body-file`).
+- If the PR is updated later, update the description and re-shoot changed views (see *Updating screenshots*).
+- The orphan `pr-assets` branch is legacy (older PRs link to it): do not add new images there and do not delete it.
