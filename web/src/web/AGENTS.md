@@ -85,6 +85,12 @@ Layers, highest to lowest: `app → pages → widgets → features → domain �
   TanStack Query options/hooks from `domain/[context]/api`.
 - Never model a backend aggregate twice — if two features need it, it belongs in `domain`.
 
+### No circular dependencies
+
+`src/app/circularDependencies/circularDependencies.test.ts` runs madge from `app/App.tsx` (aliases resolved via
+`tsconfig.app.json`) and fails on any import cycle. Fix cycles by moving shared code down a layer, never by
+disabling the test. `pnpm --filter @vaultly/web deps:circular` writes a JSON report next to the test.
+
 > **Rule**: Keep code close to where it's used. Only move it down a layer when another slice truly needs it.
 
 ---

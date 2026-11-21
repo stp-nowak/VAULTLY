@@ -5,3 +5,6 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+
+# Generated circular dependency reports (pnpm deps:circular)
+circularDependencies.json
