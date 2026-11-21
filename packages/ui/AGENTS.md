@@ -36,6 +36,8 @@ The package ships TypeScript/TSX source (`exports` → `src`); the consuming app
   once a second app needs it or it encodes a design-system pattern.
 - Every component: function component, typed props, accepts `className` and merges it last via `cn`, accessible
   semantics (roles, labels), and a test in `components/*.test.tsx`.
+- No circular dependencies: `src/circularDependencies/circularDependencies.test.ts` (madge from `src/index.ts`)
+  must stay green; `pnpm --filter @vaultly/ui deps:circular` writes a JSON report.
 - Export everything public from `src/index.ts`; never deep-import package internals from apps.
 - Breaking changes (renamed props/tokens) must update all consumers in the same PR.
 - Publishing: the package is publish-ready in shape (`exports`, `peerDependencies`, `files`) but consumed from
