@@ -1,0 +1,104 @@
+/*
+ * Vaultly design system for Tailwind CSS v4.
+ * Consumers import it right after Tailwind:
+ *   @import 'tailwindcss';
+ *   @import '@vaultly/ui/styles.css';
+ * Tokens below become utilities (bg-canvas, text-muted, border-line, font-display, shadow-panel, …).
+ * Apps must not redefine colors or fonts — extend the theme here instead.
+ */
+
+/* Let Tailwind see the class names used inside this package's components. */
+@source './';
+
+@theme {
+  /* Surfaces */
+  --color-canvas: #09070a;
+  --color-surface: rgb(255 255 255 / 0.02);
+  --color-surface-raised: rgb(255 255 255 / 0.04);
+  --color-sidebar: rgb(9 7 10 / 0.78);
+
+  /* Text */
+  --color-ink: #f5f1ea;
+  --color-muted: #c7b7ae;
+
+  /* Brand */
+  --color-accent: #f2c88f;
+  --color-accent-strong: #f8dfb6;
+  --color-accent-ink: #26180f;
+  --color-accent-soft: rgb(242 200 143 / 0.08);
+
+  /* Feedback */
+  --color-danger: #ff8e8e;
+  --color-danger-ink: #ffd4d4;
+  --color-danger-soft: rgb(255 142 142 / 0.1);
+  --color-danger-line: rgb(255 142 142 / 0.24);
+  --color-success: #9fe3bf;
+  --color-success-ink: #d7f7e5;
+  --color-success-soft: rgb(159 227 191 / 0.08);
+  --color-success-line: rgb(159 227 191 / 0.2);
+
+  /* Lines */
+  --color-line: rgb(243 221 190 / 0.12);
+  --color-line-strong: rgb(243 221 190 / 0.22);
+
+  /* Typography */
+  --font-sans: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --tracking-display: -0.04em;
+  --tracking-label: 0.12em;
+  --tracking-eyebrow: 0.18em;
+
+  /* Elevation */
+  --shadow-panel: 0 24px 80px rgb(0 0 0 / 0.45);
+}
+
+/* Gradient fill of raised panels (cards, dialogs). */
+@utility bg-panel {
+  background-image: linear-gradient(180deg, rgb(30 21 35 / 0.92), rgb(14 10 18 / 0.94));
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-canvas);
+    background-image:
+      radial-gradient(circle at top left, rgb(170 94 45 / 0.24), transparent 30%),
+      radial-gradient(circle at top right, rgb(79 34 97 / 0.32), transparent 32%),
+      linear-gradient(160deg, #0b0810 0%, #120d14 45%, #09070a 100%);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  /* Subtle grid texture behind the content. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+    background-size: 120px 120px;
+    mask-image: radial-gradient(circle at center, rgb(0 0 0 / 0.8), transparent 85%);
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: var(--tracking-display);
+  }
+}

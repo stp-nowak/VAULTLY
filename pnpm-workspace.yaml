@@ -1,0 +1,4 @@
+# All Vaultly frontends and shared packages live in one pnpm workspace with a single lockfile.
+packages:
+  - packages/*
+  - web/src/web

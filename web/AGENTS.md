@@ -23,7 +23,7 @@ web/
 1. Redis: `docker run -p 6379:6379 redis:7` (or leave `ConnectionStrings:Redis` empty in Development for an in-memory fallback).
 2. Identity service: `dotnet run --project auth/src/Vaultly.Identity.Api` (http://localhost:5096).
 3. Web API: `dotnet run --project web/src/api/Vaultly.Web.Api` (http://localhost:5180).
-4. SPA: `cd web/src/web && pnpm dev` (http://localhost:5173, proxies `/api` → 5180).
+4. SPA: `pnpm install` (repo root, once), then `pnpm --filter @vaultly/web dev` (http://localhost:5173, proxies `/api` → 5180).
 
 Open the app on http://localhost:5173 — the cookie is first-party there thanks to the Vite proxy.
 

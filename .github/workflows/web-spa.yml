@@ -1,16 +1,24 @@
 name: Web SPA
 
-# Runs only when the React SPA (or this workflow) changes. Other projects have their own workflows,
+# Runs when the React SPA, the shared UI package or the workspace setup (or this workflow) changes. Other projects have their own workflows,
 # so builds of different projects run in parallel.
 on:
   pull_request:
     paths:
       - 'web/src/web/**'
+      - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/web-spa.yml'
   push:
     branches: [main]
     paths:
       - 'web/src/web/**'
+      - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/web-spa.yml'
   workflow_dispatch:
 
@@ -25,20 +33,15 @@ jobs:
   build:
     name: Lint, test, build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web/src/web
     steps:
       - uses: actions/checkout@v4
+      # pnpm version comes from "packageManager" in the root package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: web/src/web/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm test
-      - run: pnpm build
+      - run: pnpm --filter @vaultly/web lint
+      - run: pnpm --filter @vaultly/web test
+      - run: pnpm --filter @vaultly/web build

@@ -1,17 +1,15 @@
-import { StatusNotice } from '@/shared/ui/StatusNotice';
-
-import styles from './RouteErrorPage.module.scss';
+import { Card, CenteredScreen, Eyebrow, StatusNotice } from '@vaultly/ui';
 
 export function RouteErrorPage({ error }: { error: unknown }) {
-  const message = error instanceof Error ? error.message : 'An unexpected routing error occurred.';
+  const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
 
   return (
-    <main className={styles.screen}>
-      <section className={styles.card}>
-        <p className={styles.eyebrow}>Route error</p>
-        <h1>Something interrupted the flow.</h1>
+    <CenteredScreen>
+      <Card size="hero">
+        <Eyebrow>Vaultly</Eyebrow>
+        <h1 className="text-3xl">Something went wrong.</h1>
         <StatusNotice tone="error">{message}</StatusNotice>
-      </section>
-    </main>
+      </Card>
+    </CenteredScreen>
   );
 }

@@ -1,10 +1,8 @@
 import { useState } from 'react';
 
-import { useAuth } from '@/domain/identity';
-import { Button } from '@/shared/ui/Button';
-import { StatusNotice } from '@/shared/ui/StatusNotice';
+import { Button, Card, Eyebrow, InfoTile, StatusNotice } from '@vaultly/ui';
 
-import styles from './LogoutCard.module.scss';
+import { useAuth } from '@/domain/identity';
 
 export function LogoutCard() {
   const auth = useAuth();
@@ -12,20 +10,17 @@ export function LogoutCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
-    <section className={styles.card}>
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Settings</p>
-          <h2>Session controls</h2>
-        </div>
+    <Card aria-labelledby="account-heading">
+      <div>
+        <Eyebrow>Account</Eyebrow>
+        <h2 className="text-2xl" id="account-heading">
+          Your account
+        </h2>
       </div>
 
-      <div className={styles.settingsList}>
-        <div className={styles.settingsRow}>
-          <span>Signed in as</span>
-          <strong>{auth.user?.email ?? 'Unknown user'}</strong>
-        </div>
-      </div>
+      <dl className="grid gap-3.5">
+        <InfoTile label="Signed in as" value={<strong>{auth.user?.email ?? 'Unknown user'}</strong>} />
+      </dl>
 
       {errorMessage ? <StatusNotice tone="error">{errorMessage}</StatusNotice> : null}
 
@@ -46,8 +41,8 @@ export function LogoutCard() {
         }}
         variant="secondary"
       >
-        {isSubmitting ? 'Signing out…' : 'Logout'}
+        {isSubmitting ? 'Signing out…' : 'Sign out'}
       </Button>
-    </section>
+    </Card>
   );
 }

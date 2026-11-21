@@ -1,2 +1,7 @@
 .dotnet
 .codex
+# JavaScript workspace (root and every package)
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
