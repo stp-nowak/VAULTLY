@@ -175,4 +175,3 @@ open questions).
 - Never put secrets, tokens, cookies or real personal data in descriptions or screenshots.
 - Screenshots must come from the code in this PR (build the current branch), not from mocks drawn by hand.
 - If the PR is updated later, update the description and re-shoot changed views (see *Updating screenshots*).
-- The orphan `pr-assets` branch is legacy (older PRs link to it): do not add new images there and do not delete it.
