@@ -78,3 +78,12 @@ export function parseCurrentUser(value: unknown): CurrentUser {
 
   return { sessionId, user: parseUser(record.user ?? record.User) };
 }
+
+export function parseLogoutResponse(value: unknown): string {
+  const logoutUrl = value && typeof value === 'object' ? getString(value as Record<string, unknown>, 'logoutUrl') : null;
+  if (!logoutUrl || !/^https?:\/\//.test(logoutUrl)) {
+    throw new Error('Logout response was invalid.');
+  }
+
+  return logoutUrl;
+}

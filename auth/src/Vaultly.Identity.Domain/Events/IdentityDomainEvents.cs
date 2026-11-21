@@ -84,3 +84,19 @@ public sealed record OAuthStateCreatedDomainEvent(
     OAuthStateId OAuthStateId,
     OAuthStateValue State,
     DateTimeOffset ExpiresAt) : DomainEvent;
+
+/// <summary>
+/// Raised when a client starts signing a user in.
+/// </summary>
+public sealed record AuthorizationRequestCreatedDomainEvent(
+    AuthorizationRequestId AuthorizationRequestId,
+    ClientId ClientId,
+    DateTimeOffset ExpiresAt) : DomainEvent;
+
+/// <summary>
+/// Raised when an authorization request produced an authorization code.
+/// </summary>
+public sealed record AuthorizationRequestCompletedDomainEvent(
+    AuthorizationRequestId AuthorizationRequestId,
+    ClientId ClientId,
+    DateTimeOffset CompletedAt) : DomainEvent;

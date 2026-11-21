@@ -1,0 +1,268 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json.Serialization;
+
+using MediatR;
+
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
+
+using Vaultly.Identity.Application.Commands.EndSession;
+using Vaultly.Identity.Application.Commands.ExchangeAuthCode;
+using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
+using Vaultly.Identity.Application.Commands.RefreshSession;
+using Vaultly.Identity.Application.Commands.RevokeToken;
+using Vaultly.Identity.Application.Commands.StartAuthorization;
+using Vaultly.Identity.Application.Commands.StartExternalLogin;
+using Vaultly.Identity.Application.Common;
+using Vaultly.Identity.Application.Models;
+using Vaultly.Identity.Application.Options;
+using Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
+using Vaultly.Identity.Domain.Exceptions;
+using Vaultly.Identity.SharedKernel;
+
+namespace Vaultly.Identity.Api;
+
+/// <summary>
+/// OAuth 2.0 / OIDC endpoints of the authorization server and the JSON API used by the login UI (auth/web).
+/// </summary>
+public static class OAuthEndpoints
+{
+    private const string ProviderRoute = "{provider:regex(^[a-z0-9-]+$)}";
+
+    /// <summary>
+    /// Maps <c>/authorize</c>, provider login/callback, <c>/token</c>, <c>/revoke</c>, <c>/logout</c> and the login UI API.
+    /// </summary>
+    public static IEndpointRouteBuilder MapOAuthEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapGet("/authorize", AuthorizeAsync);
+        app.MapGet($"/{ProviderRoute}/authorize", StartProviderLoginAsync);
+        app.MapGet($"/{ProviderRoute}/callback", ProviderCallbackAsync);
+        app.MapPost("/token", TokenAsync).DisableAntiforgery();
+        app.MapPost("/revoke", RevokeAsync).DisableAntiforgery();
+        app.MapGet("/logout", LogoutAsync);
+        app.MapGet("/api/authorization-requests/{id:guid}", GetAuthorizationRequestAsync);
+        return app;
+    }
+
+    internal static async Task<IResult> AuthorizeAsync(HttpContext context, ISender sender, IOptions<IdentityOptions> options, ILoggerFactory loggerFactory)
+    {
+        var query = context.Request.Query;
+        try
+        {
+            var result = await sender.Send(
+                new StartAuthorizationCommand(
+                    query["client_id"].ToString(),
+                    query["redirect_uri"].ToString(),
+                    query["response_type"].ToString(),
+                    query["state"].ToString(),
+                    query["code_challenge"].ToString(),
+                    query["code_challenge_method"].ToString(),
+                    SsoCookie.Read(context.Request)),
+                context.RequestAborted);
+
+            return Results.Redirect(result.RedirectUrl);
+        }
+        catch (OAuthProtocolException ex)
+        {
+            Logger(loggerFactory).LogWarning("Rejected /authorize request: {Error} {Description}", ex.Error, ex.Message);
+            return LoginUiError(options, "invalid_request");
+        }
+    }
+
+    internal static async Task<IResult> StartProviderLoginAsync(
+        string provider,
+        Guid? request,
+        HttpContext context,
+        ISender sender,
+        IOptions<IdentityOptions> options,
+        ILoggerFactory loggerFactory)
+    {
+        if (request is null)
+        {
+            return LoginUiError(options, "invalid_request");
+        }
+
+        try
+        {
+            var url = await sender.Send(new StartExternalLoginCommand(provider, request.Value), context.RequestAborted);
+            return Results.Redirect(url);
+        }
+        catch (Exception ex) when (ex is DomainException or InvalidOperationException)
+        {
+            Logger(loggerFactory).LogWarning(ex, "Could not start {Provider} login", provider);
+            return LoginUiError(options, ToUiErrorCode(ex));
+        }
+    }
+
+    internal static async Task<IResult> ProviderCallbackAsync(
+        string provider,
+        HttpContext context,
+        ISender sender,
+        IOptions<IdentityOptions> options,
+        ILoggerFactory loggerFactory)
+    {
+        var query = context.Request.Query;
+        var error = query["error"].ToString();
+        if (!string.IsNullOrEmpty(error))
+        {
+            Logger(loggerFactory).LogWarning("{Provider} returned error {Error}", provider, error);
+            return LoginUiError(options, error == "access_denied" ? "access_denied" : "login_failed");
+        }
+
+        var code = query["code"].ToString();
+        var state = query["state"].ToString();
+        if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+        {
+            return LoginUiError(options, "invalid_request");
+        }
+
+        try
+        {
+            var result = await sender.Send(
+                new HandleOAuthCallbackCommand(
+                    provider,
+                    code,
+                    state,
+                    context.Request.Headers.UserAgent.ToString(),
+                    context.Connection.RemoteIpAddress?.ToString()),
+                context.RequestAborted);
+
+            SsoCookie.Set(context.Response, result.SsoToken, result.SsoExpiresAt);
+            return Results.Redirect(result.RedirectUrl);
+        }
+        catch (Exception ex) when (ex is DomainException or InvalidOperationException or HttpRequestException)
+        {
+            Logger(loggerFactory).LogWarning(ex, "{Provider} callback failed", provider);
+            return LoginUiError(options, ToUiErrorCode(ex));
+        }
+    }
+
+    internal static async Task<IResult> TokenAsync(HttpContext context, ISender sender)
+    {
+        NoStore(context.Response);
+        if (!context.Request.HasFormContentType)
+        {
+            return OAuthError(OAuthProtocolException.InvalidRequest("Form-encoded body is required."));
+        }
+
+        var form = await context.Request.ReadFormAsync(context.RequestAborted);
+        var (clientId, clientSecret) = ReadClientCredentials(context.Request, form);
+
+        try
+        {
+            TokenResult result = form["grant_type"].ToString() switch
+            {
+                "authorization_code" => await sender.Send(
+                    new ExchangeAuthCodeCommand(form["code"], clientId, clientSecret, form["redirect_uri"], form["code_verifier"]),
+                    context.RequestAborted),
+                "refresh_token" => await sender.Send(
+                    new RefreshSessionCommand(form["refresh_token"], clientId, clientSecret),
+                    context.RequestAborted),
+                _ => throw OAuthProtocolException.UnsupportedGrantType(),
+            };
+
+            return Results.Ok(TokenResponse.From(result));
+        }
+        catch (OAuthProtocolException ex)
+        {
+            return OAuthError(ex);
+        }
+    }
+
+    internal static async Task<IResult> RevokeAsync(HttpContext context, ISender sender)
+    {
+        if (!context.Request.HasFormContentType)
+        {
+            return OAuthError(OAuthProtocolException.InvalidRequest("Form-encoded body is required."));
+        }
+
+        var form = await context.Request.ReadFormAsync(context.RequestAborted);
+        var (clientId, clientSecret) = ReadClientCredentials(context.Request, form);
+
+        try
+        {
+            await sender.Send(new RevokeTokenCommand(form["token"], clientId, clientSecret), context.RequestAborted);
+            return Results.Ok();
+        }
+        catch (OAuthProtocolException ex)
+        {
+            return OAuthError(ex);
+        }
+    }
+
+    internal static async Task<IResult> LogoutAsync(HttpContext context, ISender sender)
+    {
+        var result = await sender.Send(
+            new EndSessionCommand(
+                SsoCookie.Read(context.Request),
+                context.Request.Query["client_id"].ToString(),
+                context.Request.Query["post_logout_redirect_uri"].ToString()),
+            context.RequestAborted);
+
+        SsoCookie.Clear(context.Response);
+        return Results.Redirect(result.RedirectUrl);
+    }
+
+    internal static async Task<IResult> GetAuthorizationRequestAsync(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        var request = await sender.Send(new GetAuthorizationRequestQuery(id), cancellationToken);
+        return request is null ? Results.NotFound() : Results.Ok(request);
+    }
+
+    private static (string? ClientId, string? ClientSecret) ReadClientCredentials(HttpRequest request, IFormCollection form)
+    {
+        if (AuthenticationHeaderValue.TryParse(request.Headers.Authorization, out var header)
+            && string.Equals(header.Scheme, "Basic", StringComparison.OrdinalIgnoreCase)
+            && header.Parameter is { } parameter)
+        {
+            try
+            {
+                var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(parameter));
+                var separator = decoded.IndexOf(':');
+                if (separator > 0)
+                {
+                    return (Uri.UnescapeDataString(decoded[..separator]), Uri.UnescapeDataString(decoded[(separator + 1)..]));
+                }
+            }
+            catch (FormatException)
+            {
+                return (null, null);
+            }
+        }
+
+        return (form["client_id"].ToString(), form["client_secret"].ToString());
+    }
+
+    private static IResult OAuthError(OAuthProtocolException ex)
+        => Results.Json(new { error = ex.Error, error_description = ex.Message }, statusCode: ex.StatusCode);
+
+    private static void NoStore(HttpResponse response)
+    {
+        response.Headers.CacheControl = "no-store";
+        response.Headers.Pragma = "no-cache";
+    }
+
+    private static IResult LoginUiError(IOptions<IdentityOptions> options, string code)
+        => Results.Redirect(QueryHelpers.AddQueryString($"{options.Value.ResolveLoginUiBaseUrl()}/error", "code", code));
+
+    private static string ToUiErrorCode(Exception ex)
+        => ex is AuthorizationRequestExpiredException or AuthorizationRequestCompletedException or AuthorizationRequestNotFoundException
+            ? "request_expired"
+            : "login_failed";
+
+    private static ILogger Logger(ILoggerFactory loggerFactory) => loggerFactory.CreateLogger(typeof(OAuthEndpoints));
+
+    internal sealed record TokenResponse(
+        [property: JsonPropertyName("access_token")] string AccessToken,
+        [property: JsonPropertyName("token_type")] string TokenType,
+        [property: JsonPropertyName("expires_in")] int ExpiresIn,
+        [property: JsonPropertyName("refresh_token")] string RefreshToken,
+        [property: JsonPropertyName("refresh_expires_in")] int RefreshExpiresIn,
+        [property: JsonPropertyName("session_id")] Guid SessionId,
+        [property: JsonPropertyName("user")] AuthenticatedUserDto User)
+    {
+        public static TokenResponse From(TokenResult result)
+            => new(result.AccessToken, "Bearer", result.ExpiresInSeconds, result.RefreshToken, result.RefreshExpiresInSeconds, result.SessionId, result.User);
+    }
+}

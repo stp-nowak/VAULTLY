@@ -2,3 +2,4 @@
 packages:
   - packages/*
   - web/src/web
+  - auth/web

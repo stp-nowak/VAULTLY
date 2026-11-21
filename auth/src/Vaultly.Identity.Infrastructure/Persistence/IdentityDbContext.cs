@@ -20,6 +20,7 @@ public sealed class IdentityDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuthCode> AuthCodes => Set<AuthCode>();
     public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
+    public DbSet<AuthorizationRequest> AuthorizationRequests => Set<AuthorizationRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -96,6 +97,11 @@ public sealed class IdentityDbContext : DbContext
                     value => value == null ? null : value.Value,
                     value => value == null ? null : new IpAddress(value))
                 .HasMaxLength(IpAddress.MaxLength);
+            entity.Property(x => x.SsoTokenHash)
+                .HasConversion(hash => hash.Value, value => new TokenHash(value))
+                .HasMaxLength(TokenHash.MaxLength)
+                .IsRequired();
+            entity.HasIndex(x => x.SsoTokenHash).IsUnique();
             entity.HasIndex(x => x.UserId);
             entity.HasMany(x => x.RefreshTokens)
                 .WithOne()
@@ -142,6 +148,18 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(hash => hash.Value, value => new CodeHash(value))
                 .HasMaxLength(CodeHash.MaxLength)
                 .IsRequired();
+            entity.Property(x => x.ClientId)
+                .HasConversion(id => id.Value, value => new ClientId(value))
+                .HasMaxLength(ClientId.MaxLength)
+                .IsRequired();
+            entity.Property(x => x.RedirectUri)
+                .HasConversion(uri => uri.Value, value => new RedirectUri(value))
+                .HasMaxLength(RedirectUri.MaxLength)
+                .IsRequired();
+            entity.Property(x => x.CodeChallenge)
+                .HasConversion(challenge => challenge.Value, value => new CodeChallenge(value))
+                .HasMaxLength(CodeChallenge.Length)
+                .IsRequired();
             entity.HasIndex(x => x.CodeHash).IsUnique();
             entity.HasIndex(x => x.SessionId);
         });
@@ -164,12 +182,35 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(nonce => nonce.Value, value => new Nonce(value))
                 .HasMaxLength(Nonce.MaxLength)
                 .IsRequired();
-            entity.Property(x => x.RedirectUri)
-                .HasConversion(
-                    url => url == null ? null : url.Value,
-                    value => value == null ? null : new RedirectUri(value))
-                .HasMaxLength(RedirectUri.MaxLength);
+            entity.Property(x => x.AuthorizationRequestId)
+                .HasConversion(id => id.Value, value => AuthorizationRequestId.From(value));
             entity.HasIndex(x => x.State).IsUnique();
+        });
+
+        modelBuilder.Entity<AuthorizationRequest>(entity =>
+        {
+            entity.Ignore(x => x.DomainEvents);
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id)
+                .HasConversion(id => id.Value, value => AuthorizationRequestId.From(value));
+            entity.Property(x => x.ClientId)
+                .HasConversion(id => id.Value, value => new ClientId(value))
+                .HasMaxLength(ClientId.MaxLength)
+                .IsRequired();
+            entity.Property(x => x.RedirectUri)
+                .HasConversion(uri => uri.Value, value => new RedirectUri(value))
+                .HasMaxLength(RedirectUri.MaxLength)
+                .IsRequired();
+            entity.Property(x => x.State)
+                .HasConversion(state => state.Value, value => new ClientState(value))
+                .HasMaxLength(ClientState.MaxLength)
+                .IsRequired();
+            entity.Property(x => x.CodeChallenge)
+                .HasConversion(challenge => challenge.Value, value => new CodeChallenge(value))
+                .HasMaxLength(CodeChallenge.Length)
+                .IsRequired();
+            entity.Ignore(x => x.IsCompleted);
+            entity.HasIndex(x => x.ExpiresAt);
         });
     }
 }

@@ -4,5 +4,5 @@ import { http, HttpResponse } from 'msw';
 export const handlers = [
   http.get('*/api/auth/user', () => new HttpResponse(null, { status: 401 })),
   http.get('*/api/auth/sessions', () => new HttpResponse(null, { status: 401 })),
-  http.post('*/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
+  http.post('*/api/auth/logout', () => HttpResponse.json({ logoutUrl: 'https://identity.vaultly.local/logout' })),
 ];

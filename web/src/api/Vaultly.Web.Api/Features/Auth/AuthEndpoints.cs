@@ -15,15 +15,10 @@ namespace Vaultly.Web.Api.Features.Auth;
 /// </summary>
 public static class AuthEndpoints
 {
-    /// <summary>Route prefix of the Auth feature.</summary>
     public const string RoutePrefix = "/api/auth";
 
-    /// <summary>Path of the OAuth callback, relative to the public origin.</summary>
     public const string CallbackPath = RoutePrefix + "/callback";
 
-    /// <summary>
-    /// Maps login, callback, current user, session management and logout endpoints.
-    /// </summary>
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup(RoutePrefix).WithTags("Auth");
@@ -38,10 +33,6 @@ public static class AuthEndpoints
         return endpoints;
     }
 
-    /// <summary>
-    /// Starts login: remembers state + return URL in an encrypted cookie and redirects to the Identity service.
-    /// The state travels inside our callback URL because the Identity service only appends <c>code</c>.
-    /// </summary>
     internal static IResult Login(
         string? returnUrl,
         HttpContext context,
@@ -50,23 +41,30 @@ public static class AuthEndpoints
         TimeProvider timeProvider)
     {
         var authOptions = options.Value;
-        var state = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
-        var expiresAt = timeProvider.GetUtcNow().AddMinutes(authOptions.LoginTimeoutMinutes);
+        var state = RandomToken();
+        var codeVerifier = RandomToken();
 
         loginStateCookie.Append(
             context.Response,
-            new LoginState(state, SanitizeReturnUrl(returnUrl, authOptions.DefaultReturnPath), expiresAt));
+            new LoginState(
+                state,
+                codeVerifier,
+                SanitizeReturnUrl(returnUrl, authOptions.DefaultReturnPath),
+                timeProvider.GetUtcNow().AddMinutes(authOptions.LoginTimeoutMinutes)));
 
-        var callbackUrl = QueryHelpers.AddQueryString($"{authOptions.PublicOrigin.TrimEnd('/')}{CallbackPath}", "state", state);
-        var identityLoginUrl = QueryHelpers.AddQueryString($"{authOptions.IdentityBaseUrl.TrimEnd('/')}/login", "redirectUri", callbackUrl);
+        var authorizeUrl = QueryHelpers.AddQueryString($"{authOptions.IdentityBaseUrl.TrimEnd('/')}/authorize", new Dictionary<string, string?>
+        {
+            ["response_type"] = "code",
+            ["client_id"] = authOptions.ClientId,
+            ["redirect_uri"] = CallbackUrl(authOptions),
+            ["state"] = state,
+            ["code_challenge"] = CreateCodeChallenge(codeVerifier),
+            ["code_challenge_method"] = "S256",
+        });
 
-        return Results.Redirect(identityLoginUrl);
+        return Results.Redirect(authorizeUrl);
     }
 
-    /// <summary>
-    /// Completes login: validates state, exchanges the code server-to-server, creates the session and redirects
-    /// back into the SPA. Failures redirect to the SPA login page with a non-sensitive error code.
-    /// </summary>
     internal static async Task<IResult> CallbackAsync(
         string? code,
         string? state,
@@ -80,47 +78,41 @@ public static class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger(typeof(AuthEndpoints));
-        var loginPath = options.Value.LoginPagePath;
+        var authOptions = options.Value;
         var loginState = loginStateCookie.ReadAndDelete(context);
 
         if (!string.IsNullOrEmpty(error))
         {
-            logger.LogWarning("Identity service returned login error {Error}", error);
-            return Results.Redirect(QueryHelpers.AddQueryString(loginPath, "error", "login_failed"));
+            logger.LogWarning("Identity service returned authorization error {Error}", error);
+            return LoginError(authOptions, "login_failed");
         }
 
         if (loginState is null || string.IsNullOrEmpty(state) || !FixedTimeEquals(state, loginState.State))
         {
             logger.LogWarning("Rejected OAuth callback with missing, expired or mismatched state");
-            return Results.Redirect(QueryHelpers.AddQueryString(loginPath, "error", "invalid_state"));
+            return LoginError(authOptions, "invalid_state");
         }
 
         if (string.IsNullOrEmpty(code))
         {
-            return Results.Redirect(QueryHelpers.AddQueryString(loginPath, "error", "login_failed"));
+            return LoginError(authOptions, "login_failed");
         }
 
         try
         {
-            var tokens = await identity.ExchangeCodeAsync(code, cancellationToken);
+            var tokens = await identity.ExchangeCodeAsync(code, loginState.CodeVerifier, CallbackUrl(authOptions), cancellationToken);
             await sessions.SignInAsync(context, tokens, cancellationToken);
         }
         catch (Exception exception) when (exception is IdentityServiceException or HttpRequestException)
         {
             logger.LogWarning(exception, "Authorization code exchange failed");
-            return Results.Redirect(QueryHelpers.AddQueryString(loginPath, "error", "login_failed"));
+            return LoginError(authOptions, "login_failed");
         }
 
         return Results.LocalRedirect(loginState.ReturnUrl);
     }
 
-    /// <summary>
-    /// Returns the signed-in user, or 401. The SPA uses it to bootstrap its auth state.
-    /// </summary>
-    internal static async Task<IResult> GetUserAsync(
-        HttpContext context,
-        IUserSessionService sessions,
-        CancellationToken cancellationToken)
+    internal static async Task<IResult> GetUserAsync(HttpContext context, IUserSessionService sessions, CancellationToken cancellationToken)
     {
         var session = await sessions.GetActiveSessionAsync(context, cancellationToken);
         return session is null
@@ -128,9 +120,6 @@ public static class AuthEndpoints
             : Results.Ok(new { user = session.User, sessionId = session.AuthSessionId });
     }
 
-    /// <summary>
-    /// Lists the user's Identity sessions using the server-side access token.
-    /// </summary>
     internal static async Task<IResult> GetSessionsAsync(
         HttpContext context,
         IUserSessionService sessions,
@@ -145,8 +134,7 @@ public static class AuthEndpoints
 
         try
         {
-            var items = await identity.GetSessionsAsync(session.AccessToken, cancellationToken);
-            return Results.Ok(new { sessions = items });
+            return Results.Ok(new { sessions = await identity.GetSessionsAsync(session.AccessToken, cancellationToken) });
         }
         catch (IdentityServiceException exception) when (exception.StatusCode == StatusCodes.Status401Unauthorized)
         {
@@ -155,9 +143,6 @@ public static class AuthEndpoints
         }
     }
 
-    /// <summary>
-    /// Revokes an Identity session. Revoking the current one also ends the browser session.
-    /// </summary>
     internal static async Task<IResult> RevokeSessionAsync(
         Guid id,
         HttpContext context,
@@ -184,21 +169,24 @@ public static class AuthEndpoints
         return Results.NoContent();
     }
 
-    /// <summary>
-    /// Signs out locally and at the Identity service. Idempotent.
-    /// </summary>
     internal static async Task<IResult> LogoutAsync(
         HttpContext context,
         IUserSessionService sessions,
+        IOptions<AuthOptions> options,
         CancellationToken cancellationToken)
     {
         await sessions.SignOutAsync(context, cancellationToken);
-        return Results.NoContent();
+
+        var authOptions = options.Value;
+        var logoutUrl = QueryHelpers.AddQueryString($"{authOptions.IdentityBaseUrl.TrimEnd('/')}/logout", new Dictionary<string, string?>
+        {
+            ["client_id"] = authOptions.ClientId,
+            ["post_logout_redirect_uri"] = $"{authOptions.PublicOrigin.TrimEnd('/')}{authOptions.PostLogoutRedirectPath}",
+        });
+
+        return Results.Ok(new { logoutUrl });
     }
 
-    /// <summary>
-    /// Accepts only local, app-relative paths to prevent open redirects (<c>//evil.com</c>, <c>/\evil.com</c>, absolute URLs).
-    /// </summary>
     internal static string SanitizeReturnUrl(string? returnUrl, string fallback)
     {
         if (string.IsNullOrEmpty(returnUrl) || returnUrl[0] != '/')
@@ -214,9 +202,16 @@ public static class AuthEndpoints
         return returnUrl.StartsWith(RoutePrefix, StringComparison.OrdinalIgnoreCase) ? fallback : returnUrl;
     }
 
-    /// <summary>
-    /// Constant-time comparison so the state check does not leak timing information.
-    /// </summary>
+    internal static string CreateCodeChallenge(string codeVerifier)
+        => WebEncoders.Base64UrlEncode(SHA256.HashData(Encoding.ASCII.GetBytes(codeVerifier)));
+
+    private static string CallbackUrl(AuthOptions options) => $"{options.PublicOrigin.TrimEnd('/')}{CallbackPath}";
+
+    private static string RandomToken() => WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+
+    private static IResult LoginError(AuthOptions options, string error)
+        => Results.Redirect(QueryHelpers.AddQueryString(options.LoginPagePath, "error", error));
+
     private static bool FixedTimeEquals(string left, string right)
         => CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(left), Encoding.UTF8.GetBytes(right));
 }

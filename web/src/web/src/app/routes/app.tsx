@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
+import { buildLoginUrl } from '@/domain/identity';
 import { DashboardPage } from '@/pages/dashboard';
 
 export const Route = createFileRoute('/app')({
@@ -7,7 +8,7 @@ export const Route = createFileRoute('/app')({
     await context.auth.ensureReady();
 
     if (!context.auth.isAuthenticated) {
-      throw redirect({ search: { returnUrl: location.href }, to: '/login' });
+      throw redirect({ href: buildLoginUrl(location.href), reloadDocument: true });
     }
   },
   component: DashboardPage,

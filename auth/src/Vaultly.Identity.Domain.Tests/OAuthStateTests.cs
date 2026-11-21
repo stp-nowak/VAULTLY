@@ -20,7 +20,7 @@ public sealed class OAuthStateTests
             new CodeVerifier("verifier"),
             new Nonce("nonce"),
             now.AddMinutes(5),
-            null);
+            AuthorizationRequestId.New());
 
         Assert.That(state.DomainEvents.OfType<OAuthStateCreatedDomainEvent>().Single().OAuthStateId, Is.EqualTo(state.Id));
     }
@@ -34,7 +34,7 @@ public sealed class OAuthStateTests
             new CodeVerifier("verifier"),
             new Nonce("nonce"),
             now.AddMinutes(-1),
-            null);
+            AuthorizationRequestId.New());
 
         Assert.That(expired.IsExpired(now), Is.True);
     }
@@ -48,7 +48,7 @@ public sealed class OAuthStateTests
             new CodeVerifier("verifier"),
             new Nonce("nonce"),
             now.AddMinutes(5),
-            null);
+            AuthorizationRequestId.New());
 
         Assert.That(active.IsExpired(now), Is.False);
     }
@@ -62,21 +62,23 @@ public sealed class OAuthStateTests
             new CodeVerifier("verifier"),
             new Nonce("nonce"),
             now.AddMinutes(-1),
-            null);
+            AuthorizationRequestId.New());
 
         Assert.That(() => expired.EnsureActive(now), Throws.TypeOf<OAuthStateExpiredException>());
     }
 
     [Test]
-    public void Create_WhenRedirectUriProvided_PersistsRedirectUri()
+    public void Create_LinksStateToAuthorizationRequest()
     {
+        var requestId = AuthorizationRequestId.New();
+
         var state = OAuthState.Create(
             new OAuthStateValue("state"),
             new CodeVerifier("verifier"),
             new Nonce("nonce"),
             new DateTimeOffset(2025, 1, 1, 0, 5, 0, TimeSpan.Zero),
-            new RedirectUri("https://app.test/callback"));
+            requestId);
 
-        Assert.That(state.RedirectUri?.Value, Is.EqualTo("https://app.test/callback"));
+        Assert.That(state.AuthorizationRequestId, Is.EqualTo(requestId));
     }
 }

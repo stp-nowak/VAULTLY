@@ -19,10 +19,10 @@ public sealed class SessionReadServiceTests
     {
         await using var dbContext = CreateDbContext();
         var userId = UserId.New();
-        var older = Session.Create(userId, new AuthMethod("google"), new UserAgent("Firefox"), new IpAddress("10.0.0.1"), Now);
-        var newer = Session.Create(userId, new AuthMethod("google"), null, null, Now);
+        var older = Session.Create(userId, new AuthMethod("google"), new UserAgent("Firefox"), new IpAddress("10.0.0.1"), NewSsoTokenHash(), Now, Now.AddHours(12));
+        var newer = Session.Create(userId, new AuthMethod("google"), null, null, NewSsoTokenHash(), Now, Now.AddHours(12));
         newer.MarkUsed(Now.AddHours(1));
-        var foreign = Session.Create(UserId.New(), new AuthMethod("google"), null, null, Now);
+        var foreign = Session.Create(UserId.New(), new AuthMethod("google"), null, null, NewSsoTokenHash(), Now, Now.AddHours(12));
         dbContext.Sessions.AddRange(older, newer, foreign);
         await dbContext.SaveChangesAsync();
 
@@ -46,7 +46,7 @@ public sealed class SessionReadServiceTests
     {
         await using var dbContext = CreateDbContext();
         var userId = UserId.New();
-        dbContext.Sessions.Add(Session.Create(userId, new AuthMethod("google"), null, null, Now));
+        dbContext.Sessions.Add(Session.Create(userId, new AuthMethod("google"), null, null, NewSsoTokenHash(), Now, Now.AddHours(12)));
         await dbContext.SaveChangesAsync();
         dbContext.ChangeTracker.Clear();
 
@@ -56,6 +56,8 @@ public sealed class SessionReadServiceTests
 
         Assert.That(dbContext.ChangeTracker.Entries<Session>(), Is.Empty);
     }
+
+    private static TokenHash NewSsoTokenHash() => new(Guid.NewGuid().ToString("N"));
 
     /// <summary>
     /// Creates an isolated in-memory database context for read-side tests.

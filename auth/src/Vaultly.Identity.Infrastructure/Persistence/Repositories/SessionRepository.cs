@@ -44,4 +44,13 @@ public sealed class SessionRepository(IdentityDbContext dbContext) : ISessionRep
             .Include(x => x.RefreshTokens)
             .Include(x => x.AuthCodes)
             .SingleOrDefaultAsync(x => x.RefreshTokens.Any(token => token.TokenHash == tokenHash), cancellationToken);
+
+    /// <summary>
+    /// Gets a session by the hash of its SSO token (auth codes are loaded so a new one can be issued).
+    /// </summary>
+    public Task<Session?> GetBySsoTokenHashAsync(TokenHash ssoTokenHash, CancellationToken cancellationToken)
+        => _dbContext.Sessions
+            .Include(x => x.RefreshTokens)
+            .Include(x => x.AuthCodes)
+            .SingleOrDefaultAsync(x => x.SsoTokenHash == ssoTokenHash, cancellationToken);
 }

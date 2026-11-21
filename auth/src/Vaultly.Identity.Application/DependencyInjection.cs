@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
+using Vaultly.Identity.Application.Common;
+
 namespace Vaultly.Identity.Application;
 
 /// <summary>
@@ -15,6 +17,8 @@ public static class DependencyInjection
         services.AddMediatR(config =>
             config.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
 
+        // Registered clients are static configuration: parse and validate them once.
+        services.AddSingleton<IClientRegistry, ClientRegistry>();
 
         return services;
     }

@@ -1,0 +1,3 @@
+/* Tailwind + the shared Vaultly design system. Colors, fonts and base styles come from @vaultly/ui only. */
+@import 'tailwindcss';
+@import '@vaultly/ui/styles.css';

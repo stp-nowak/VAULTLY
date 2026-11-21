@@ -110,6 +110,9 @@ disabling the test. `pnpm --filter @vaultly/web deps:circular` writes a JSON rep
 
 - **Default**: functional components with explicit return types
 - One component per file; filename = component name (PascalCase)
+- **No `if`/early-return chains that render JSX.** Derive one state value in a pure, tested function (prefer lookup
+  maps such as `Record<QueryStatus, Notice>` over `if` chains), map it to a small view model at a single branch point
+  (e.g. `{ heading, body }`) and render shared markup once. Never repeat the same element (heading, wrapper) per state.
 - Keep components small and focused — extract logic into custom hooks
 - Use **composition over configuration** — prefer `children` and slot patterns over large prop APIs
 - Avoid prop drilling beyond 2 levels — lift to context or a store

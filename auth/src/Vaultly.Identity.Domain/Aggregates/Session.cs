@@ -11,9 +11,6 @@ public sealed class Session : AggregateRoot
     private readonly List<RefreshToken> _refreshTokens = new();
     private readonly List<AuthCode> _authCodes = new();
 
-    /// <summary>
-    /// Required by EF Core.
-    /// </summary>
     private Session()
     {
     }
@@ -28,14 +25,35 @@ public sealed class Session : AggregateRoot
     public bool IsRevoked { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
 
+    /// <summary>
+    /// Hash of the single sign-on token kept in the auth service's own cookie. While the SSO session is active,
+    /// further authorization requests are answered without showing the login page again.
+    /// </summary>
+    public TokenHash SsoTokenHash { get; private set; } = null!;
+
+    /// <summary>Absolute end of the SSO session; afterwards the user must sign in again.</summary>
+    public DateTimeOffset SsoExpiresAt { get; private set; }
+
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
     public IReadOnlyCollection<AuthCode> AuthCodes => _authCodes.AsReadOnly();
 
     /// <summary>
     /// Creates a new session aggregate.
     /// </summary>
-    public static Session Create(UserId userId, AuthMethod authMethod, UserAgent? userAgent, IpAddress? ipAddress, DateTimeOffset now)
+    public static Session Create(
+        UserId userId,
+        AuthMethod authMethod,
+        UserAgent? userAgent,
+        IpAddress? ipAddress,
+        TokenHash ssoTokenHash,
+        DateTimeOffset now,
+        DateTimeOffset ssoExpiresAt)
     {
+        if (ssoExpiresAt <= now)
+        {
+            throw new InvalidValueException("SSO session must expire in the future.");
+        }
+
         var session = new Session
         {
             Id = SessionId.New(),
@@ -45,12 +63,19 @@ public sealed class Session : AggregateRoot
             UserAgent = userAgent,
             IpAddress = ipAddress,
             AuthMethod = authMethod,
-            IsRevoked = false
+            IsRevoked = false,
+            SsoTokenHash = ssoTokenHash,
+            SsoExpiresAt = ssoExpiresAt
         };
 
         session.RaiseDomainEvent(new SessionStartedDomainEvent(session.Id, session.UserId, session.AuthMethod));
         return session;
     }
+
+    /// <summary>
+    /// Whether the SSO session can still sign the user in silently.
+    /// </summary>
+    public bool IsSsoActive(DateTimeOffset now) => !IsRevoked && SsoExpiresAt > now;
 
     /// <summary>
     /// Marks the session as recently used.
@@ -92,22 +117,33 @@ public sealed class Session : AggregateRoot
     }
 
     /// <summary>
-    /// Issues a new auth code for the session.
+    /// Issues a new auth code bound to the client, redirect URI and PKCE challenge of an authorization request.
     /// </summary>
-    public AuthCode IssueAuthCode(CodeHash codeHash, DateTimeOffset expiresAt)
+    public AuthCode IssueAuthCode(
+        CodeHash codeHash,
+        DateTimeOffset expiresAt,
+        ClientId clientId,
+        RedirectUri redirectUri,
+        CodeChallenge codeChallenge)
     {
         EnsureNotRevoked();
 
-        var authCode = AuthCode.Issue(Id, codeHash, expiresAt);
+        var authCode = AuthCode.Issue(Id, codeHash, expiresAt, clientId, redirectUri, codeChallenge);
         _authCodes.Add(authCode);
         RaiseDomainEvent(new SessionAuthCodeIssuedDomainEvent(Id, authCode.Id, authCode.ExpiresAt));
         return authCode;
     }
 
     /// <summary>
-    /// Consumes an auth code if it is valid and marks the session as used.
+    /// Consumes an auth code if it is valid for this client, redirect URI and PKCE verifier, and marks the session
+    /// as used. The code is burned even when a binding check fails, so a stolen code cannot be retried.
     /// </summary>
-    public AuthCode ConsumeAuthCode(CodeHash codeHash, DateTimeOffset now)
+    public AuthCode ConsumeAuthCode(
+        CodeHash codeHash,
+        ClientId clientId,
+        RedirectUri redirectUri,
+        string? codeVerifier,
+        DateTimeOffset now)
     {
         EnsureNotRevoked();
 
@@ -128,6 +164,22 @@ public sealed class Session : AggregateRoot
         }
 
         authCode.MarkUsed(now);
+
+        if (authCode.ClientId != clientId)
+        {
+            throw new AuthCodeMismatchException("client");
+        }
+
+        if (authCode.RedirectUri != redirectUri)
+        {
+            throw new AuthCodeMismatchException("redirect_uri");
+        }
+
+        if (!authCode.CodeChallenge.IsSatisfiedBy(codeVerifier))
+        {
+            throw new AuthCodeMismatchException("code_verifier");
+        }
+
         MarkUsed(now);
         RaiseDomainEvent(new SessionAuthCodeConsumedDomainEvent(Id, authCode.Id, now));
         return authCode;
@@ -177,9 +229,6 @@ public sealed class Session : AggregateRoot
         return rotated;
     }
 
-    /// <summary>
-    /// Ensures the session is not revoked before performing sensitive operations.
-    /// </summary>
     private void EnsureNotRevoked()
     {
         if (IsRevoked)

@@ -1,22 +1,23 @@
+using Microsoft.Extensions.Options;
+
 using Serilog;
 
+using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
-
-using Microsoft.Extensions.Options;
 
 namespace Vaultly.Identity.Application.Commands.ExchangeAuthCode;
 
 /// <summary>
-/// Handles exchanging an auth code for access and refresh tokens.
+/// Handles the authorization_code grant.
 /// </summary>
 public sealed class ExchangeAuthCodeHandler(
+    IClientRegistry clientRegistry,
     ISessionRepository sessionRepository,
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
@@ -26,8 +27,9 @@ public sealed class ExchangeAuthCodeHandler(
     IClock clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger)
-    : ICommandHandler<ExchangeAuthCodeCommand, ExchangeResult>
+    : ICommandHandler<ExchangeAuthCodeCommand, TokenResult>
 {
+    private readonly IClientRegistry _clientRegistry = clientRegistry;
     private readonly ISessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -38,30 +40,37 @@ public sealed class ExchangeAuthCodeHandler(
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<ExchangeAuthCodeHandler>();
 
-    /// <summary>
-    /// Exchanges the provided auth code for tokens.
-    /// </summary>
-    public async Task<ExchangeResult> Handle(ExchangeAuthCodeCommand request, CancellationToken cancellationToken)
+    public async Task<TokenResult> Handle(ExchangeAuthCodeCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Code))
+        var client = _clientRegistry.Authenticate(request.ClientId, request.ClientSecret)
+            ?? throw OAuthProtocolException.InvalidClient();
+
+        var redirectUri = ClientRedirect.TryParse(request.RedirectUri);
+        if (string.IsNullOrWhiteSpace(request.Code) || redirectUri is null || string.IsNullOrEmpty(request.CodeVerifier))
         {
-            throw new InvalidOperationException("Auth code is required.");
+            throw OAuthProtocolException.InvalidRequest("code, redirect_uri and code_verifier are required.");
         }
 
         var now = _clock.UtcNow;
         var codeHash = new CodeHash(_tokenHasher.HashToken(request.Code));
+        var session = await _sessionRepository.GetByAuthCodeHashAsync(codeHash, cancellationToken)
+            ?? throw OAuthProtocolException.InvalidGrant("Authorization code is invalid.");
 
-        var session = await _sessionRepository.GetByAuthCodeHashAsync(codeHash, cancellationToken);
-        if (session is null)
+        try
         {
-            throw new AuthCodeNotFoundException();
+            session.ConsumeAuthCode(codeHash, client.Id, redirectUri, request.CodeVerifier, now);
+        }
+        catch (DomainException ex)
+        {
+            // Persist the burned code: a failed attempt (e.g. wrong verifier) must not leave it redeemable.
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _logger.Warning("Rejected authorization code for client {ClientId}: {Reason}", client.Id.Value, ex.Message);
+            throw OAuthProtocolException.InvalidGrant("Authorization code is invalid, expired or does not match the request.");
         }
 
-        session.ConsumeAuthCode(codeHash, now);
-
-        var refreshToken = _tokenGenerator.GenerateToken(64);
-        var issuedRefreshToken = session.IssueRefreshToken(
-            new TokenHash(_tokenHasher.HashToken(refreshToken)),
+        var plainRefreshToken = _tokenGenerator.GenerateToken(64);
+        var refreshToken = session.IssueRefreshToken(
+            new TokenHash(_tokenHasher.HashToken(plainRefreshToken)),
             now,
             now.AddDays(_identityOptions.RefreshTokenTtlDays));
 
@@ -70,21 +79,12 @@ public sealed class ExchangeAuthCodeHandler(
         var user = await _userRepository.GetByIdAsync(session.UserId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
 
-        var accessToken = _jwtTokenService.CreateAccessToken(user, session, now);
-        var userDto = new AuthenticatedUserDto(user.Id.Value, user.Email.Value, user.Name.Value);
-
         _logger.Information(
-            "Exchanged auth code for session {SessionId} and user {UserId}",
+            "Exchanged auth code for session {SessionId}, user {UserId}, client {ClientId}",
             session.Id.Value,
-            user.Id.Value);
+            user.Id.Value,
+            client.Id.Value);
 
-        return new ExchangeResult(
-            accessToken,
-            _identityOptions.AccessTokenTtlMinutes * 60,
-            refreshToken,
-            issuedRefreshToken.ExpiresAt,
-            session.Id.Value,
-            userDto,
-            _identityOptions.RefreshTokenCookieDomain);
+        return TokenResults.Create(_jwtTokenService, _identityOptions, user, session, plainRefreshToken, refreshToken, now);
     }
 }

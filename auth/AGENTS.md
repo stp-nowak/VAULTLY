@@ -1,8 +1,9 @@
 # Vaultly Auth (Identity service)
 
-Standalone authentication service: OAuth 2.0 Authorization Code + PKCE, Google login, JWT access tokens,
-refresh-token rotation (cookie `vaultly_refresh`), session listing/revocation, OIDC discovery + JWKS.
-Client-facing flow: `./docs/auth-flow.md`.
+Standalone OAuth 2.0 / OIDC authorization server, Keycloak-style: registered clients redirect the browser to
+`/authorize`, the user signs in on the service's **own login UI** (`./web`, React), an SSO session cookie lets later
+sign-ins skip the login page, and clients exchange codes for tokens server-to-server. Google is the identity provider.
+Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
 
 ## Independence
 - This service is **completely separate** from `./backend`: own solution (`src/Vaultly.Auth.slnx`), own
@@ -16,26 +17,44 @@ Client-facing flow: `./docs/auth-flow.md`.
 - from `auth/src`: `dotnet build Vaultly.Auth.slnx` — build
 - from `auth/src`: `dotnet test Vaultly.Auth.slnx` — run tests
 - Local config: `src/Vaultly.Identity.Api/.env.example` → `.env` (overrides `appsettings*.json`, keys like `Identity__Issuer`).
+- Login UI: `pnpm --filter @vaultly/auth-web dev` (http://localhost:5174, proxies API paths to http://localhost:5096).
+
+## Endpoints
+| Endpoint | Purpose |
+|---|---|
+| `GET /authorize` | Authorization code + PKCE (S256 only, `state` required). Silent sign-in with an active SSO cookie, otherwise redirect to the login UI `/login?request=<id>` |
+| `GET /api/authorization-requests/{id}` | Login UI data: client name, status, providers |
+| `GET /{provider}/authorize?request=<id>`, `GET /{provider}/callback` | External provider login; the callback sets the `vaultly_sso` cookie and redirects to the client with `code` + `state` |
+| `POST /token` | Form-encoded; `authorization_code` (code, `code_verifier`, `redirect_uri`) and `refresh_token` grants; client auth `client_secret_post` or `client_secret_basic`; refresh token in the body |
+| `POST /revoke` | RFC 7009 refresh-token revocation (ends the session) |
+| `GET /logout` | Ends the SSO session; redirects to a registered `post_logout_redirect_uri` or the UI `/logged-out` |
+| `GET/DELETE /sessions` | User's sessions (bearer access token) |
+| `/.well-known/openid-configuration`, `/.well-known/jwks.json` | Discovery and signing keys |
+
+Clients are registered in `Identity:Clients` (id, secret, display name, redirect and post-logout URIs; exact or
+`…/*` prefix). Secrets only via environment/secret store. Protocol errors never redirect to an unvalidated URI.
 
 ## Structure
 
 ```
 auth/
 ├── docs/                                   # Client-facing documentation
+├── web/                                    # Login UI (React SPA, @vaultly/auth-web) — served by the API in production
 └── src/
     ├── Vaultly.Auth.slnx
     ├── Vaultly.Identity.SharedKernel/      # AggregateRoot, DomainEvent, DomainException, IUnitOfWork
-    ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User, Session, OAuthState), Entities,
+    ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User, Session + SSO, OAuthState,
+    │                                       #   AuthorizationRequest), Entities (AuthCode bound to client/PKCE),
     │                                       #   ValueObjects, Events, Exceptions, Constants
     ├── Vaultly.Identity.Application/       # CQRS
     │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
-    │   ├── Commands/<UseCase>/             #   write side: StartExternalLogin, HandleOAuthCallback,
-    │   │                                   #   ExchangeAuthCode, RefreshSession, Logout, RevokeSession
-    │   ├── Queries/<UseCase>/              #   read side: GetEnabledProviders, GetSessions
+    │   ├── Commands/<UseCase>/             #   write side: StartAuthorization, StartExternalLogin, HandleOAuthCallback,
+    │   │                                   #   ExchangeAuthCode, RefreshSession, RevokeToken, EndSession, RevokeSession
+    │   ├── Queries/<UseCase>/              #   read side: GetAuthorizationRequest, GetSessions
     │   ├── Interfaces/Repositories/        #   write ports (aggregates)
     │   ├── Interfaces/ReadServices/        #   read ports (DTOs)
     │   ├── Interfaces/Services/            #   other ports (clock, token hashing, JWT, OAuth providers)
-    │   ├── Models/  Options/  Common/
+    │   ├── Models/  Options/  Common/       #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors)
     ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
     ├── Vaultly.Identity.Api/               # Minimal API endpoints → ISender, composition root
     ├── Vaultly.Identity.Domain.Tests/
@@ -57,7 +76,8 @@ auth/
 ## C# Instructions
 - Latest C# (currently C# 14), `net10.0`, nullable reference types enabled.
 - Prefer primary constructors.
-- Write clear and concise XML comments for each function; explain *why* for non-obvious design decisions.
+- Comments: follow the root rule — minimal; `<summary>` only on public API types/members where it adds information;
+  inline comments only for genuinely non-obvious reasons (protocol/security constraints, workarounds).
 - Test-driven development; use the `test-writer` skill (NUnit + Moq).
 - Always build and run tests after changes to service functionality.
 

@@ -1,81 +1,52 @@
-# Vaultly Identity authentication flow
+# Vaultly Identity — client integration
 
-This document is intentionally brief and only covers what a client needs to know.
+Vaultly Identity is an OAuth 2.0 / OpenID Connect authorization server with its own login UI. Applications never
+show a sign-in form: they redirect the browser to the Identity service and receive an authorization code back.
 
-## Authentication model
+## Clients
 
-Vaultly Identity handles authentication using a standard OAuth 2.0 Authorization Code flow with PKCE.
+Every application is a registered **confidential client** (`Identity:Clients`): client id, client secret, allowed
+redirect URIs and post-logout redirect URIs. The web app's server side (`web/src/api`) is the `vaultly-web` client.
+Browsers never receive tokens.
 
-For client applications, the important part is:
+Discovery: `GET /.well-known/openid-configuration` (endpoints below), `GET /.well-known/jwks.json` (keys to validate
+access tokens).
 
-- start authentication with the identity service
-- complete the normal PKCE login flow
-- exchange the returned code for an access token
-- use the access token as a bearer token for protected calls
+## Sign-in (authorization code + PKCE)
 
-The PKCE protocol itself is standard and is not re-documented here.
+1. The client creates `state` and a PKCE `code_verifier`, keeps them server-side (e.g. an encrypted cookie) and
+   redirects the browser to
+   `GET /authorize?response_type=code&client_id=…&redirect_uri=…&state=…&code_challenge=…&code_challenge_method=S256`.
+2. If the browser has an active SSO session (`vaultly_sso` cookie on the Identity domain), the user is sent straight
+   back. Otherwise the Identity login UI (`/login`) lets the user pick a provider (Google) and signs them in.
+3. The browser returns to `redirect_uri?code=…&state=…`. The client checks `state` against what it stored.
+   Errors come back as `redirect_uri?error=…&state=…`; an unknown client or unregistered `redirect_uri` is never
+   redirected (the Identity error page is shown instead).
+4. The client exchanges the code server-to-server:
 
-## Discovery endpoints
+   ```http
+   POST /token
+   Content-Type: application/x-www-form-urlencoded
 
-The service exposes standard discovery endpoints:
+   grant_type=authorization_code&code=…&code_verifier=…&redirect_uri=…&client_id=…&client_secret=…
+   ```
 
-- `GET /.well-known/openid-configuration`
-- `GET /.well-known/jwks.json`
+   Response: `access_token`, `token_type`, `expires_in`, `refresh_token`, `refresh_expires_in`, `session_id`, `user`.
+   A code is single-use and bound to the client, redirect URI and PKCE challenge; a failed attempt burns it.
 
-Clients and downstream services can use them to:
+## Refresh and revocation
 
-- discover the issuer, authorization endpoint, token endpoint, and JWKS URI
-- validate JWT access tokens issued by the identity service
+- `POST /token` with `grant_type=refresh_token&refresh_token=…` + client credentials rotates the refresh token
+  (single use; reuse of an old token revokes the whole session). A rejected refresh returns `400 invalid_grant`.
+- `POST /revoke` with `token=<refresh token>` + client credentials ends the session (always `200`).
 
-## Session management
+## Sign-out
 
-Session management is the main Vaultly-specific behavior a client should care about.
+After revoking its tokens, the client sends the browser to
+`GET /logout?client_id=…&post_logout_redirect_uri=…` so the Identity service can end the SSO session and clear its
+cookie; the browser then returns to the registered post-logout URI.
 
-### Access token
+## Using access tokens
 
-- The client receives a JWT access token after authentication.
-- The access token is used as `Authorization: Bearer <token>` for protected endpoints.
-- The access token is short-lived and should be treated as temporary client state.
-
-### Refresh token
-
-- Refresh state is stored in the `vaultly_refresh` cookie.
-- The cookie is `HttpOnly`, `Secure`, and `SameSite=None`.
-- The client should not try to read or store the refresh token directly in JavaScript.
-- Browser clients should send requests with credentials included so the cookie is sent.
-
-### Refresh flow
-
-- When the access token expires, the client should call the refresh endpoint.
-- A successful refresh returns a new access token and rotates the refresh cookie.
-- If refresh fails with `401 Unauthorized`, the client should treat the session as ended and restart login.
-
-### Logout
-
-- Logging out clears the current refresh cookie and ends the current session.
-- After logout, the client should clear any locally stored access token and user state.
-
-### Session listing and revocation
-
-- The client can fetch the user’s sessions using the access token.
-- The client can revoke a specific session using the access token.
-- If the current session is revoked, the refresh cookie is cleared and the client should consider the user signed out.
-
-## Client guidance
-
-- Keep the access token in short-lived client state, ideally in memory.
-- Include credentials on requests that depend on refresh/logout behavior.
-- Use bearer authentication for protected API calls.
-- If refresh fails, clear local auth state and restart authentication.
-
-## Summary
-
-From the client perspective, Vaultly Identity is:
-
-- a standard PKCE-based authentication service
-- an issuer of JWT access tokens
-- a provider of well-known discovery metadata
-- a session manager with refresh, logout, session listing, and session revocation support
-
-
-
+Send `Authorization: Bearer <access_token>`; tokens are short-lived JWTs (RS256) with `sub` (user) and `sid`
+(session). `GET /sessions` and `DELETE /sessions/{id}` let a user manage their sessions.

@@ -2,35 +2,35 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
-using Microsoft.Extensions.Primitives;
-using Microsoft.Net.Http.Headers;
+using Microsoft.Extensions.Options;
 
 namespace Vaultly.Web.Api.Features.Auth.IdentityService;
 
 /// <summary>
-/// HTTP implementation of <see cref="IIdentityServiceClient"/>.
+/// OIDC confidential client of the Identity service: token and revocation endpoints authenticated with the client
+/// secret, session management with the user's access token.
 /// </summary>
-/// <remarks>
-/// The Identity service transports the refresh token only in its HttpOnly <c>vaultly_refresh</c> cookie (it was
-/// designed for browser clients). The web API therefore reads it from <c>Set-Cookie</c> and sends it back in a
-/// <c>Cookie</c> header. The primary handler must have <c>UseCookies = false</c> so these headers are passed through
-/// untouched and no cookie state is shared between users.
-/// </remarks>
-public sealed class IdentityServiceClient(HttpClient httpClient, TimeProvider timeProvider) : IIdentityServiceClient
+public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOptions> options, TimeProvider timeProvider) : IIdentityServiceClient
 {
-    /// <summary>Cookie used by the Identity service to carry the refresh token.</summary>
-    public const string RefreshCookieName = "vaultly_refresh";
-
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient _httpClient = httpClient;
+    private readonly AuthOptions _options = options.Value;
     private readonly TimeProvider _timeProvider = timeProvider;
 
     /// <inheritdoc />
-    public async Task<IdentityTokenSet> ExchangeCodeAsync(string code, CancellationToken cancellationToken)
+    public async Task<IdentityTokenSet> ExchangeCodeAsync(string code, string codeVerifier, string redirectUri, CancellationToken cancellationToken)
     {
-        using var response = await _httpClient.PostAsJsonAsync("token", new { code }, JsonOptions, cancellationToken);
+        using var response = await PostFormAsync("token", new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code,
+            ["code_verifier"] = codeVerifier,
+            ["redirect_uri"] = redirectUri,
+        }, cancellationToken);
+
         EnsureSuccess(response, "exchange authorization code");
         return await ReadTokenSetAsync(response, cancellationToken);
     }
@@ -38,11 +38,13 @@ public sealed class IdentityServiceClient(HttpClient httpClient, TimeProvider ti
     /// <inheritdoc />
     public async Task<IdentityTokenSet?> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "refresh");
-        AddRefreshCookie(request, refreshToken);
+        using var response = await PostFormAsync("token", new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = refreshToken,
+        }, cancellationToken);
 
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        if (response.StatusCode == HttpStatusCode.BadRequest)
         {
             return null;
         }
@@ -52,13 +54,15 @@ public sealed class IdentityServiceClient(HttpClient httpClient, TimeProvider ti
     }
 
     /// <inheritdoc />
-    public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken)
+    public async Task RevokeAsync(string refreshToken, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "logout");
-        AddRefreshCookie(request, refreshToken);
+        using var response = await PostFormAsync("revoke", new Dictionary<string, string>
+        {
+            ["token"] = refreshToken,
+            ["token_type_hint"] = "refresh_token",
+        }, cancellationToken);
 
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        EnsureSuccess(response, "logout");
+        EnsureSuccess(response, "revoke token");
     }
 
     /// <inheritdoc />
@@ -90,57 +94,31 @@ public sealed class IdentityServiceClient(HttpClient httpClient, TimeProvider ti
         return true;
     }
 
-    /// <summary>
-    /// Builds the token set from the JSON body (access token) and the <c>Set-Cookie</c> header (refresh token).
-    /// </summary>
+    private Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form, CancellationToken cancellationToken)
+    {
+        form["client_id"] = _options.ClientId;
+        form["client_secret"] = _options.ClientSecret;
+        return _httpClient.PostAsync(path, new FormUrlEncodedContent(form), cancellationToken);
+    }
+
     private async Task<IdentityTokenSet> ReadTokenSetAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         var body = await response.Content.ReadFromJsonAsync<TokenResponse>(JsonOptions, cancellationToken)
                    ?? throw new IdentityServiceException((int)response.StatusCode, "Identity service returned an empty token response.");
 
         var now = _timeProvider.GetUtcNow();
-        var (refreshToken, refreshTokenExpiresAt) = ReadRefreshCookie(response, now);
-
         return new IdentityTokenSet(
             body.AccessToken,
             now.AddSeconds(body.ExpiresIn),
-            refreshToken,
-            refreshTokenExpiresAt,
+            body.RefreshToken,
+            now.AddSeconds(body.RefreshExpiresIn),
             body.SessionId,
             body.User);
     }
 
-    /// <summary>
-    /// Extracts the refresh token cookie. ASP.NET Core URL-encodes cookie values, hence the unescape.
-    /// </summary>
-    private static (string Value, DateTimeOffset ExpiresAt) ReadRefreshCookie(HttpResponseMessage response, DateTimeOffset now)
-    {
-        if (response.Headers.TryGetValues(HeaderNames.SetCookie, out var setCookieHeaders)
-            && SetCookieHeaderValue.TryParseList(setCookieHeaders.ToList(), out var cookies))
-        {
-            var cookie = cookies.FirstOrDefault(x => x.Name.Equals(RefreshCookieName, StringComparison.Ordinal));
-            if (cookie is not null && !StringSegment.IsNullOrEmpty(cookie.Value))
-            {
-                var expiresAt = cookie.Expires ?? (cookie.MaxAge is { } maxAge ? now.Add(maxAge) : now.AddDays(1));
-                return (Uri.UnescapeDataString(cookie.Value.Value!), expiresAt);
-            }
-        }
-
-        throw new IdentityServiceException((int)response.StatusCode, "Identity service did not return a refresh token.");
-    }
-
-    /// <summary>
-    /// Sends the refresh token the same way a browser would, so the Identity service contract stays unchanged.
-    /// </summary>
-    private static void AddRefreshCookie(HttpRequestMessage request, string refreshToken)
-        => request.Headers.Add(HeaderNames.Cookie, $"{RefreshCookieName}={Uri.EscapeDataString(refreshToken)}");
-
-    /// <summary>
-    /// Throws <see cref="IdentityServiceException"/> for non-success responses. The body is not logged because
-    /// it may echo sensitive request data.
-    /// </summary>
     private static void EnsureSuccess(HttpResponseMessage response, string operation)
     {
+        // The body is not logged or surfaced: it may echo request data.
         if (!response.IsSuccessStatusCode)
         {
             throw new IdentityServiceException(
@@ -149,7 +127,13 @@ public sealed class IdentityServiceClient(HttpClient httpClient, TimeProvider ti
         }
     }
 
-    private sealed record TokenResponse(string AccessToken, int ExpiresIn, Guid SessionId, AuthenticatedUser User);
+    private sealed record TokenResponse(
+        [property: JsonPropertyName("access_token")] string AccessToken,
+        [property: JsonPropertyName("expires_in")] int ExpiresIn,
+        [property: JsonPropertyName("refresh_token")] string RefreshToken,
+        [property: JsonPropertyName("refresh_expires_in")] int RefreshExpiresIn,
+        [property: JsonPropertyName("session_id")] Guid SessionId,
+        [property: JsonPropertyName("user")] AuthenticatedUser User);
 
     private sealed record SessionsResponse(IReadOnlyList<IdentitySession> Sessions);
 }

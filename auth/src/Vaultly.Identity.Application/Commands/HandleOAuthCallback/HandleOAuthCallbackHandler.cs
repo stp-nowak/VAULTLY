@@ -20,6 +20,7 @@ namespace Vaultly.Identity.Application.Commands.HandleOAuthCallback;
 /// </summary>
 public sealed class HandleOAuthCallbackHandler(
     IOAuthStateRepository oauthStateRepository,
+    IAuthorizationRequestRepository authorizationRequestRepository,
     IUserRepository userRepository,
     ISessionRepository sessionRepository,
     IUnitOfWork unitOfWork,
@@ -32,6 +33,7 @@ public sealed class HandleOAuthCallbackHandler(
     : ICommandHandler<HandleOAuthCallbackCommand, AuthCallbackResult>
 {
     private readonly IOAuthStateRepository _oauthStateRepository = oauthStateRepository;
+    private readonly IAuthorizationRequestRepository _authorizationRequestRepository = authorizationRequestRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ISessionRepository _sessionRepository = sessionRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -42,9 +44,6 @@ public sealed class HandleOAuthCallbackHandler(
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<HandleOAuthCallbackHandler>();
 
-    /// <summary>
-    /// Handles the OAuth callback and returns the redirect URL.
-    /// </summary>
     public async Task<AuthCallbackResult> Handle(HandleOAuthCallbackCommand request, CancellationToken cancellationToken)
     {
         var provider = OAuthFlowUtilities.GetProvider(_providers, new ProviderId(request.ProviderId));
@@ -73,6 +72,11 @@ public sealed class HandleOAuthCallbackHandler(
         }
 
         _oauthStateRepository.Remove(oauthState);
+
+        // The sign-in continues a client's authorization request; it must still be pending.
+        var authorizationRequest = await _authorizationRequestRepository.GetByIdAsync(oauthState.AuthorizationRequestId, cancellationToken)
+            ?? throw new AuthorizationRequestNotFoundException();
+        authorizationRequest.EnsurePending(now);
 
         var identityInfo = await provider.ExchangeCodeAsync(request.Code, oauthState.CodeVerifier.Value, cancellationToken);
         if (!string.Equals(identityInfo.Nonce, oauthState.Nonce.Value, StringComparison.Ordinal))
@@ -109,33 +113,41 @@ public sealed class HandleOAuthCallbackHandler(
 
         user.UpdateProfile(new PersonName(identityInfo.Name), identityInfo.EmailVerified);
 
+        // New SSO session: its token goes into the auth service's cookie, only the hash is stored.
+        var ssoToken = _tokenGenerator.GenerateToken(32);
+        var ssoExpiresAt = now.AddHours(_identityOptions.SsoSessionTtlHours);
         var session = Session.Create(
             user.Id,
             new AuthMethod(provider.Id.Value),
             UserAgent.FromNullable(OAuthFlowUtilities.Truncate(request.UserAgent, 512)),
             IpAddress.FromNullable(OAuthFlowUtilities.Truncate(request.IpAddress, 64)),
-            now);
+            new TokenHash(_tokenHasher.HashToken(ssoToken)),
+            now,
+            ssoExpiresAt);
 
         _sessionRepository.Add(session);
 
         var authCode = _tokenGenerator.GenerateToken(32);
         session.IssueAuthCode(
             new CodeHash(_tokenHasher.HashToken(authCode)),
-            now.AddMinutes(_identityOptions.AuthCodeTtlMinutes));
+            now.AddMinutes(_identityOptions.AuthCodeTtlMinutes),
+            authorizationRequest.ClientId,
+            authorizationRequest.RedirectUri,
+            authorizationRequest.CodeChallenge);
+        authorizationRequest.Complete(now);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.Information(
-            "Handled OAuth callback for provider {ProviderId}, session {SessionId}, user {UserId}",
+            "Handled OAuth callback for provider {ProviderId}, session {SessionId}, user {UserId}, client {ClientId}",
             provider.Id.Value,
             session.Id.Value,
-            user.Id.Value);
+            user.Id.Value,
+            authorizationRequest.ClientId.Value);
 
-        if (oauthState.RedirectUri is null)
-        {
-            throw new InvalidOperationException("OAuth redirect URI is missing.");
-        }
-
-        return new AuthCallbackResult(OAuthFlowUtilities.BuildFrontendRedirectUrl(authCode, oauthState.RedirectUri));
+        return new AuthCallbackResult(
+            ClientRedirect.WithCode(authorizationRequest.RedirectUri, authCode, authorizationRequest.State),
+            ssoToken,
+            ssoExpiresAt);
     }
 }

@@ -6,14 +6,18 @@ using NUnit.Framework;
 
 using Serilog;
 
+using Vaultly.Identity.Application.Commands.EndSession;
 using Vaultly.Identity.Application.Commands.ExchangeAuthCode;
 using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
+using Vaultly.Identity.Application.Commands.RefreshSession;
+using Vaultly.Identity.Application.Commands.StartAuthorization;
 using Vaultly.Identity.Application.Commands.StartExternalLogin;
+using Vaultly.Identity.Application.Common;
+using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Application.Queries.GetEnabledProviders;
+using Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -24,300 +28,367 @@ namespace Vaultly.Identity.Application.Tests;
 [TestFixture]
 public sealed class IdentityUseCaseHandlerTests
 {
-    [Test]
-    public async Task GetEnabledProvidersHandler_WhenSomeDisabled_ReturnsOnlyEnabled()
+    // RFC 7636 Appendix B test vector.
+    private const string Verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    private const string Challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+    private const string ClientIdValue = "vaultly-web";
+    private const string ClientSecret = "test-secret";
+    private const string Callback = "https://app.test/api/auth/callback";
+
+    private static readonly DateTimeOffset Now = new(2025, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private Mock<IAuthorizationRequestRepository> _requests = null!;
+    private Mock<ISessionRepository> _sessions = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
+    private Mock<ITokenGenerator> _tokenGenerator = null!;
+    private Mock<ITokenHasher> _tokenHasher = null!;
+    private IOptions<IdentityOptions> _options = null!;
+    private ClientRegistry _clients = null!;
+
+    [SetUp]
+    public void SetUp()
     {
-        var handler = new GetEnabledProvidersHandler(
-            [
-                new TestProvider("google", "Google", true),
-                new TestProvider("github", "GitHub", false)
-            ]);
-
-        var result = await handler.Handle(new GetEnabledProvidersQuery(), CancellationToken.None);
-
-        Assert.That(result, Is.EqualTo(new[] { new ProviderInfo("google", "Google", "/google/authorize") }));
-    }
-
-    [Test]
-    public async Task StartExternalLoginHandler_WhenProviderEnabled_PersistsOAuthStateAndReturnsAuthorizeUrl()
-    {
-        var oauthRepo = new Mock<IOAuthStateRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
-        var tokenGenerator = new Mock<ITokenGenerator>();
-        var clock = CreateClock();
-        OAuthState? capturedState = null;
-
-        tokenGenerator.SetupSequence(x => x.GenerateToken(It.IsAny<int>()))
-            .Returns("generated-state")
-            .Returns("generated-verifier")
-            .Returns("generated-nonce");
-        oauthRepo.Setup(x => x.Add(It.IsAny<OAuthState>()))
-            .Callback<OAuthState>(state => capturedState = state);
-
-        var handler = new StartExternalLoginHandler(
-            oauthRepo.Object,
-            unitOfWork.Object,
-            new[] { new TestProvider("google", "Google", true) },
-            tokenGenerator.Object,
-            clock.Object,
-            CreateIdentityOptions(),
-            CreateLogger());
-
-        var url = await handler.Handle(
-            new StartExternalLoginCommand("google", "https://app.test/callback"),
-            CancellationToken.None);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(capturedState, Is.Not.Null);
-            Assert.That(capturedState!.RedirectUri!.Value, Is.EqualTo("https://app.test/callback"));
-            Assert.That(url, Does.Contain("state=generated-state"));
-            Assert.That(url, Does.Contain("nonce=generated-nonce"));
-        });
-        unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
-    }
-
-    [Test]
-    public void StartExternalLoginHandler_WhenRedirectUriNotAllowed_ThrowsInvalidValueException()
-    {
-        var handler = new StartExternalLoginHandler(
-            new Mock<IOAuthStateRepository>().Object,
-            new Mock<IUnitOfWork>().Object,
-            [new TestProvider("google", "Google", true)],
-            new Mock<ITokenGenerator>().Object,
-            CreateClock().Object,
-            CreateIdentityOptions(),
-            CreateLogger());
-
-        Assert.That(
-            async () => await handler.Handle(
-                new StartExternalLoginCommand("google", "https://evil.test/callback"),
-                CancellationToken.None),
-            Throws.TypeOf<InvalidValueException>());
-    }
-
-    [Test]
-    public async Task StartExternalLoginHandler_WhenRedirectUriMatchesWildcardPattern_PersistsOAuthStateAndReturnsAuthorizeUrl()
-    {
-        var oauthRepo = new Mock<IOAuthStateRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
-        var tokenGenerator = new Mock<ITokenGenerator>();
-        var clock = CreateClock();
-        OAuthState? capturedState = null;
-
-        tokenGenerator.SetupSequence(x => x.GenerateToken(It.IsAny<int>()))
-            .Returns("generated-state")
-            .Returns("generated-verifier")
-            .Returns("generated-nonce");
-        oauthRepo.Setup(x => x.Add(It.IsAny<OAuthState>()))
-            .Callback<OAuthState>(state => capturedState = state);
-
-        var handler = new StartExternalLoginHandler(
-            oauthRepo.Object,
-            unitOfWork.Object,
-            [new TestProvider("google", "Google", true)],
-            tokenGenerator.Object,
-            clock.Object,
-            CreateIdentityOptions(allowedRedirectUris: ["http://localhost:4200/*"]),
-            CreateLogger());
-
-        var url = await handler.Handle(
-            new StartExternalLoginCommand("google", "http://localhost:4200/oauth/callback?returnUrl=%2Fbudget"),
-            CancellationToken.None);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(capturedState, Is.Not.Null);
-            Assert.That(capturedState!.RedirectUri!.Value, Is.EqualTo("http://localhost:4200/oauth/callback?returnUrl=%2Fbudget"));
-            Assert.That(url, Does.Contain("state=generated-state"));
-        });
-        unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
-    }
-
-    [Test]
-    public void StartExternalLoginHandler_WhenRedirectUriFallsOutsideWildcardPattern_ThrowsInvalidValueException()
-    {
-        var handler = new StartExternalLoginHandler(
-            new Mock<IOAuthStateRepository>().Object,
-            new Mock<IUnitOfWork>().Object,
-            [new TestProvider("google", "Google", true)],
-            new Mock<ITokenGenerator>().Object,
-            CreateClock().Object,
-            CreateIdentityOptions(allowedRedirectUris: ["http://localhost:4200/oauth/*"]),
-            CreateLogger());
-
-        Assert.That(
-            async () => await handler.Handle(
-                new StartExternalLoginCommand("google", "http://localhost:4200/other/callback"),
-                CancellationToken.None),
-            Throws.TypeOf<InvalidValueException>());
-    }
-
-    [Test]
-    public void StartExternalLoginHandler_WhenWildcardPatternConfigurationIsInvalid_ThrowsInvalidOperationException()
-    {
-        var handler = new StartExternalLoginHandler(
-            new Mock<IOAuthStateRepository>().Object,
-            new Mock<IUnitOfWork>().Object,
-            [new TestProvider("google", "Google", true)],
-            new Mock<ITokenGenerator>().Object,
-            CreateClock().Object,
-            CreateIdentityOptions(allowedRedirectUris: ["http://localhost:4200/*/callback"]),
-            CreateLogger());
-
-        Assert.That(
-            async () => await handler.Handle(
-                new StartExternalLoginCommand("google", "http://localhost:4200/oauth/callback"),
-                CancellationToken.None),
-            Throws.TypeOf<InvalidOperationException>());
-    }
-
-    [Test]
-    public async Task ExchangeAuthCodeHandler_WhenCodeValid_ReturnsTokensAndPersistsChanges()
-    {
-        var now = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var session = Session.Create(
-            UserId.New(),
-            new AuthMethod("google"),
-            UserAgent.FromNullable("unit-test"),
-            IpAddress.FromNullable("127.0.0.1"),
-            now);
-        session.IssueAuthCode(new CodeHash("hashed-auth-code"), now.AddMinutes(5));
-
-        var user = User.Create(new EmailAddress("user@example.com"), new PersonName("Test User"), true, now);
-        var sessionRepository = new Mock<ISessionRepository>();
-        var userRepository = new Mock<IUserRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
-        var tokenGenerator = new Mock<ITokenGenerator>();
-        var tokenHasher = new Mock<ITokenHasher>();
-        var jwtTokenService = new Mock<IJwtTokenService>();
-        var clock = CreateClock(now);
-
-        tokenHasher.Setup(x => x.HashToken("plain-auth-code")).Returns("hashed-auth-code");
-        tokenHasher.Setup(x => x.HashToken("plain-refresh-token")).Returns("hashed-refresh-token");
-        tokenGenerator.Setup(x => x.GenerateToken(64)).Returns("plain-refresh-token");
-        jwtTokenService.Setup(x => x.CreateAccessToken(user, session, now)).Returns("access-token");
-        sessionRepository.Setup(x => x.GetByAuthCodeHashAsync(new CodeHash("hashed-auth-code"), CancellationToken.None)).ReturnsAsync(session);
-        userRepository.Setup(x => x.GetByIdAsync(session.UserId, CancellationToken.None)).ReturnsAsync(user);
-
-        var handler = new ExchangeAuthCodeHandler(
-            sessionRepository.Object,
-            userRepository.Object,
-            unitOfWork.Object,
-            jwtTokenService.Object,
-            tokenGenerator.Object,
-            tokenHasher.Object,
-            clock.Object,
-            CreateIdentityOptions(cookieDomain: ".vaultly.local"),
-            CreateLogger());
-
-        var result = await handler.Handle(new ExchangeAuthCodeCommand("plain-auth-code"), CancellationToken.None);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.AccessToken, Is.EqualTo("access-token"));
-            Assert.That(result.RefreshToken, Is.EqualTo("plain-refresh-token"));
-            Assert.That(result.SessionId, Is.EqualTo(session.Id.Value));
-            Assert.That(result.CookieDomain, Is.EqualTo(".vaultly.local"));
-            Assert.That(result.User, Is.EqualTo(new AuthenticatedUserDto(user.Id.Value, user.Email.Value, user.Name.Value)));
-        });
-        unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
-    }
-
-    [Test]
-    public async Task HandleOAuthCallbackHandler_WhenUserDoesNotExist_CreatesUserSessionAndRedirectUrl()
-    {
-        var now = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var oauthState = OAuthState.Create(
-            new OAuthStateValue("state-value"),
-            new CodeVerifier("stored-code-verifier"),
-            new Nonce("expected-nonce"),
-            now.AddMinutes(5),
-            new RedirectUri("https://app.test/callback"));
-
-        var oauthRepo = new Mock<IOAuthStateRepository>();
-        var userRepo = new Mock<IUserRepository>();
-        var sessionRepo = new Mock<ISessionRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
-        var tokenGenerator = new Mock<ITokenGenerator>();
-        var tokenHasher = new Mock<ITokenHasher>();
-        var clock = CreateClock(now);
-
-        User? capturedUser = null;
-        Session? capturedSession = null;
-
-        oauthRepo.Setup(x => x.GetByStateAsync(new OAuthStateValue("state-value"), CancellationToken.None)).ReturnsAsync(oauthState);
-        tokenGenerator.Setup(x => x.GenerateToken(32)).Returns("plain-auth-code");
-        tokenHasher.Setup(x => x.HashToken("plain-auth-code")).Returns("hashed-auth-code");
-        userRepo.Setup(x => x.GetByExternalIdentityAsync(new ProviderId("google"), new ProviderUserId("subject-1"), CancellationToken.None))
-            .ReturnsAsync((User?)null);
-        userRepo.Setup(x => x.GetByEmailAsync(new EmailAddress("user@example.com"), CancellationToken.None))
-            .ReturnsAsync((User?)null);
-        userRepo.Setup(x => x.Add(It.IsAny<User>())).Callback<User>(user => capturedUser = user);
-        sessionRepo.Setup(x => x.Add(It.IsAny<Session>())).Callback<Session>(session => capturedSession = session);
-
-        var handler = new HandleOAuthCallbackHandler(
-            oauthRepo.Object,
-            userRepo.Object,
-            sessionRepo.Object,
-            unitOfWork.Object,
-            new[]
-            {
-                new TestProvider(
-                    "google",
-                    "Google",
-                    true,
-                    new ExternalIdentityInfo("subject-1", "user@example.com", true, "Test User", "expected-nonce"))
-            },
-            tokenGenerator.Object,
-            tokenHasher.Object,
-            clock.Object,
-            CreateIdentityOptions(),
-            CreateLogger());
-
-        var result = await handler.Handle(
-            new HandleOAuthCallbackCommand("google", "provider-code", "state-value", "unit-test", "127.0.0.1"),
-            CancellationToken.None);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(capturedUser, Is.Not.Null);
-            Assert.That(capturedSession, Is.Not.Null);
-            Assert.That(result.RedirectUrl, Does.StartWith("https://app.test/callback?"));
-            Assert.That(result.RedirectUrl, Does.Contain("code=plain-auth-code"));
-            Assert.That(result.RedirectUrl, Does.Not.Contain("returnUrl="));
-        });
-        oauthRepo.Verify(x => x.Remove(oauthState), Times.Once);
-        unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
-    }
-
-    private static Mock<IClock> CreateClock(DateTimeOffset? now = null)
-    {
-        var clock = new Mock<IClock>();
-        clock.SetupGet(x => x.UtcNow).Returns(now ?? new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        return clock;
-    }
-
-    private static IOptions<IdentityOptions> CreateIdentityOptions(string? cookieDomain = null, params IEnumerable<string> allowedRedirectUris)
-    {
-        var configuredRedirectUris = allowedRedirectUris.ToArray();
-
-        return Microsoft.Extensions.Options.Options.Create(new IdentityOptions
+        _requests = new Mock<IAuthorizationRequestRepository>();
+        _sessions = new Mock<ISessionRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
+        _tokenGenerator = new Mock<ITokenGenerator>();
+        _tokenHasher = new Mock<ITokenHasher>();
+        _tokenHasher.Setup(x => x.HashToken(It.IsAny<string>())).Returns<string>(value => $"hash:{value}");
+        _options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions
         {
             Issuer = "issuer",
             Audience = "audience",
             PublicBaseUrl = "https://identity.test",
-            JwtPrivateKeyPem = "pem",
             AccessTokenTtlMinutes = 15,
             RefreshTokenTtlDays = 14,
-            AuthCodeTtlMinutes = 5,
+            AuthCodeTtlMinutes = 2,
             OAuthStateTtlMinutes = 10,
-            RefreshTokenCookieDomain = cookieDomain,
-            AllowedRedirectUris = configuredRedirectUris.Length > 0 ? [.. configuredRedirectUris] : ["https://app.test/callback"]
+            AuthorizationRequestTtlMinutes = 10,
+            SsoSessionTtlHours = 12,
+            Clients =
+            [
+                new OAuthClientOptions
+                {
+                    ClientId = ClientIdValue,
+                    ClientSecret = ClientSecret,
+                    DisplayName = "Vaultly",
+                    RedirectUris = [Callback],
+                    PostLogoutRedirectUris = ["https://app.test/"],
+                },
+            ],
+        });
+        _clients = new ClientRegistry(_options);
+    }
+
+    [Test]
+    public void StartAuthorization_WhenClientUnknown_ThrowsWithoutRedirect()
+    {
+        var ex = Assert.ThrowsAsync<OAuthProtocolException>(() => CreateStartAuthorizationHandler().Handle(
+            Authorize(clientId: "unknown"),
+            CancellationToken.None));
+
+        Assert.That(ex!.Error, Is.EqualTo("invalid_request"));
+    }
+
+    [Test]
+    public void StartAuthorization_WhenRedirectUriNotRegistered_ThrowsWithoutRedirect()
+    {
+        Assert.ThrowsAsync<OAuthProtocolException>(() => CreateStartAuthorizationHandler().Handle(
+            Authorize(redirectUri: "https://evil.test/callback"),
+            CancellationToken.None));
+    }
+
+    [Test]
+    public async Task StartAuthorization_WhenPkceMissing_RedirectsErrorWithStateToClient()
+    {
+        var result = await CreateStartAuthorizationHandler().Handle(Authorize(codeChallenge: null), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.RedirectUrl, Does.StartWith(Callback + "?"));
+            Assert.That(result.RedirectUrl, Does.Contain("error=invalid_request"));
+            Assert.That(result.RedirectUrl, Does.Contain("state=client-state"));
+        });
+        _requests.Verify(x => x.Add(It.IsAny<AuthorizationRequest>()), Times.Never);
+    }
+
+    [Test]
+    public async Task StartAuthorization_WithoutSso_StoresRequestAndRedirectsToLoginUi()
+    {
+        AuthorizationRequest? stored = null;
+        _requests.Setup(x => x.Add(It.IsAny<AuthorizationRequest>())).Callback<AuthorizationRequest>(x => stored = x);
+
+        var result = await CreateStartAuthorizationHandler().Handle(Authorize(), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stored, Is.Not.Null);
+            Assert.That(stored!.CodeChallenge.Value, Is.EqualTo(Challenge));
+            Assert.That(stored.ExpiresAt, Is.EqualTo(Now.AddMinutes(10)));
+            Assert.That(result.RedirectUrl, Is.EqualTo($"https://identity.test/login?request={stored.Id.Value}"));
+        });
+        _unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
+    }
+
+    [Test]
+    public async Task StartAuthorization_WithActiveSso_IssuesCodeWithoutLoginPage()
+    {
+        var session = CreateSession();
+        _sessions.Setup(x => x.GetBySsoTokenHashAsync(new TokenHash("hash:sso-token"), CancellationToken.None)).ReturnsAsync(session);
+        _tokenGenerator.Setup(x => x.GenerateToken(32)).Returns("silent-code");
+
+        var result = await CreateStartAuthorizationHandler().Handle(Authorize(ssoToken: "sso-token"), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.RedirectUrl, Does.StartWith(Callback + "?"));
+            Assert.That(result.RedirectUrl, Does.Contain("code=silent-code"));
+            Assert.That(result.RedirectUrl, Does.Contain("state=client-state"));
+            Assert.That(session.AuthCodes.Single().ClientId.Value, Is.EqualTo(ClientIdValue));
+        });
+        _requests.Verify(x => x.Add(It.IsAny<AuthorizationRequest>()), Times.Never);
+    }
+
+    [Test]
+    public async Task StartExternalLogin_WhenRequestPending_LinksOAuthStateToRequest()
+    {
+        var request = CreateRequest();
+        var oauthStates = new Mock<IOAuthStateRepository>();
+        OAuthState? stored = null;
+        oauthStates.Setup(x => x.Add(It.IsAny<OAuthState>())).Callback<OAuthState>(x => stored = x);
+        _requests.Setup(x => x.GetByIdAsync(request.Id, CancellationToken.None)).ReturnsAsync(request);
+        _tokenGenerator.SetupSequence(x => x.GenerateToken(It.IsAny<int>()))
+            .Returns("provider-state")
+            .Returns("provider-verifier")
+            .Returns("provider-nonce");
+
+        var url = await CreateStartExternalLoginHandler(oauthStates).Handle(
+            new StartExternalLoginCommand("google", request.Id.Value),
+            CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stored!.AuthorizationRequestId, Is.EqualTo(request.Id));
+            Assert.That(url, Does.StartWith("https://provider.test/auth?"));
+            Assert.That(url, Does.Contain("state=provider-state"));
         });
     }
 
-    private static ILogger CreateLogger() => new LoggerConfiguration().CreateLogger();
+    [Test]
+    public void StartExternalLogin_WhenRequestExpired_Throws()
+    {
+        var request = AuthorizationRequest.Create(
+            new ClientId(ClientIdValue), new RedirectUri(Callback), new ClientState("s"), new CodeChallenge(Challenge), Now.AddMinutes(-20), Now.AddMinutes(-10));
+        _requests.Setup(x => x.GetByIdAsync(request.Id, CancellationToken.None)).ReturnsAsync(request);
+
+        Assert.ThrowsAsync<AuthorizationRequestExpiredException>(() => CreateStartExternalLoginHandler(new Mock<IOAuthStateRepository>())
+            .Handle(new StartExternalLoginCommand("google", request.Id.Value), CancellationToken.None));
+    }
+
+    [Test]
+    public async Task HandleOAuthCallback_WhenUserIsNew_StartsSsoSessionCompletesRequestAndRedirectsWithCode()
+    {
+        var request = CreateRequest();
+        var oauthState = OAuthState.Create(
+            new OAuthStateValue("provider-state"), new CodeVerifier("provider-verifier"), new Nonce("expected-nonce"), Now.AddMinutes(5), request.Id);
+        var oauthStates = new Mock<IOAuthStateRepository>();
+        var users = new Mock<IUserRepository>();
+        Session? createdSession = null;
+
+        oauthStates.Setup(x => x.GetByStateAsync(new OAuthStateValue("provider-state"), CancellationToken.None)).ReturnsAsync(oauthState);
+        _requests.Setup(x => x.GetByIdAsync(request.Id, CancellationToken.None)).ReturnsAsync(request);
+        users.Setup(x => x.GetByExternalIdentityAsync(It.IsAny<ProviderId>(), It.IsAny<ProviderUserId>(), CancellationToken.None)).ReturnsAsync((User?)null);
+        users.Setup(x => x.GetByEmailAsync(It.IsAny<EmailAddress>(), CancellationToken.None)).ReturnsAsync((User?)null);
+        _sessions.Setup(x => x.Add(It.IsAny<Session>())).Callback<Session>(x => createdSession = x);
+        _tokenGenerator.SetupSequence(x => x.GenerateToken(32)).Returns("sso-token").Returns("auth-code");
+
+        var handler = new HandleOAuthCallbackHandler(
+            oauthStates.Object,
+            _requests.Object,
+            users.Object,
+            _sessions.Object,
+            _unitOfWork.Object,
+            [new TestProvider("google", "Google", true, new ExternalIdentityInfo("subject-1", "user@example.com", true, "Test User", "expected-nonce"))],
+            _tokenGenerator.Object,
+            _tokenHasher.Object,
+            Clock(),
+            _options,
+            Logger());
+
+        var result = await handler.Handle(
+            new HandleOAuthCallbackCommand("google", "provider-code", "provider-state", "unit-test", "127.0.0.1"),
+            CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.RedirectUrl, Is.EqualTo($"{Callback}?code=auth-code&state=client-state"));
+            Assert.That(result.SsoToken, Is.EqualTo("sso-token"));
+            Assert.That(result.SsoExpiresAt, Is.EqualTo(Now.AddHours(12)));
+            Assert.That(createdSession!.SsoTokenHash.Value, Is.EqualTo("hash:sso-token"));
+            Assert.That(request.IsCompleted, Is.True);
+        });
+        oauthStates.Verify(x => x.Remove(oauthState), Times.Once);
+    }
+
+    [Test]
+    public async Task ExchangeAuthCode_WhenClientAndPkceValid_ReturnsTokens()
+    {
+        var (session, user, users, jwt) = ArrangeExchange();
+        _tokenGenerator.Setup(x => x.GenerateToken(64)).Returns("refresh-token");
+
+        var result = await CreateExchangeHandler(users, jwt).Handle(
+            new ExchangeAuthCodeCommand("auth-code", ClientIdValue, ClientSecret, Callback, Verifier),
+            CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.AccessToken, Is.EqualTo("access-token"));
+            Assert.That(result.RefreshToken, Is.EqualTo("refresh-token"));
+            Assert.That(result.RefreshExpiresInSeconds, Is.EqualTo(14 * 24 * 3600));
+            Assert.That(result.SessionId, Is.EqualTo(session.Id.Value));
+            Assert.That(result.User.Email, Is.EqualTo(user.Email.Value));
+        });
+    }
+
+    [Test]
+    public void ExchangeAuthCode_WhenClientSecretWrong_ReturnsInvalidClient()
+    {
+        var (_, _, users, jwt) = ArrangeExchange();
+
+        var ex = Assert.ThrowsAsync<OAuthProtocolException>(() => CreateExchangeHandler(users, jwt).Handle(
+            new ExchangeAuthCodeCommand("auth-code", ClientIdValue, "wrong", Callback, Verifier),
+            CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ex!.Error, Is.EqualTo("invalid_client"));
+            Assert.That(ex.StatusCode, Is.EqualTo(401));
+        });
+    }
+
+    [Test]
+    public void ExchangeAuthCode_WhenVerifierWrong_ReturnsInvalidGrantAndPersistsBurnedCode()
+    {
+        var (session, _, users, jwt) = ArrangeExchange();
+
+        var ex = Assert.ThrowsAsync<OAuthProtocolException>(() => CreateExchangeHandler(users, jwt).Handle(
+            new ExchangeAuthCodeCommand("auth-code", ClientIdValue, ClientSecret, Callback, "wrong-verifier-wrong-verifier-wrong-verifier-1"),
+            CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ex!.Error, Is.EqualTo("invalid_grant"));
+            Assert.That(session.AuthCodes.Single().IsUsed, Is.True);
+        });
+        _unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
+    }
+
+    [Test]
+    public void RefreshSession_WhenClientUnauthenticated_ReturnsInvalidClient()
+    {
+        var handler = new RefreshSessionHandler(
+            _clients, _sessions.Object, new Mock<IUserRepository>().Object, _unitOfWork.Object,
+            new Mock<IJwtTokenService>().Object, _tokenGenerator.Object, _tokenHasher.Object, Clock(), _options, Logger());
+
+        var ex = Assert.ThrowsAsync<OAuthProtocolException>(() => handler.Handle(
+            new RefreshSessionCommand("refresh-token", ClientIdValue, null),
+            CancellationToken.None));
+
+        Assert.That(ex!.Error, Is.EqualTo("invalid_client"));
+        _sessions.Verify(x => x.GetByRefreshTokenHashAsync(It.IsAny<TokenHash>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [TestCase("https://app.test/", "https://app.test/")]
+    [TestCase("https://evil.test/", "https://identity.test/logged-out")]
+    [TestCase(null, "https://identity.test/logged-out")]
+    public async Task EndSession_RevokesSsoSessionAndOnlyHonoursRegisteredPostLogoutUris(string? postLogoutUri, string expected)
+    {
+        var session = CreateSession();
+        _sessions.Setup(x => x.GetBySsoTokenHashAsync(new TokenHash("hash:sso-token"), CancellationToken.None)).ReturnsAsync(session);
+        var handler = new EndSessionHandler(_clients, _sessions.Object, _unitOfWork.Object, _tokenHasher.Object, Clock(), _options, Logger());
+
+        var result = await handler.Handle(new EndSessionCommand("sso-token", ClientIdValue, postLogoutUri), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.RedirectUrl, Is.EqualTo(expected));
+            Assert.That(session.IsRevoked, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task GetAuthorizationRequest_ListsEnabledProvidersOnlyWhilePending()
+    {
+        var pendingId = Guid.NewGuid();
+        var expiredId = Guid.NewGuid();
+        var readService = new Mock<IAuthorizationRequestReadService>();
+        readService.Setup(x => x.GetAsync(pendingId, CancellationToken.None))
+            .ReturnsAsync(new AuthorizationRequestReadModel(pendingId, ClientIdValue, Now.AddMinutes(5), null));
+        readService.Setup(x => x.GetAsync(expiredId, CancellationToken.None))
+            .ReturnsAsync(new AuthorizationRequestReadModel(expiredId, ClientIdValue, Now.AddMinutes(-1), null));
+        var handler = new GetAuthorizationRequestHandler(
+            readService.Object,
+            _clients,
+            [new TestProvider("google", "Google", true), new TestProvider("github", "GitHub", false)],
+            Clock());
+
+        var pending = await handler.Handle(new GetAuthorizationRequestQuery(pendingId), CancellationToken.None);
+        var expired = await handler.Handle(new GetAuthorizationRequestQuery(expiredId), CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(pending!.Status, Is.EqualTo("pending"));
+            Assert.That(pending.ClientName, Is.EqualTo("Vaultly"));
+            Assert.That(pending.Providers.Single().StartUrl, Is.EqualTo($"/google/authorize?request={pendingId}"));
+            Assert.That(expired!.Status, Is.EqualTo("expired"));
+            Assert.That(expired.Providers, Is.Empty);
+        });
+    }
+
+    private StartAuthorizationHandler CreateStartAuthorizationHandler()
+        => new(_clients, _requests.Object, _sessions.Object, _unitOfWork.Object, _tokenGenerator.Object, _tokenHasher.Object, Clock(), _options, Logger());
+
+    private StartExternalLoginHandler CreateStartExternalLoginHandler(Mock<IOAuthStateRepository> oauthStates)
+        => new(oauthStates.Object, _requests.Object, _unitOfWork.Object, [new TestProvider("google", "Google", true)], _tokenGenerator.Object, Clock(), _options, Logger());
+
+    private ExchangeAuthCodeHandler CreateExchangeHandler(Mock<IUserRepository> users, Mock<IJwtTokenService> jwt)
+        => new(_clients, _sessions.Object, users.Object, _unitOfWork.Object, jwt.Object, _tokenGenerator.Object, _tokenHasher.Object, Clock(), _options, Logger());
+
+    private (Session Session, User User, Mock<IUserRepository> Users, Mock<IJwtTokenService> Jwt) ArrangeExchange()
+    {
+        var session = CreateSession();
+        session.IssueAuthCode(new CodeHash("hash:auth-code"), Now.AddMinutes(2), new ClientId(ClientIdValue), new RedirectUri(Callback), new CodeChallenge(Challenge));
+        var user = User.Create(new EmailAddress("user@example.com"), new PersonName("Test User"), true, Now);
+        var users = new Mock<IUserRepository>();
+        var jwt = new Mock<IJwtTokenService>();
+        _sessions.Setup(x => x.GetByAuthCodeHashAsync(new CodeHash("hash:auth-code"), CancellationToken.None)).ReturnsAsync(session);
+        users.Setup(x => x.GetByIdAsync(session.UserId, CancellationToken.None)).ReturnsAsync(user);
+        jwt.Setup(x => x.CreateAccessToken(user, session, Now)).Returns("access-token");
+        return (session, user, users, jwt);
+    }
+
+    private static StartAuthorizationCommand Authorize(
+        string clientId = ClientIdValue,
+        string redirectUri = Callback,
+        string? codeChallenge = Challenge,
+        string? ssoToken = null)
+        => new(clientId, redirectUri, "code", "client-state", codeChallenge, codeChallenge is null ? null : "S256", ssoToken);
+
+    private static AuthorizationRequest CreateRequest()
+        => AuthorizationRequest.Create(
+            new ClientId(ClientIdValue), new RedirectUri(Callback), new ClientState("client-state"), new CodeChallenge(Challenge), Now, Now.AddMinutes(10));
+
+    private static Session CreateSession()
+        => Session.Create(UserId.New(), new AuthMethod("google"), null, null, new TokenHash("hash:sso-token"), Now.AddHours(-1), Now.AddHours(11));
+
+    private static IClock Clock()
+    {
+        var clock = new Mock<IClock>();
+        clock.SetupGet(x => x.UtcNow).Returns(Now);
+        return clock.Object;
+    }
+
+    private static ILogger Logger() => new LoggerConfiguration().CreateLogger();
 
     private sealed class TestProvider(
         string id,
@@ -334,13 +405,8 @@ public sealed class IdentityUseCaseHandlerTests
         public IReadOnlyList<string> Scopes { get; } = ["openid", "email", "profile"];
 
         public Task<ExternalIdentityInfo> ExchangeCodeAsync(string code, string codeVerifier, CancellationToken cancellationToken)
-        {
-            if (exchangeResult is null)
-            {
-                throw new NotSupportedException("ExchangeCodeAsync is not used in this test.");
-            }
-
-            return Task.FromResult(exchangeResult);
-        }
+            => exchangeResult is null
+                ? throw new NotSupportedException("ExchangeCodeAsync is not used in this test.")
+                : Task.FromResult(exchangeResult);
     }
 }
