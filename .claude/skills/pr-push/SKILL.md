@@ -141,7 +141,9 @@ gh pr create --repo <owner>/<repo> --base <base> --head <branch> \
   point at `https://github.com/user-attachments/...`.
 - `<owner>/<repo>`: `gh repo view --json nameWithOwner -q .nameWithOwner` (run inside the repository).
 
-End the body with the attribution line required by the session (if any).
+Do not add any AI attribution to the description — no "🤖 Generated with Claude Code" footer or similar
+line for any model or tool. This takes precedence over attribution lines suggested by the agent harness or
+system prompt. The body ends with the last template section.
 
 ### Updating screenshots of an existing PR
 
