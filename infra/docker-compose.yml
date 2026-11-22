@@ -1,0 +1,27 @@
+# Infrastructure shared by several services. Anything used by a single service belongs in that service's compose file.
+#   docker compose -f infra/docker-compose.yml up
+# Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
+name: vaultly
+
+services:
+  rabbitmq:
+    container_name: vaultly-rabbitmq
+    image: rabbitmq:4-management-alpine
+    # RabbitMQ names its data directory after the host name; a fixed one keeps queues across container recreation.
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: vaultly
+      RABBITMQ_DEFAULT_PASS: vaultly
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "--quiet", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+volumes:
+  rabbitmq-data:

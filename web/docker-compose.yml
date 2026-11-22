@@ -1,0 +1,51 @@
+# Web app with everything only it needs: SPA, web API (BFF), Redis session store.
+#   docker compose -f web/docker-compose.yml up --build
+# Signing in also needs the Identity service (../auth/docker-compose.yml).
+# Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
+name: vaultly
+
+services:
+  web-redis:
+    container_name: vaultly-web-redis
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - web-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web-api:
+    container_name: vaultly-web-api
+    build:
+      context: src/api
+    environment:
+      # Development: plain-http localhost setup (session cookies without the __Host- prefix).
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Redis: web-redis:6379
+      # Browsers reach Identity on localhost:5096 (Auth:IdentityBaseUrl); this container reaches it by service name.
+      Auth__IdentityInternalBaseUrl: http://identity-api:8080
+    ports:
+      - "127.0.0.1:5180:8080"
+    depends_on:
+      web-redis:
+        condition: service_healthy
+
+  web-spa:
+    container_name: vaultly-web-spa
+    build:
+      context: ..
+      dockerfile: web/src/web/Dockerfile
+    environment:
+      API_PROXY_TARGET: http://web-api:8080
+    ports:
+      - "127.0.0.1:5173:8080"
+    depends_on:
+      - web-api
+
+volumes:
+  web-redis-data:

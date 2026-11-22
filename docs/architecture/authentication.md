@@ -45,7 +45,7 @@ flowchart LR
 | Web SPA | `web/src/web` | The app. Calls only same-origin `/api/*`. No sign-in screen, no tokens. |
 | Web API (BFF) | `web/src/api` | Confidential OIDC client `vaultly-web`. Owns the browser session, stores tokens in Redis, forwards API calls to the backend with a bearer token. |
 | Auth service | `auth/src` | OAuth 2.0 / OIDC authorization server: `/authorize`, `/token`, `/revoke`, `/logout`, SSO session, JWT signing. |
-| Auth UI | `auth/web` | The auth service's own login pages (`/login`, `/error`, `/logged-out`), served by the auth service. |
+| Auth UI | `auth/web` | The auth service's own login pages (`/login`, `/error`, `/logged-out`), hosted by their own web server, which proxies the auth API paths. |
 | Google | – | Identity provider used by the auth service. |
 | Backend gateway | `backend/` | Business APIs; trusts JWTs issued by the auth service. |
 
@@ -264,20 +264,25 @@ stateDiagram-v2
 | Setting | Service | Default | Notes |
 |---|---|---|---|
 | `Identity:Clients[]` | auth | `vaultly-web` | Client id, secret, display name, redirect URIs, post-logout URIs (exact or `…/*`) |
-| `Identity:LoginUiBaseUrl` | auth | empty (same origin) | Dev: `http://localhost:5174` (Vite) |
+| `Identity:LoginUiBaseUrl` | auth | empty (same origin as `Identity:PublicBaseUrl`) | Browser-facing URL of the separately hosted login UI. Dev and Docker: `http://localhost:5174` |
 | `Identity:AccessTokenTtlMinutes` | auth | 15 | |
 | `Identity:RefreshTokenTtlDays` | auth | 30 | |
 | `Identity:AuthCodeTtlMinutes` | auth | 2 | |
 | `Identity:AuthorizationRequestTtlMinutes` | auth | 10 | |
 | `Identity:SsoSessionTtlHours` | auth | 12 | |
-| `LoginUi:ServeSpa`, `LoginUi:SpaRootPath` | auth | `true`, `wwwroot` | Off in development |
 | `Auth:IdentityBaseUrl`, `Auth:ClientId`, `Auth:ClientSecret` | web API | – | Secret only via environment (`Auth__ClientSecret`) |
+| `Auth:IdentityInternalBaseUrl` | web API | unset (= `Auth:IdentityBaseUrl`) | Server-to-server address of the auth service (`/token`, `/revoke`, `/sessions`) when it differs from the browser-facing one, e.g. `http://identity-api:8080` in Docker |
 | `Auth:PublicOrigin` | web API | – | Callback and post-logout URLs are built from it |
 | `Auth:LoginTimeoutMinutes`, `Auth:AccessTokenRefreshSkewSeconds` | web API | 10, 60 | |
 | `ConnectionStrings:Redis` | web API | `localhost:6379` | Required outside Development |
+| `Database:MigrateOnStartup` | auth | `false` (Development: `true`) | Applies EF Core migrations to the Identity DB on startup; single-instance setups only |
 
 Local development ports: web SPA 5173 (proxies `/api` to 5180), web API 5180, auth service 5096, auth UI 5174
-(proxies auth API paths to 5096).
+(proxies auth API paths to 5096). The Docker Compose stack (root `README.md`) uses the same ports and topology:
+nginx containers take the place of the two Vite dev servers.
+
+Neither API serves a frontend. Each SPA is hosted by its own web server, which proxies the API paths so the SPA and
+its API share one origin for cookies.
 
 ## Code map
 

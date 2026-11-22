@@ -35,7 +35,6 @@ internal sealed class WebApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment(PlatformServiceCollectionExtensions.TestingEnvironment);
         builder.UseSetting("ConnectionStrings:Redis", string.Empty);
-        builder.UseSetting("Web:ServeSpa", "false");
         builder.UseSetting("Web:BackendApiBaseUrl", "https://backend.test");
         builder.UseSetting("Auth:ClientSecret", "test-secret");
 

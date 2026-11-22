@@ -13,11 +13,23 @@ Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
   - JWTs validated by consumers via `/.well-known/openid-configuration` and `/.well-known/jwks.json`,
   - integration events on the message bus (contracts are duplicated as DTOs by consumers, not shared assemblies).
 
+- The API never serves the login UI (no static files, no `index.html` fallback). `./web` is hosted by its own web
+  server (nginx image), which proxies the API paths so UI and API share one origin; the API only knows the UI's
+  URL for redirects (`Identity:LoginUiBaseUrl`, empty = same origin as `Identity:PublicBaseUrl`).
+
 ## Commands
 - from `auth/src`: `dotnet build Vaultly.Auth.slnx` — build
 - from `auth/src`: `dotnet test Vaultly.Auth.slnx` — run tests
 - Local config: `src/Vaultly.Identity.Api/.env.example` → `.env` (overrides `appsettings*.json`, keys like `Identity__Issuer`).
 - Login UI: `pnpm --filter @vaultly/auth-web dev` (http://localhost:5174, proxies API paths to http://localhost:5096).
+- Docker: `docker compose -f auth/docker-compose.yml up --build` (from the repo root) — API (5096), login UI (5174)
+  and Postgres (5432); only the database: add `-d identity-db`. Images: `src/Dockerfile` (API), `web/Dockerfile`
+  (nginx + login UI). Google credentials: `.env.example` → `.env` next to the compose file.
+- Database schema = EF Core migrations in `src/Vaultly.Identity.Infrastructure/Persistence/Migrations`. After a model
+  change, from `auth/src`:
+  `dotnet ef migrations add <Name> --project Vaultly.Identity.Infrastructure --startup-project Vaultly.Identity.Infrastructure --output-dir Persistence/Migrations`
+  (a test fails while the model and migrations differ). `Database:MigrateOnStartup` applies them on startup — on in
+  Development, off otherwise.
 
 ## Endpoints
 | Endpoint | Purpose |
@@ -39,7 +51,7 @@ Clients are registered in `Identity:Clients` (id, secret, display name, redirect
 ```
 auth/
 ├── docs/                                   # Client-facing documentation
-├── web/                                    # Login UI (React SPA, @vaultly/auth-web) — served by the API in production
+├── web/                                    # Login UI (React SPA, @vaultly/auth-web) — hosted by its own web server, never by the API
 └── src/
     ├── Vaultly.Auth.slnx
     ├── Vaultly.Identity.SharedKernel/      # AggregateRoot, DomainEvent, DomainException, IUnitOfWork

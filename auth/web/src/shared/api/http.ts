@@ -1,6 +1,6 @@
 /**
- * HTTP client for the Identity API (auth/src). The API serves this SPA, so every call is same-origin and carries the
- * browser's first-party cookies; the SPA itself never handles credentials.
+ * HTTP client for the Identity API (auth/src). The SPA's web server proxies the API paths, so every call is
+ * same-origin and carries the browser's first-party cookies; the SPA itself never handles credentials.
  */
 
 export class HttpError extends Error {

@@ -13,6 +13,13 @@ public sealed class AuthOptions
     [Required, Url]
     public string IdentityBaseUrl { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Address for server-to-server calls to the Identity service when it differs from the browser-facing
+    /// <see cref="IdentityBaseUrl"/> (e.g. a container network name). Unset = <see cref="IdentityBaseUrl"/>.
+    /// </summary>
+    [Url]
+    public string? IdentityInternalBaseUrl { get; init; }
+
     [Required]
     public string ClientId { get; init; } = string.Empty;
 

@@ -10,6 +10,7 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
+      - '.dockerignore'
       - '.github/workflows/auth-web.yml'
   push:
     branches: [main]
@@ -19,6 +20,7 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
+      - '.dockerignore'
       - '.github/workflows/auth-web.yml'
   workflow_dispatch:
 
@@ -45,3 +47,10 @@ jobs:
       - run: pnpm --filter @vaultly/auth-web lint
       - run: pnpm --filter @vaultly/auth-web test
       - run: pnpm --filter @vaultly/auth-web build
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --file auth/web/Dockerfile .

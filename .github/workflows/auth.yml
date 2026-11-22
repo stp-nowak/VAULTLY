@@ -45,3 +45,10 @@ jobs:
       - run: dotnet restore Vaultly.Auth.slnx
       - run: dotnet build Vaultly.Auth.slnx --no-restore --configuration Release
       - run: dotnet test Vaultly.Auth.slnx --no-build --configuration Release
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build auth/src
