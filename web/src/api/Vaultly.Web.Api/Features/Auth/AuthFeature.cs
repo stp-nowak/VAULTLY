@@ -24,7 +24,8 @@ public static class AuthFeature
         services.AddHttpClient<IIdentityServiceClient, IdentityServiceClient>((serviceProvider, client) =>
             {
                 var options = serviceProvider.GetRequiredService<IOptions<AuthOptions>>().Value;
-                client.BaseAddress = new Uri(options.IdentityBaseUrl.TrimEnd('/') + "/");
+                var serverToServerUrl = options.IdentityInternalBaseUrl ?? options.IdentityBaseUrl;
+                client.BaseAddress = new Uri(serverToServerUrl.TrimEnd('/') + "/");
                 client.Timeout = TimeSpan.FromSeconds(15);
             })
             // Cookies are passed explicitly per call (refresh token); a shared cookie jar would leak between users.

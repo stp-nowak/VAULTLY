@@ -25,8 +25,17 @@ Full flow with diagrams: `../docs/architecture/authentication.md`.
 - Logout: `POST /api/auth/logout` revokes the tokens and returns `logoutUrl`; the SPA navigates there so the Identity
   service ends its SSO session, then the browser returns to `/`.
 
+## Docker
+- `docker compose -f web/docker-compose.yml up --build` (from the repo root) starts the SPA (http://localhost:5173),
+  the web API (5180) and its Redis (6379); signing in also needs `auth/docker-compose.yml`. Root `README.md` has the
+  whole picture.
+- Two images: `src/api/Dockerfile` (web API) and `src/web/Dockerfile` (nginx serving the SPA and proxying `/api` to
+  `API_PROXY_TARGET`, see `src/web/nginx.conf.template`).
+- In a container the web API calls Identity through `Auth:IdentityInternalBaseUrl`, while browser redirects keep
+  using `Auth:IdentityBaseUrl`.
+
 ## Local development
-1. Redis: `docker run -p 6379:6379 redis:7` (or leave `ConnectionStrings:Redis` empty in Development for an in-memory fallback).
+1. Redis: `docker compose -f web/docker-compose.yml up -d web-redis` (or leave `ConnectionStrings:Redis` empty in Development for an in-memory fallback).
 2. Identity service: `dotnet run --project auth/src/Vaultly.Identity.Api` (http://localhost:5096) and its login UI
    `pnpm --filter @vaultly/auth-web dev` (http://localhost:5174).
 3. Web API: `dotnet run --project web/src/api/Vaultly.Web.Api` (http://localhost:5180).

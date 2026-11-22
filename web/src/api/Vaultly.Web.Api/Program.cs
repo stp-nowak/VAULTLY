@@ -24,7 +24,6 @@ builder.Services.AddWebFeature(builder.Configuration);
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
-app.UseWebFeatureStaticFiles();
 app.UseRouting();
 app.UseMiddleware<CsrfHeaderMiddleware>();
 

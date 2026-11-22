@@ -2,8 +2,9 @@
 
 > Part of the auth service (`../AGENTS.md`). React SPA `@vaultly/auth-web`: the **login UI of the Vaultly Identity
 > service**, Keycloak-style. Client apps (e.g. the web API) redirect the browser to the Identity service
-> (`/authorize`), which sends it to this UI to choose a sign-in provider. In production the Identity API
-> (`auth/src`) serves the built `dist/` on its own origin; this SPA never sees tokens and holds no credentials.
+> (`/authorize`), which sends it to this UI to choose a sign-in provider. The UI is hosted by its own web server
+> (nginx image, Vite in development) that proxies the Identity API paths, so every call is same-origin; the Identity
+> API (`auth/src`) never serves it. This SPA never sees tokens and holds no credentials.
 
 ## Routes (`src/app/routes`, TanStack file routes)
 
@@ -39,7 +40,9 @@ Client, parser, types and `authorizationRequestQueryOptions` live in `src/domain
   `/token`, `/revoke`, `/.well-known` to `AUTH_API_PROXY_TARGET` (default `http://localhost:5096`, see `.env.example`)
 - `pnpm --filter @vaultly/auth-web lint | typecheck | test | build`
 - `pnpm --filter @vaultly/auth-web deps:circular` — JSON report of import cycles
-- CI: `.github/workflows/auth-web.yml` (lint, test, build)
+- CI: `.github/workflows/auth-web.yml` (lint, test, build, Docker image build)
+- Docker: `Dockerfile` builds an nginx image that serves `dist/` and proxies the Identity API paths to
+  `AUTH_API_PROXY_TARGET`. The path list in `nginx.conf.template` must match `authApiPaths` in `vite.config.ts`.
 
 ## Rules (mirrored from `web/src/web/AGENTS.md`)
 

@@ -9,8 +9,9 @@ public sealed class IdentityOptions
     public string PublicBaseUrl { get; set; } = string.Empty;
 
     /// <summary>
-    /// Where the login UI (auth/web) is reachable in the browser. Empty = served by this service on
-    /// <see cref="PublicBaseUrl"/>; in development the Vite dev server (e.g. http://localhost:5174).
+    /// Where the separately hosted login UI (auth/web) is reachable in the browser. Empty = same origin as
+    /// <see cref="PublicBaseUrl"/> (a reverse proxy routes UI and API paths); in development the Vite dev server
+    /// (e.g. http://localhost:5174).
     /// </summary>
     public string LoginUiBaseUrl { get; set; } = string.Empty;
 

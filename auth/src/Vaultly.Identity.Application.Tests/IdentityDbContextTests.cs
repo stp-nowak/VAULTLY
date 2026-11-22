@@ -58,6 +58,17 @@ public sealed class IdentityDbContextTests
         });
     }
 
+    [Test]
+    public void Migrations_WhenComparedWithTheModel_LeaveNoPendingChanges()
+    {
+        using var dbContext = new IdentityDbContextDesignTimeFactory().CreateDbContext([]);
+
+        Assert.That(
+            dbContext.Database.HasPendingModelChanges(),
+            Is.False,
+            "The model changed without a migration: run `dotnet ef migrations add <Name>` (see auth/AGENTS.md).");
+    }
+
     /// <summary>
     /// Creates an isolated in-memory database context for EF Core persistence tests.
     /// </summary>

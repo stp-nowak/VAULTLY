@@ -1,0 +1,18 @@
+# Only the frontend images (auth/web, web/src/web) are built from the repository root, so only the pnpm workspace
+# is sent to Docker.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!packages/ui
+!auth/web
+!web/src/web
+
+**/node_modules
+**/dist
+**/coverage
+**/.tanstack
+**/.vite
+**/*.tsbuildinfo
+**/.claude
+**/.env*

@@ -40,3 +40,10 @@ jobs:
       - run: dotnet restore Vaultly.Web.Api.slnx
       - run: dotnet build Vaultly.Web.Api.slnx --no-restore --configuration Release
       - run: dotnet test Vaultly.Web.Api.slnx --no-build --configuration Release
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build web/src/api

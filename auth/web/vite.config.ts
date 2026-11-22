@@ -4,9 +4,8 @@ import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
-// In production the Identity API (auth/src) serves this SPA's `dist/` itself, so every call is same-origin.
-// In development Vite proxies the Identity API paths so cookies set by the API are first-party for
-// http://localhost:5174, exactly like in production.
+// The SPA's web server proxies the Identity API paths so every call is same-origin and cookies set by the API are
+// first-party: nginx in the Docker image (nginx.conf.template), Vite here in development.
 const authApiProxyTarget = process.env.AUTH_API_PROXY_TARGET ?? 'http://localhost:5096';
 
 const authApiPaths = ['/api', '/authorize', '/google', '/logout', '/token', '/revoke', '/.well-known'];

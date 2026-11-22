@@ -24,7 +24,7 @@ Vaultly.Web.Api/
     │   ├── IdentityService/     #   HTTP client of ./auth (/token, /revoke with client secret, /sessions)
     │   └── Sessions/            #   WebSession, IWebSessionStore (Redis), cookies, UserSessionService, refresh lock
     └── Web/                     # Everything else the SPA needs
-        ├── WebFeature.cs        #   DI + static SPA hosting + endpoint registration
+        ├── WebFeature.cs        #   DI + endpoint registration
         ├── WebOptions.cs        #   section "Web"
         └── ApiProxy/            #   /api/{**path} → backend gateway via YARP, bearer from the session
 ```
@@ -34,6 +34,8 @@ Vaultly.Web.Api/
 - Features talk to each other only through small public interfaces. Today: `Web` → `Auth.Sessions.IAccessTokenProvider`.
   `Auth` must never reference `Web`.
 - Only `Common/` may be shared by several features, and it must not contain feature logic.
+- This API never serves the SPA (no static files, no `index.html` fallback): the SPA is hosted by its own web
+  server (`../web/Dockerfile`, nginx), which proxies `/api` here so both share one origin.
 - No DDD layering here — this is an application edge, not a bounded context. Domain rules live in `./backend`/`./auth`.
 - Tokens never leave the server: never return them in responses, never put them in cookies, never log them.
   Session ids are bearer credentials too — never log them (log `AuthSessionId`/`UserId` instead).

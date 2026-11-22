@@ -15,10 +15,12 @@ using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Queries.GetSessions;
 using Vaultly.Identity.Infrastructure;
 using Vaultly.Identity.Infrastructure.Options;
+using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Security;
 
-// Vaultly Identity: OAuth 2.0 / OIDC authorization server (authorization code + PKCE, SSO session) that also hosts
-// its own login UI (auth/web). Client applications only redirect to /authorize and call /token server-to-server.
+// Vaultly Identity: OAuth 2.0 / OIDC authorization server (authorization code + PKCE, SSO session). Client
+// applications only redirect to /authorize and call /token server-to-server. Its login UI (auth/web) is hosted
+// separately and reaches this API through its own web server's proxy.
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddOptionalDotEnvFile(Path.Combine(builder.Environment.ContentRootPath, ".env"));
 
@@ -35,7 +37,6 @@ builder.Services.AddOpenApi();
 
 builder.Services.Configure<IdentityOptions>(builder.Configuration.GetSection("Identity"));
 builder.Services.Configure<GoogleOAuthOptions>(builder.Configuration.GetSection("Google"));
-builder.Services.Configure<LoginUiOptions>(builder.Configuration.GetSection(LoginUiOptions.SectionName));
 
 var identityOptions = builder.Configuration.GetSection("Identity").Get<IdentityOptions>()
                       ?? throw new InvalidOperationException("Identity configuration is missing.");
@@ -76,6 +77,11 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    await app.Services.MigrateIdentityDatabaseAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -85,7 +91,6 @@ else
     app.UseHttpsRedirection();
 }
 
-app.UseLoginUiStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -152,8 +157,6 @@ app.MapGet("/.well-known/jwks.json", (IJwtKeyProvider keyProvider) =>
     var jwk = keyProvider.GetJwk();
     return Results.Ok(new { keys = new[] { jwk } });
 });
-
-app.MapLoginUi();
 
 app.Run();
 

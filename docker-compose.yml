@@ -1,0 +1,14 @@
+# The whole local stack: `docker compose up --build`, then open http://localhost:5173.
+#
+# Each part has its own compose file and can be started alone, e.g. `docker compose -f auth/docker-compose.yml up`.
+# All of them use the project name `vaultly`, so whichever combination is running shares one network and containers
+# find each other by service name. Host ports equal the documented development ports and bind to 127.0.0.1 only
+# (the credentials are development defaults), so services run from the IDE can use the databases, Redis and RabbitMQ
+# from here. App containers never go through those ports, so they do not see an app run from the IDE (README.md).
+name: vaultly
+
+include:
+  - infra/docker-compose.yml
+  - auth/docker-compose.yml
+  - backend/docker-compose.yml
+  - web/docker-compose.yml

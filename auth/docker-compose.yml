@@ -1,0 +1,57 @@
+# Identity service with everything only it needs: API, login UI, database.
+#   docker compose -f auth/docker-compose.yml up --build
+# Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
+name: vaultly
+
+services:
+  identity-db:
+    container_name: vaultly-identity-db
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vaultly_identity
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Over TCP: the image's init-time temporary server answers on the socket only, before the real server is up.
+      test: ["CMD-SHELL", "pg_isready --host 127.0.0.1 --username postgres --dbname vaultly_identity"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  identity-api:
+    container_name: vaultly-identity-api
+    build:
+      context: src
+    environment:
+      # Development: plain-http localhost setup (auto-generated JWT signing key, migrations applied on startup).
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__IdentityDb: Host=identity-db;Database=vaultly_identity;Username=postgres;Password=postgres
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-REPLACE_WITH_GOOGLE_CLIENT_ID}
+      Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-REPLACE_WITH_GOOGLE_CLIENT_SECRET}
+    ports:
+      - "127.0.0.1:5096:8080"
+    volumes:
+      - identity-keys:/app/.secrets
+    depends_on:
+      identity-db:
+        condition: service_healthy
+
+  identity-web:
+    container_name: vaultly-identity-web
+    build:
+      context: ..
+      dockerfile: auth/web/Dockerfile
+    environment:
+      AUTH_API_PROXY_TARGET: http://identity-api:8080
+    ports:
+      - "127.0.0.1:5174:8080"
+    depends_on:
+      - identity-api
+
+volumes:
+  identity-db-data:
+  identity-keys:
