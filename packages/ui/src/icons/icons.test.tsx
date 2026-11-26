@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 import { BrandMark } from './BrandMark';
 import { ChevronDownIcon } from './ChevronDownIcon';
+import { CloseIcon } from './CloseIcon';
+import { MenuIcon } from './MenuIcon';
 import { SearchIcon } from './SearchIcon';
 
 describe('BrandMark', () => {
@@ -23,6 +25,8 @@ describe('BrandMark', () => {
 describe.each([
   ['SearchIcon', SearchIcon],
   ['ChevronDownIcon', ChevronDownIcon],
+  ['MenuIcon', MenuIcon],
+  ['CloseIcon', CloseIcon],
 ])('%s', (_, Icon) => {
   it('is decorative and merges className', () => {
     const { container } = render(<Icon className="size-6" />);

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 
-import { Eyebrow, SearchField, StatusNotice, type StatusTone } from '@vaultly/ui';
+import { SearchField, StatusNotice, type StatusTone } from '@vaultly/ui';
 
 import { usersQueryOptions } from '@/domain/user';
 
@@ -29,10 +29,7 @@ export function AdminUsersPage() {
   return (
     <div className="grid gap-8">
       <header className="flex flex-wrap items-end justify-between gap-6">
-        <div className="grid gap-2">
-          <Eyebrow>People</Eyebrow>
-          <h1 className="text-4xl">Users</h1>
-        </div>
+        <h1 className="text-4xl">Users</h1>
         <SearchField
           className="w-full sm:w-80"
           defaultValue={search}

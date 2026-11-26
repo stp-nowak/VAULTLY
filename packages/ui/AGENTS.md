@@ -13,7 +13,8 @@ base styles and React primitives. Part of the root pnpm workspace; apps depend o
 src/
 ├── styles.css        # @theme tokens (colors, fonts, tracking, shadows, animations), @utility bg-panel, base layer, @source
 ├── lib/cn.ts         # clsx + tailwind-merge
-├── icons/            # SVG graphics in the current text color: BrandMark (logo), ChevronDownIcon, SearchIcon
+├── icons/            # SVG graphics in the current text color: BrandMark (logo), ChevronDownIcon, CloseIcon,
+│                     #   MenuIcon, SearchIcon
 ├── components/       # React primitives, one folder per kind:
 │   ├── actions/      #   Button
 │   ├── data/         #   Badge, InfoTile, Table
