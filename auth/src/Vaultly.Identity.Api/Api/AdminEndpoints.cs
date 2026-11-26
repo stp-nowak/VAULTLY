@@ -7,6 +7,7 @@ using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Queries.GetConsoleUser;
 using Vaultly.Identity.Application.Queries.GetSignInSettings;
 using Vaultly.Identity.Application.Queries.GetUsers;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 
@@ -58,7 +59,7 @@ public static class AdminEndpoints
             return Results.Unauthorized();
         }
 
-        if (user.Role != UserRole.Admin.Value)
+        if (user.Role != UserRole.Admin)
         {
             Logger(httpContext).LogWarning("User {UserId} without the admin role tried to use the admin console", user.Id);
             return Results.StatusCode(StatusCodes.Status403Forbidden);
@@ -82,11 +83,7 @@ public static class AdminEndpoints
         }
         catch (LastAdminException)
         {
-            return Results.Conflict(new { error = "last_admin" });
-        }
-        catch (InvalidValueException)
-        {
-            return Results.BadRequest(new { error = "invalid_role" });
+            return Results.Conflict(new ApiErrorResponse(ApiError.LastAdmin));
         }
     }
 
@@ -104,7 +101,7 @@ public static class AdminEndpoints
         }
         catch (LastSignInMethodException)
         {
-            return Results.Conflict(new { error = "last_sign_in_method" });
+            return Results.Conflict(new ApiErrorResponse(ApiError.LastSignInMethod));
         }
     }
 
@@ -114,7 +111,7 @@ public static class AdminEndpoints
         => context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(AdminEndpoints));
 
     /// <summary>Body of <c>PUT /api/admin/users/{id}/role</c>.</summary>
-    public sealed record AssignRoleRequest(string Role);
+    public sealed record AssignRoleRequest(UserRole Role);
 
     /// <summary>Body of <c>PUT /api/admin/sign-in-settings/methods/{method}</c>.</summary>
     public sealed record SetSignInMethodRequest(bool Enabled);

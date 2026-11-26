@@ -88,7 +88,7 @@ public sealed class IdentityUseCaseHandlerTests
             Authorize(clientId: "unknown"),
             CancellationToken.None));
 
-        Assert.That(ex!.Error, Is.EqualTo("invalid_request"));
+        Assert.That(ex!.Error, Is.EqualTo(OAuthError.InvalidRequest));
     }
 
     [Test]
@@ -263,7 +263,7 @@ public sealed class IdentityUseCaseHandlerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(ex!.Error, Is.EqualTo("invalid_client"));
+            Assert.That(ex!.Error, Is.EqualTo(OAuthError.InvalidClient));
             Assert.That(ex.StatusCode, Is.EqualTo(401));
         });
     }
@@ -279,7 +279,7 @@ public sealed class IdentityUseCaseHandlerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(ex!.Error, Is.EqualTo("invalid_grant"));
+            Assert.That(ex!.Error, Is.EqualTo(OAuthError.InvalidGrant));
             Assert.That(session.AuthCodes.Single().IsUsed, Is.True);
         });
         _unitOfWork.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -296,7 +296,7 @@ public sealed class IdentityUseCaseHandlerTests
             new RefreshSessionCommand("refresh-token", ClientIdValue, null),
             CancellationToken.None));
 
-        Assert.That(ex!.Error, Is.EqualTo("invalid_client"));
+        Assert.That(ex!.Error, Is.EqualTo(OAuthError.InvalidClient));
         _sessions.Verify(x => x.GetByRefreshTokenHashAsync(It.IsAny<TokenHash>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

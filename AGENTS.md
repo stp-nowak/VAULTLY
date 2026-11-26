@@ -18,6 +18,11 @@ Mono repo:
   security constraint, a workaround, a surprising "why". The only routine exception: a short `<summary>`/JSDoc on
   public types and members of a project's public API (public classes, interfaces, exported package APIs) when it
   adds information beyond the name. This rule overrides any older "comment every function" guidance.
+- **Enums, not magic strings.** In C#, a value with a fixed set of options (roles, statuses, error codes, kinds) is
+  an enum; never pass around or compare its string spellings. The wire or database form may stay a lowercase string,
+  produced in one place by serialization (`WireNames`, `[JsonStringEnumMemberName]`, an EF value converter). Open
+  sets (e.g. provider ids) stay strings. If there is a strong reason not to use an enum, ask first and present the
+  options. **Frontends (TypeScript) never use `enum`**: always a string literal union type (`'admin' | 'user'`).
 - **Backends never serve frontends.** No API hosts SPA files (no static files, no `index.html` fallback) or knows
   how a frontend is built. Every SPA is hosted by its own web server, which proxies the API paths when both must
   share an origin; an API may only know a frontend's URL for redirects.

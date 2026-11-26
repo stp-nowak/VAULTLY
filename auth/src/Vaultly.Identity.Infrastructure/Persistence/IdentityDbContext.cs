@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Entities;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
 
@@ -10,6 +12,8 @@ namespace Vaultly.Identity.Infrastructure.Persistence;
 
 public sealed class IdentityDbContext : DbContext
 {
+    private const int RoleMaxLength = 20;
+
     public IdentityDbContext(DbContextOptions<IdentityDbContext> options) : base(options)
     {
     }
@@ -43,8 +47,8 @@ public sealed class IdentityDbContext : DbContext
                 .HasMaxLength(PersonName.MaxLength)
                 .IsRequired();
             entity.Property(x => x.Role)
-                .HasConversion(role => role.Value, value => UserRole.Parse(value))
-                .HasMaxLength(UserRole.MaxLength)
+                .HasConversion(role => WireNames.Of(role), value => WireNames.Parse<UserRole>(value))
+                .HasMaxLength(RoleMaxLength)
                 .IsRequired();
             entity.Ignore(x => x.IsAdmin);
             entity.Property(x => x.PasswordHash)

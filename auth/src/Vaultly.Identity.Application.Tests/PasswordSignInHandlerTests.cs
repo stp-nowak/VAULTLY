@@ -88,7 +88,7 @@ public sealed class PasswordSignInHandlerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(ex!.Code, Is.EqualTo(PasswordSignInException.InvalidCredentials));
+            Assert.That(ex!.Failure, Is.EqualTo(PasswordSignInFailure.InvalidCredentials));
             Assert.That(user.FailedSignInCount, Is.EqualTo(1));
             Assert.That(_request.IsCompleted, Is.False);
         });
@@ -107,7 +107,7 @@ public sealed class PasswordSignInHandlerTests
         var ex = Assert.ThrowsAsync<PasswordSignInException>(() => CreateSignInHandler().Handle(
             SignIn("ada@example.com", GoodPassword), CancellationToken.None));
 
-        Assert.That(ex!.Code, Is.EqualTo(PasswordSignInException.InvalidCredentials));
+        Assert.That(ex!.Failure, Is.EqualTo(PasswordSignInFailure.InvalidCredentials));
         _sessions.Verify(x => x.Add(It.IsAny<Session>()), Times.Never);
     }
 
@@ -120,7 +120,7 @@ public sealed class PasswordSignInHandlerTests
 
         var ex = Assert.ThrowsAsync<PasswordSignInException>(() => CreateSignInHandler().Handle(SignIn(email, password), CancellationToken.None));
 
-        Assert.That(ex!.Code, Is.EqualTo(PasswordSignInException.InvalidCredentials));
+        Assert.That(ex!.Failure, Is.EqualTo(PasswordSignInFailure.InvalidCredentials));
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -133,7 +133,7 @@ public sealed class PasswordSignInHandlerTests
         var ex = Assert.ThrowsAsync<PasswordSignInException>(() => CreateSignInHandler().Handle(
             SignIn("ada@example.com", GoodPassword), CancellationToken.None));
 
-        Assert.That(ex!.Code, Is.EqualTo(PasswordSignInException.InvalidCredentials));
+        Assert.That(ex!.Failure, Is.EqualTo(PasswordSignInFailure.InvalidCredentials));
     }
 
     [Test]
@@ -172,7 +172,7 @@ public sealed class PasswordSignInHandlerTests
 
         var ex = Assert.ThrowsAsync<PasswordSignInException>(() => CreateRegisterHandler().Handle(Register("Ada", "ada@example.com"), CancellationToken.None));
 
-        Assert.That(ex!.Code, Is.EqualTo(PasswordSignInException.EmailTaken));
+        Assert.That(ex!.Failure, Is.EqualTo(PasswordSignInFailure.EmailTaken));
         _users.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
     }
 

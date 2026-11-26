@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
+using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Domain.Aggregates;
@@ -33,7 +34,7 @@ public sealed class JwtTokenService(IOptions<IdentityOptions> options, RsaKeyPro
             new("amr", session.AuthMethod.Value),
             new("email", user.Email.Value),
             new("name", user.Name.Value),
-            new("role", user.Role.Value)
+            new("role", WireNames.Of(user.Role))
         };
 
         var credentials = new SigningCredentials(_keyProvider.SecurityKey, SecurityAlgorithms.RsaSha256);

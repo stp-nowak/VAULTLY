@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.ValueObjects;
 
 namespace Vaultly.Identity.Infrastructure.Persistence.Repositories;

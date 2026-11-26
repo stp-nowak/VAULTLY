@@ -21,6 +21,7 @@ using Vaultly.Identity.Application.Queries.GetConsoleUser;
 using Vaultly.Identity.Application.Queries.GetUsers;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Constants;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -151,7 +152,7 @@ public sealed class AdminConsoleHandlerTests
         _users.Setup(x => x.CountAdminsAsync(CancellationToken.None)).ReturnsAsync(1);
 
         var assigned = await CreateAssignUserRoleHandler().Handle(
-            new AssignUserRoleCommand(Guid.NewGuid(), user.Id.Value, "admin"),
+            new AssignUserRoleCommand(Guid.NewGuid(), user.Id.Value, UserRole.Admin),
             CancellationToken.None);
 
         Assert.Multiple(() =>
@@ -171,7 +172,7 @@ public sealed class AdminConsoleHandlerTests
         _users.Setup(x => x.CountAdminsAsync(CancellationToken.None)).ReturnsAsync(1);
 
         Assert.ThrowsAsync<LastAdminException>(() => CreateAssignUserRoleHandler().Handle(
-            new AssignUserRoleCommand(admin.Id.Value, admin.Id.Value, "user"),
+            new AssignUserRoleCommand(admin.Id.Value, admin.Id.Value, UserRole.User),
             CancellationToken.None));
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -182,17 +183,11 @@ public sealed class AdminConsoleHandlerTests
         _users.Setup(x => x.GetByIdAsync(It.IsAny<UserId>(), CancellationToken.None)).ReturnsAsync((User?)null);
 
         var assigned = await CreateAssignUserRoleHandler().Handle(
-            new AssignUserRoleCommand(Guid.NewGuid(), Guid.NewGuid(), "admin"),
+            new AssignUserRoleCommand(Guid.NewGuid(), Guid.NewGuid(), UserRole.Admin),
             CancellationToken.None);
 
         Assert.That(assigned, Is.False);
     }
-
-    [Test]
-    public void AssignUserRole_WhenRoleUnknown_Throws()
-        => Assert.ThrowsAsync<InvalidValueException>(() => CreateAssignUserRoleHandler().Handle(
-            new AssignUserRoleCommand(Guid.NewGuid(), Guid.NewGuid(), "owner"),
-            CancellationToken.None));
 
     [Test]
     public async Task EnsureBootstrapAdmin_WithoutAdmins_CreatesVerifiedAdminForConfiguredEmail()
@@ -287,7 +282,7 @@ public sealed class AdminConsoleHandlerTests
     public async Task GetConsoleUser_LooksUpTheSessionByHashedSsoToken()
     {
         var readService = new Mock<IUserReadService>();
-        var admin = new ConsoleUserDto(Guid.NewGuid(), "admin@example.com", "Admin", "admin");
+        var admin = new ConsoleUserDto(Guid.NewGuid(), "admin@example.com", "Admin", UserRole.Admin);
         readService.Setup(x => x.GetBySsoTokenHashAsync("hash:sso-token", Now, CancellationToken.None)).ReturnsAsync(admin);
         var handler = new GetConsoleUserHandler(readService.Object, _tokenHasher.Object, Clock());
 

@@ -1,4 +1,5 @@
 using Vaultly.Identity.Domain.Entities;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Events;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -27,7 +28,7 @@ public sealed class User : AggregateRoot
     public PersonName Name { get; private set; } = null!;
     public bool EmailVerified { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
-    public UserRole Role { get; private set; } = null!;
+    public UserRole Role { get; private set; }
     public PasswordHash? PasswordHash { get; private set; }
     public int FailedSignInCount { get; private set; }
     public DateTimeOffset? LockedUntil { get; private set; }

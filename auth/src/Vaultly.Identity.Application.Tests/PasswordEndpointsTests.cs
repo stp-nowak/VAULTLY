@@ -57,16 +57,16 @@ public sealed class PasswordEndpointsTests
 
     private static IEnumerable<TestCaseData> Failures()
     {
-        yield return new TestCaseData(PasswordSignInException.WrongCredentials(), 400, "invalid_credentials");
-        yield return new TestCaseData(PasswordSignInException.EmailAlreadyUsed(), 409, "email_taken");
-        yield return new TestCaseData(new WeakPasswordException(), 400, "weak_password");
-        yield return new TestCaseData(new AuthorizationRequestExpiredException(), 400, "request_expired");
-        yield return new TestCaseData(new InvalidValueException("Email is invalid."), 400, "invalid_input");
-        yield return new TestCaseData(new InvalidOperationException("Sign-in method is disabled."), 403, "sign_in_method_disabled");
+        yield return new TestCaseData(PasswordSignInException.WrongCredentials(), 400, ApiError.InvalidCredentials);
+        yield return new TestCaseData(PasswordSignInException.EmailAlreadyUsed(), 409, ApiError.EmailTaken);
+        yield return new TestCaseData(new WeakPasswordException(), 400, ApiError.WeakPassword);
+        yield return new TestCaseData(new AuthorizationRequestExpiredException(), 400, ApiError.RequestExpired);
+        yield return new TestCaseData(new InvalidValueException("Email is invalid."), 400, ApiError.InvalidInput);
+        yield return new TestCaseData(new InvalidOperationException("Sign-in method is disabled."), 403, ApiError.SignInMethodDisabled);
     }
 
     [TestCaseSource(nameof(Failures))]
-    public async Task Register_MapsFailuresToCodesTheLoginUiUnderstands(Exception failure, int status, string code)
+    public async Task Register_MapsFailuresToCodesTheLoginUiUnderstands(Exception failure, int status, ApiError error)
     {
         _sender.Setup(x => x.Send(It.IsAny<RegisterWithPasswordCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(failure);
         var httpContext = CreateHttpContext();
@@ -77,7 +77,7 @@ public sealed class PasswordEndpointsTests
         Assert.Multiple(() =>
         {
             Assert.That(((IStatusCodeHttpResult)result).StatusCode, Is.EqualTo(status));
-            Assert.That(((IValueHttpResult)result).Value?.ToString(), Does.Contain(code));
+            Assert.That(((IValueHttpResult)result).Value, Is.EqualTo(new ApiErrorResponse(error)));
             Assert.That(httpContext.Response.Headers.SetCookie.ToString(), Is.Empty);
         });
     }

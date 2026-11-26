@@ -63,29 +63,29 @@ public static class PasswordEndpoints
             SsoCookie.Set(context.Response, result.SsoToken, result.SsoExpiresAt);
             return Results.Ok(new { redirectUrl = result.RedirectUrl });
         }
-        catch (PasswordSignInException ex) when (ex.Code == PasswordSignInException.EmailTaken)
+        catch (PasswordSignInException ex) when (ex.Failure == PasswordSignInFailure.EmailTaken)
         {
-            return Results.Conflict(new { error = ex.Code });
+            return Results.Conflict(new ApiErrorResponse(ApiError.EmailTaken));
         }
-        catch (PasswordSignInException ex)
+        catch (PasswordSignInException)
         {
-            return Results.BadRequest(new { error = ex.Code });
+            return Results.BadRequest(new ApiErrorResponse(ApiError.InvalidCredentials));
         }
         catch (WeakPasswordException)
         {
-            return Results.BadRequest(new { error = "weak_password" });
+            return Results.BadRequest(new ApiErrorResponse(ApiError.WeakPassword));
         }
         catch (Exception ex) when (ex is AuthorizationRequestExpiredException or AuthorizationRequestCompletedException or AuthorizationRequestNotFoundException)
         {
-            return Results.BadRequest(new { error = "request_expired" });
+            return Results.BadRequest(new ApiErrorResponse(ApiError.RequestExpired));
         }
         catch (InvalidValueException)
         {
-            return Results.BadRequest(new { error = "invalid_input" });
+            return Results.BadRequest(new ApiErrorResponse(ApiError.InvalidInput));
         }
         catch (InvalidOperationException)
         {
-            return Results.Json(new { error = "sign_in_method_disabled" }, statusCode: StatusCodes.Status403Forbidden);
+            return Results.Json(new ApiErrorResponse(ApiError.SignInMethodDisabled), statusCode: StatusCodes.Status403Forbidden);
         }
     }
 

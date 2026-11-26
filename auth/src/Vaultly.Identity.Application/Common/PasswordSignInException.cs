@@ -1,17 +1,20 @@
 namespace Vaultly.Identity.Application.Common;
 
-/// <summary>
-/// An email and password sign-in or registration was refused. <see cref="Code"/> is safe to show the login UI; it never
-/// tells whether an account exists for a failed sign-in.
-/// </summary>
-public sealed class PasswordSignInException(string code, string message) : Exception(message)
+public enum PasswordSignInFailure
 {
-    public const string InvalidCredentials = "invalid_credentials";
-    public const string EmailTaken = "email_taken";
+    /// <summary>Wrong email or password; never tells which, nor whether the account exists.</summary>
+    InvalidCredentials,
+    EmailTaken,
+}
 
-    public string Code { get; } = code;
+/// <summary>An email and password sign-in or registration was refused.</summary>
+public sealed class PasswordSignInException(PasswordSignInFailure failure, string message) : Exception(message)
+{
+    public PasswordSignInFailure Failure { get; } = failure;
 
-    public static PasswordSignInException WrongCredentials() => new(InvalidCredentials, "Email or password is incorrect.");
+    public static PasswordSignInException WrongCredentials()
+        => new(PasswordSignInFailure.InvalidCredentials, "Email or password is incorrect.");
 
-    public static PasswordSignInException EmailAlreadyUsed() => new(EmailTaken, "An account with this email already exists.");
+    public static PasswordSignInException EmailAlreadyUsed()
+        => new(PasswordSignInFailure.EmailTaken, "An account with this email already exists.");
 }

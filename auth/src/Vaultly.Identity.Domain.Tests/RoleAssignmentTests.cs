@@ -1,6 +1,7 @@
 using NUnit.Framework;
 
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Events;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.Services;
@@ -75,17 +76,6 @@ public sealed class RoleAssignmentTests
 
         Assert.That(admin.DomainEvents, Is.Empty);
     }
-
-    [TestCase("admin")]
-    [TestCase(" Admin ")]
-    public void UserRole_Parse_AcceptsKnownRolesCaseInsensitively(string value)
-        => Assert.That(UserRole.Parse(value), Is.EqualTo(UserRole.Admin));
-
-    [TestCase("owner")]
-    [TestCase("")]
-    [TestCase(null)]
-    public void UserRole_Parse_RejectsUnknownRoles(string? value)
-        => Assert.That(() => UserRole.Parse(value), Throws.TypeOf<InvalidValueException>());
 
     private static User CreateUser()
         => User.Create(new EmailAddress("user@example.com"), new PersonName("Test User"), true, Now);

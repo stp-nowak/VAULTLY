@@ -13,6 +13,7 @@ using Vaultly.Identity.Application.Commands.AssignUserRole;
 using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Queries.GetConsoleUser;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Exceptions;
 
 namespace Vaultly.Identity.Application.Tests;
@@ -20,7 +21,7 @@ namespace Vaultly.Identity.Application.Tests;
 [TestFixture]
 public sealed class AdminEndpointsTests
 {
-    private static readonly ConsoleUserDto Admin = new(Guid.NewGuid(), "admin@example.com", "Admin", "admin");
+    private static readonly ConsoleUserDto Admin = new(Guid.NewGuid(), "admin@example.com", "Admin", UserRole.Admin);
 
     private Mock<ISender> _sender = null!;
     private bool _nextCalled;
@@ -76,7 +77,7 @@ public sealed class AdminEndpointsTests
     public async Task RequireAdmin_ForRegularUser_ReturnsForbidden()
     {
         _sender.Setup(x => x.Send(It.IsAny<GetConsoleUserQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Admin with { Role = "user" });
+            .ReturnsAsync(Admin with { Role = UserRole.User });
 
         var result = await AdminEndpoints.RequireAdminAsync(Invocation(CreateHttpContext()), Next);
 
@@ -110,7 +111,7 @@ public sealed class AdminEndpointsTests
         var httpContext = await SignedInAdminContextAsync();
         _sender.Setup(x => x.Send(It.IsAny<AssignUserRoleCommand>(), It.IsAny<CancellationToken>())).ReturnsAsync(assigned);
 
-        var result = await AdminEndpoints.AssignRoleAsync(Guid.NewGuid(), new AdminEndpoints.AssignRoleRequest("admin"), httpContext, _sender.Object);
+        var result = await AdminEndpoints.AssignRoleAsync(Guid.NewGuid(), new AdminEndpoints.AssignRoleRequest(UserRole.Admin), httpContext, _sender.Object);
 
         Assert.That(StatusOf(result), Is.EqualTo(expectedStatus));
     }
@@ -121,9 +122,9 @@ public sealed class AdminEndpointsTests
         var httpContext = await SignedInAdminContextAsync();
         var userId = Guid.NewGuid();
 
-        await AdminEndpoints.AssignRoleAsync(userId, new AdminEndpoints.AssignRoleRequest("admin"), httpContext, _sender.Object);
+        await AdminEndpoints.AssignRoleAsync(userId, new AdminEndpoints.AssignRoleRequest(UserRole.Admin), httpContext, _sender.Object);
 
-        _sender.Verify(x => x.Send(new AssignUserRoleCommand(Admin.Id, userId, "admin"), It.IsAny<CancellationToken>()), Times.Once);
+        _sender.Verify(x => x.Send(new AssignUserRoleCommand(Admin.Id, userId, UserRole.Admin), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -132,21 +133,9 @@ public sealed class AdminEndpointsTests
         var httpContext = await SignedInAdminContextAsync();
         _sender.Setup(x => x.Send(It.IsAny<AssignUserRoleCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(new LastAdminException());
 
-        var result = await AdminEndpoints.AssignRoleAsync(Guid.NewGuid(), new AdminEndpoints.AssignRoleRequest("user"), httpContext, _sender.Object);
+        var result = await AdminEndpoints.AssignRoleAsync(Guid.NewGuid(), new AdminEndpoints.AssignRoleRequest(UserRole.User), httpContext, _sender.Object);
 
         Assert.That(StatusOf(result), Is.EqualTo(StatusCodes.Status409Conflict));
-    }
-
-    [Test]
-    public async Task AssignRole_WhenRoleUnknown_ReturnsBadRequest()
-    {
-        var httpContext = await SignedInAdminContextAsync();
-        _sender.Setup(x => x.Send(It.IsAny<AssignUserRoleCommand>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidValueException("Unknown user role."));
-
-        var result = await AdminEndpoints.AssignRoleAsync(Guid.NewGuid(), new AdminEndpoints.AssignRoleRequest("owner"), httpContext, _sender.Object);
-
-        Assert.That(StatusOf(result), Is.EqualTo(StatusCodes.Status400BadRequest));
     }
 
     [TestCase(true, StatusCodes.Status204NoContent)]
