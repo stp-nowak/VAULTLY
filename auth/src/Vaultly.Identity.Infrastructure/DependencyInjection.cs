@@ -33,12 +33,14 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IAuthorizationRequestRepository, AuthorizationRequestRepository>();
+        services.AddScoped<ISignInSettingsRepository, SignInSettingsRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Read side (CQRS): query handlers depend on read services, never on repositories.
         services.AddScoped<ISessionReadService, SessionReadService>();
         services.AddScoped<IAuthorizationRequestReadService, AuthorizationRequestReadService>();
         services.AddScoped<IUserReadService, UserReadService>();
+        services.AddScoped<ISignInSettingsReadService, SignInSettingsReadService>();
 
         services.AddScoped<IExternalOAuthProvider, GoogleOAuthClient>();
 

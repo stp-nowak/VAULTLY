@@ -22,6 +22,7 @@ public sealed class StartExternalLoginHandler(
     IAuthorizationRequestRepository authorizationRequestRepository,
     IUnitOfWork unitOfWork,
     IEnumerable<IExternalOAuthProvider> providers,
+    ISignInSettingsRepository signInSettingsRepository,
     ITokenGenerator tokenGenerator,
     IClock clock,
     IOptions<IdentityOptions> identityOptions,
@@ -31,6 +32,7 @@ public sealed class StartExternalLoginHandler(
     private readonly IAuthorizationRequestRepository _authorizationRequestRepository = authorizationRequestRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IReadOnlyDictionary<ProviderId, IExternalOAuthProvider> _providers = providers.ToDictionary(x => x.Id);
+    private readonly ISignInSettingsRepository _signInSettingsRepository = signInSettingsRepository;
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
     private readonly IClock _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
@@ -39,11 +41,7 @@ public sealed class StartExternalLoginHandler(
     public async Task<string> Handle(StartExternalLoginCommand request, CancellationToken cancellationToken)
     {
         var provider = OAuthFlowUtilities.GetProvider(_providers, new ProviderId(request.ProviderId));
-        if (!provider.IsEnabled)
-        {
-            _logger.Warning("OAuth provider {ProviderId} is disabled", provider.Id.Value);
-            throw new InvalidOperationException("OAuth provider is disabled.");
-        }
+        await SignInMethodGuard.EnsureUsableAsync(provider, _signInSettingsRepository, cancellationToken);
 
         var now = _clock.UtcNow;
 

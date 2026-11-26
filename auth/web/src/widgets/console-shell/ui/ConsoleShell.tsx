@@ -93,6 +93,14 @@ export function ConsoleShell({ admin, children }: ConsoleShellProps) {
           >
             Users
           </Link>
+          <Link
+            activeProps={{ className: 'border-line-strong bg-accent-soft text-ink' }}
+            className={navLink}
+            onClick={closeMenu}
+            to="/admin/sign-in-methods"
+          >
+            Sign-in methods
+          </Link>
         </nav>
 
         <div className="mt-auto grid gap-2 border-t border-line pt-5 text-sm">

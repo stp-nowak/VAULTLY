@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { SearchField } from './SearchField';
 import { Select } from './Select';
+import { Switch } from './Switch';
 import { TextField } from './TextField';
 
 describe('Select', () => {
@@ -63,6 +64,29 @@ describe('SearchField', () => {
 
     expect(onSearch).toHaveBeenCalledExactlyOnceWith('grace');
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+});
+
+describe('Switch', () => {
+  it('is a named switch that reports the toggled state', () => {
+    const onCheckedChange = vi.fn();
+    render(<Switch aria-label="Google" checked onCheckedChange={onCheckedChange} />);
+
+    const toggle = screen.getByRole('switch', { name: 'Google' });
+    expect(toggle).toBeChecked();
+
+    fireEvent.click(toggle);
+
+    expect(onCheckedChange).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it('does not toggle while disabled', () => {
+    const onCheckedChange = vi.fn();
+    render(<Switch aria-label="Password" checked={false} disabled onCheckedChange={onCheckedChange} />);
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Password' }));
+
+    expect(onCheckedChange).not.toHaveBeenCalled();
   });
 });
 

@@ -43,6 +43,7 @@ Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
 | `GET/DELETE /sessions` | User's sessions (bearer access token) |
 | `GET /api/admin/sign-in` | Admin console sign-in (navigation): straight to the console with an active SSO session, otherwise via the login UI |
 | `GET /api/admin/me`, `GET /api/admin/users?search&page&pageSize`, `PUT /api/admin/users/{id}/role` | Admin console API: `vaultly_sso` cookie + `X-CSRF: 1`; 401 without a session, 403 without the admin role, 409 `last_admin` |
+| `GET /api/admin/sign-in-settings`, `PUT /api/admin/sign-in-settings/methods/{method}` | Sign-in methods with `isConfigured` / `isEnabled`; switching one on or off (`{ "enabled": bool }`), 409 `last_sign_in_method` |
 | `/.well-known/openid-configuration`, `/.well-known/jwks.json` | Discovery and signing keys |
 
 Clients are registered in `Identity:Clients` (id, secret, display name, redirect and post-logout URIs; exact or
@@ -52,6 +53,12 @@ Users have a role, `user` or `admin`. Admins use the admin console (login UI `/a
 it is signed in through an `AuthorizationRequest` for `ConsoleClient` (no state, no PKCE, no code issued) and then
 uses the SSO cookie. The first admin comes from `Identity:BootstrapAdmin:Email` while no admin exists; role changes
 go through `RoleAssignment`, which keeps at least one admin.
+
+Sign-in methods (external providers, later email + password) are *configured* by the deployment
+(`IExternalOAuthProvider.IsConfigured`, e.g. Google with a client id) and *enabled* by admins at runtime
+(`SignInSettings`, one row, stores only the disabled methods). A method is usable only when both hold
+(`SignInMethodGuard` on provider start and callback, the login UI's provider list); the last configured, enabled
+method cannot be switched off. `SignInMethodCatalog` lists every known method.
 
 ## Structure
 
@@ -63,15 +70,16 @@ auth/
     ├── Vaultly.Auth.slnx
     ├── Vaultly.Identity.SharedKernel/      # AggregateRoot, DomainEvent, DomainException, IUnitOfWork
     ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User + role, Session + SSO, OAuthState,
-    │                                       #   AuthorizationRequest for a client or the console), Entities (AuthCode
+    │                                       #   AuthorizationRequest for a client or the console, SignInSettings), Entities (AuthCode
     │                                       #   bound to client/PKCE), ValueObjects, Events, Exceptions, Constants,
     │                                       #   Services (RoleAssignment)
     ├── Vaultly.Identity.Application/       # CQRS
     │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
     │   ├── Commands/<UseCase>/             #   write side: StartAuthorization, StartExternalLogin, HandleOAuthCallback,
     │   │                                   #   ExchangeAuthCode, RefreshSession, RevokeToken, EndSession, RevokeSession,
-    │   │                                   #   StartConsoleSignIn, AssignUserRole, EnsureBootstrapAdmin
-    │   ├── Queries/<UseCase>/              #   read side: GetAuthorizationRequest, GetSessions, GetConsoleUser, GetUsers
+    │   │                                   #   StartConsoleSignIn, AssignUserRole, EnsureBootstrapAdmin, SetSignInMethodEnabled
+    │   ├── Queries/<UseCase>/              #   read side: GetAuthorizationRequest, GetSessions, GetConsoleUser, GetUsers,
+    │   │                                   #   GetSignInSettings
     │   ├── Interfaces/Repositories/        #   write ports (aggregates)
     │   ├── Interfaces/ReadServices/        #   read ports (DTOs)
     │   ├── Interfaces/Services/            #   other ports (clock, token hashing, JWT, OAuth providers)

@@ -209,6 +209,7 @@ public sealed class IdentityUseCaseHandlerTests
             _sessions.Object,
             _unitOfWork.Object,
             [new TestProvider("google", "Google", true, new ExternalIdentityInfo("subject-1", "user@example.com", true, "Test User", "expected-nonce"))],
+            new Mock<ISignInSettingsRepository>().Object,
             _tokenGenerator.Object,
             _tokenHasher.Object,
             Clock(),
@@ -330,6 +331,7 @@ public sealed class IdentityUseCaseHandlerTests
             readService.Object,
             _clients,
             [new TestProvider("google", "Google", true), new TestProvider("github", "GitHub", false)],
+            NoDisabledMethods(),
             Clock());
 
         var pending = await handler.Handle(new GetAuthorizationRequestQuery(pendingId), CancellationToken.None);
@@ -349,7 +351,14 @@ public sealed class IdentityUseCaseHandlerTests
         => new(_clients, _requests.Object, _sessions.Object, _unitOfWork.Object, _tokenGenerator.Object, _tokenHasher.Object, Clock(), _options, Logger());
 
     private StartExternalLoginHandler CreateStartExternalLoginHandler(Mock<IOAuthStateRepository> oauthStates)
-        => new(oauthStates.Object, _requests.Object, _unitOfWork.Object, [new TestProvider("google", "Google", true)], _tokenGenerator.Object, Clock(), _options, Logger());
+        => new(oauthStates.Object, _requests.Object, _unitOfWork.Object, [new TestProvider("google", "Google", true)], new Mock<ISignInSettingsRepository>().Object, _tokenGenerator.Object, Clock(), _options, Logger());
+
+    internal static ISignInSettingsReadService NoDisabledMethods()
+    {
+        var readService = new Mock<ISignInSettingsReadService>();
+        readService.Setup(x => x.GetDisabledMethodsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new HashSet<string>());
+        return readService.Object;
+    }
 
     private ExchangeAuthCodeHandler CreateExchangeHandler(Mock<IUserRepository> users, Mock<IJwtTokenService> jwt)
         => new(_clients, _sessions.Object, users.Object, _unitOfWork.Object, jwt.Object, _tokenGenerator.Object, _tokenHasher.Object, Clock(), _options, Logger());
@@ -398,7 +407,7 @@ public sealed class IdentityUseCaseHandlerTests
     {
         public ProviderId Id { get; } = new(id);
         public string Name { get; } = name;
-        public bool IsEnabled { get; } = enabled;
+        public bool IsConfigured { get; } = enabled;
         public string AuthorizationEndpoint { get; } = "https://provider.test/auth";
         public string ClientId { get; } = "client";
         public string RedirectUri { get; } = "https://identity.test/callback";

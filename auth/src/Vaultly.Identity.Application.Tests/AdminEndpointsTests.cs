@@ -10,6 +10,7 @@ using NUnit.Framework;
 
 using Vaultly.Identity.Api;
 using Vaultly.Identity.Application.Commands.AssignUserRole;
+using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Queries.GetConsoleUser;
 using Vaultly.Identity.Domain.Exceptions;
@@ -146,6 +147,31 @@ public sealed class AdminEndpointsTests
         var result = await AdminEndpoints.AssignRoleAsync(Guid.NewGuid(), new AdminEndpoints.AssignRoleRequest("owner"), httpContext, _sender.Object);
 
         Assert.That(StatusOf(result), Is.EqualTo(StatusCodes.Status400BadRequest));
+    }
+
+    [TestCase(true, StatusCodes.Status204NoContent)]
+    [TestCase(false, StatusCodes.Status404NotFound)]
+    public async Task SetSignInMethodEnabled_MapsTheOutcomeAndRecordsTheAdmin(bool changed, int expectedStatus)
+    {
+        var httpContext = await SignedInAdminContextAsync();
+        _sender.Setup(x => x.Send(It.IsAny<SetSignInMethodEnabledCommand>(), It.IsAny<CancellationToken>())).ReturnsAsync(changed);
+
+        var result = await AdminEndpoints.SetSignInMethodEnabledAsync("google", new AdminEndpoints.SetSignInMethodRequest(false), httpContext, _sender.Object);
+
+        Assert.That(StatusOf(result), Is.EqualTo(expectedStatus));
+        _sender.Verify(x => x.Send(new SetSignInMethodEnabledCommand(Admin.Id, "google", false), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task SetSignInMethodEnabled_WhenLastMethod_ReturnsConflict()
+    {
+        var httpContext = await SignedInAdminContextAsync();
+        _sender.Setup(x => x.Send(It.IsAny<SetSignInMethodEnabledCommand>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new LastSignInMethodException());
+
+        var result = await AdminEndpoints.SetSignInMethodEnabledAsync("google", new AdminEndpoints.SetSignInMethodRequest(false), httpContext, _sender.Object);
+
+        Assert.That(StatusOf(result), Is.EqualTo(StatusCodes.Status409Conflict));
     }
 
     private async Task<HttpContext> SignedInAdminContextAsync()

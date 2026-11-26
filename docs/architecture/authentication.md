@@ -63,6 +63,7 @@ flowchart LR
 | `RefreshToken` | Identity DB | Hashed, rotated on every use, 30 days |
 | Access token | JWT (RS256) | 15 min, claims `sub` (user), `sid` (session), `role` (`user` or `admin`); validated with `/.well-known/jwks.json` |
 | User role | Identity DB | `user` (default) or `admin`; admins use the admin console. At least one admin always remains |
+| Sign-in settings | Identity DB | One row listing the sign-in methods admins switched off; every other method is on |
 
 ## 1. First sign-in
 
@@ -255,6 +256,15 @@ The first admin comes from configuration: while no admin exists, startup makes t
 which must have verified the address. The last admin can never lose the role (`409 last_admin`). Signing out of the
 console is the usual `GET /logout`.
 
+### Sign-in methods
+
+Admins switch sign-in methods on and off at runtime on the console's `/admin/sign-in-methods`
+(`GET /api/admin/sign-in-settings`, `PUT /api/admin/sign-in-settings/methods/{method}`). A method can be used only when
+the deployment is configured for it (Google: `Google:Enabled` and a client id) **and** admins have not switched it off.
+A switched-off provider disappears from the login page, and `/{provider}/authorize` and `/{provider}/callback` refuse
+it, so a sign-in started before the switch cannot finish. Existing sessions are not ended. The last configured,
+enabled method cannot be switched off (`409 last_sign_in_method`), so nobody can be locked out.
+
 ## Lifecycles
 
 ```mermaid
@@ -293,6 +303,8 @@ stateDiagram-v2
 | CSRF against the admin console API | `X-CSRF: 1` required on every `/api/admin/*` call except the sign-in navigation; responses are `no-store` | `AdminEndpoints.RequireCsrfHeader` |
 | Admin console used without the role, or after losing it | Role read from the database on every admin call, not from a token | `AdminEndpoints.RequireAdminAsync`, `GetConsoleUser` |
 | Locking everyone out of the console | The last admin cannot be demoted | `RoleAssignment` |
+| Locking everyone out of signing in | The last configured, enabled sign-in method cannot be switched off | `SignInSettings.Disable` |
+| Signing in with a switched-off method | Checked when the provider login starts and again on its callback | `SignInMethodGuard` |
 | Login CSRF / forged callback | `state` bound to the encrypted `vaultly-login` cookie, compared in constant time | `AuthEndpoints.CallbackAsync` |
 | Intercepted authorization code | PKCE S256, code bound to client + redirect URI, client secret at `/token`, single use, burned on failure | `Session.ConsumeAuthCode`, `CodeChallenge` |
 | Open redirect | Clients and redirect/post-logout URIs registered per client; invalid ones are never redirected; `returnUrl` must be a local path in the SPA and in the BFF | `ClientRegistry`, `StartAuthorizationHandler`, `SanitizeReturnUrl`, `readLocalPath` |
@@ -352,4 +364,4 @@ its API share one origin for cookies.
 | Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Commands/*`, `Queries/*` |
 | Auth domain rules | `AuthorizationRequest`, `Session`, `AuthCode`, `CodeChallenge` in `auth/src/Vaultly.Identity.Domain` |
 | Login UI | `auth/web/src/pages/{login,sign-in-error,logged-out}` |
-| Admin console | `auth/web/src/pages/{admin-console,admin-users}`, `auth/web/src/features/assign-user-role` |
+| Admin console | `auth/web/src/pages/{admin-console,admin-users,admin-sign-in-methods}`, `auth/web/src/features/{assign-user-role,toggle-sign-in-method}` |

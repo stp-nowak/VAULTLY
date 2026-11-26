@@ -18,6 +18,7 @@
 | `/` | — | Redirects to `/logged-out`. |
 | `/admin` | `pages/admin-console` | Layout of the admin console: loads `GET /api/admin/me`; admin → console frame (`widgets/console-shell`) + child page; 403 → "No access" + sign out; 401 → "Signing you in…" and a full-page navigation to `/api/admin/sign-in`. `/admin/` redirects to `/admin/users`. |
 | `/admin/users?search=&page=` | `pages/admin-users` | Users newest first with role select (`features/assign-user-role`), sign-in methods and join date; search by email or name; pages of 20. |
+| `/admin/sign-in-methods` | `pages/admin-sign-in-methods` | Every sign-in method with a switch (`features/toggle-sign-in-method`) and whether it is offered, switched off or not set up on this server (switch disabled). |
 | unknown URL / route error | `pages/route-error` | Root `notFoundComponent` / `errorComponent`. |
 
 Search params are kept as raw strings (`shared/lib/searchParams.ts`): the router's default JSON parsing would turn
@@ -46,6 +47,10 @@ Admin console (`X-CSRF: 1` required; 401 = no SSO session, 403 = not an admin):
   "createdAt", "signInMethods": ["google"] }], "total", "page", "pageSize" }` (`domain/user`).
 - `PUT /api/admin/users/{id}/role` with `{ "role": "admin" | "user" }` → 204; 404 unknown user; 409
   `{ "error": "last_admin" }` (`features/assign-user-role`).
+- `GET /api/admin/sign-in-settings` → `{ "methods": [{ "id", "name", "isConfigured", "isEnabled" }] }`
+  (`domain/sign-in-settings`).
+- `PUT /api/admin/sign-in-settings/methods/{id}` with `{ "enabled": bool }` → 204; 404 unknown method; 409
+  `{ "error": "last_sign_in_method" }` (`features/toggle-sign-in-method`).
 - Sign out: navigation to `/logout`.
 
 ## Commands (from the repository root)
@@ -68,7 +73,9 @@ Admin console (`X-CSRF: 1` required; 401 = no SSO session, 403 = not an admin):
   relative imports inside a slice, `@/` across slices. Enforced by `no-restricted-imports` in `eslint.config.js`.
   - `app/routes/*` stay thin (search validation, loader prefetch) and render a page.
   - `domain/authorization-request` ↔ the AuthorizationRequest aggregate of the Identity service.
-  - `domain/console-admin` — who may use the admin console; `domain/user` ↔ the User aggregate (read side).
+  - `domain/console-admin` — who may use the admin console; `domain/user` ↔ the User aggregate (read side);
+    `domain/sign-in-settings` ↔ the SignInSettings aggregate.
+  - `features/toggle-sign-in-method` — the sign-in method switch.
   - `features/sign-in-with-provider` — the provider buttons (user action).
   - `features/assign-user-role` — the role select; writes are mutations in `features/*/api`.
   - `widgets/console-shell` — frame of the admin console pages.
