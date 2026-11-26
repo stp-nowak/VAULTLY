@@ -2,6 +2,7 @@ using Serilog;
 
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Messaging;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
@@ -17,7 +18,6 @@ public sealed class AssignUserRoleHandler(IUserRepository userRepository, IUnitO
 
     public async Task<bool> Handle(AssignUserRoleCommand request, CancellationToken cancellationToken)
     {
-        var role = UserRole.Parse(request.Role);
         var user = await _userRepository.GetByIdAsync(UserId.From(request.UserId), cancellationToken);
         if (user is null)
         {
@@ -25,14 +25,14 @@ public sealed class AssignUserRoleHandler(IUserRepository userRepository, IUnitO
         }
 
         var adminCount = await _userRepository.CountAdminsAsync(cancellationToken);
-        RoleAssignment.Assign(user, role, adminCount);
+        RoleAssignment.Assign(user, request.Role, adminCount);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.Information(
             "Admin {AdminUserId} set the role of user {UserId} to {Role}",
             request.AdminUserId,
             user.Id.Value,
-            role.Value);
+            request.Role);
 
         return true;
     }

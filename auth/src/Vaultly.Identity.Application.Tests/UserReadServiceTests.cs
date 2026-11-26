@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.Infrastructure.Persistence;
@@ -33,7 +34,7 @@ public sealed class UserReadServiceTests
             Assert.That(page.Total, Is.EqualTo(3));
             Assert.That(page.Page, Is.EqualTo(2));
             Assert.That(page.Items.Single().Email, Is.EqualTo("grace@example.com"));
-            Assert.That(page.Items.Single().Role, Is.EqualTo("admin"));
+            Assert.That(page.Items.Single().Role, Is.EqualTo(UserRole.Admin));
         });
 
         var last = await new UserReadService(dbContext).GetPageAsync(null, page: 3, pageSize: 1, CancellationToken.None);
@@ -99,7 +100,7 @@ public sealed class UserReadServiceTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(active, Is.EqualTo(new Application.Models.ConsoleUserDto(user.Id.Value, "grace@example.com", "Grace Hopper", "user")));
+            Assert.That(active, Is.EqualTo(new Application.Models.ConsoleUserDto(user.Id.Value, "grace@example.com", "Grace Hopper", UserRole.User)));
             Assert.That(await sut.GetBySsoTokenHashAsync("expired", Now, CancellationToken.None), Is.Null);
             Assert.That(await sut.GetBySsoTokenHashAsync("revoked", Now, CancellationToken.None), Is.Null);
             Assert.That(await sut.GetBySsoTokenHashAsync("unknown", Now, CancellationToken.None), Is.Null);

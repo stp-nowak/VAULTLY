@@ -4,6 +4,7 @@ using NUnit.Framework;
 
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Entities;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.SharedKernel;
@@ -44,7 +45,6 @@ public sealed class IdentityDbContextTests
         {
             Assert.That(GetMaxLength<User>(dbContext, nameof(User.Email)), Is.EqualTo(EmailAddress.MaxLength));
             Assert.That(GetMaxLength<User>(dbContext, nameof(User.Name)), Is.EqualTo(PersonName.MaxLength));
-            Assert.That(GetMaxLength<User>(dbContext, nameof(User.Role)), Is.EqualTo(UserRole.MaxLength));
             Assert.That(GetMaxLength<Session>(dbContext, nameof(Session.AuthMethod)), Is.EqualTo(AuthMethod.MaxLength));
             Assert.That(GetMaxLength<RefreshToken>(dbContext, nameof(RefreshToken.TokenHash)), Is.EqualTo(TokenHash.MaxLength));
             Assert.That(GetMaxLength<AuthCode>(dbContext, nameof(AuthCode.CodeHash)), Is.EqualTo(CodeHash.MaxLength));

@@ -22,7 +22,7 @@ public sealed class UserReadService(IdentityDbContext dbContext) : IUserReadServ
                 from session in _dbContext.Sessions.AsNoTracking()
                 join user in _dbContext.Users.AsNoTracking() on session.UserId equals user.Id
                 where session.SsoTokenHash == hash && !session.IsRevoked && session.SsoExpiresAt > now
-                select new ConsoleUserDto(user.Id.Value, user.Email.Value, user.Name.Value, user.Role.Value))
+                select new ConsoleUserDto(user.Id.Value, user.Email.Value, user.Name.Value, user.Role))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -54,7 +54,7 @@ public sealed class UserReadService(IdentityDbContext dbContext) : IUserReadServ
                 x.Id.Value,
                 x.Email.Value,
                 x.Name.Value,
-                x.Role.Value,
+                x.Role,
                 x.EmailVerified,
                 x.CreatedAt,
                 SignInMethods(x.Providers, x.HasPassword)))

@@ -11,6 +11,7 @@ using Vaultly.Identity.Api.Configuration;
 using Vaultly.Identity.Application;
 using Vaultly.Identity.Application.Commands.EnsureBootstrapAdmin;
 using Vaultly.Identity.Application.Commands.RevokeSession;
+using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Queries.GetSessions;
@@ -76,6 +77,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddPasswordRateLimiting();
+builder.Services.ConfigureHttpJsonOptions(options => ApiJson.Configure(options.SerializerOptions));
 
 var app = builder.Build();
 
@@ -154,7 +156,7 @@ app.MapGet("/.well-known/openid-configuration", (IOptions<IdentityOptions> optio
         end_session_endpoint = $"{baseUrl}/logout",
         jwks_uri = $"{baseUrl}/.well-known/jwks.json",
         response_types_supported = new[] { "code" },
-        grant_types_supported = new[] { "authorization_code", "refresh_token" },
+        grant_types_supported = WireNames.All<GrantType>(),
         code_challenge_methods_supported = new[] { "S256" },
         subject_types_supported = new[] { "public" },
         id_token_signing_alg_values_supported = new[] { "RS256" },

@@ -1,9 +1,11 @@
+using Vaultly.Identity.Domain.Enums;
+
 namespace Vaultly.Identity.Application.Models;
 
 /// <summary>
 /// The user signed in through an active SSO session, as the admin console sees them.
 /// </summary>
-public sealed record ConsoleUserDto(Guid Id, string Email, string Name, string Role);
+public sealed record ConsoleUserDto(Guid Id, string Email, string Name, UserRole Role);
 
 /// <summary>
 /// One user in the admin console's user list.
@@ -13,7 +15,7 @@ public sealed record UserSummaryDto(
     Guid Id,
     string Email,
     string Name,
-    string Role,
+    UserRole Role,
     bool EmailVerified,
     DateTimeOffset CreatedAt,
     IReadOnlyList<string> SignInMethods);

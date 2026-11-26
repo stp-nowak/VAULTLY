@@ -66,7 +66,7 @@ public static class OAuthEndpoints
         catch (OAuthProtocolException ex)
         {
             Logger(loggerFactory).LogWarning("Rejected /authorize request: {Error} {Description}", ex.Error, ex.Message);
-            return LoginUiError(options, "invalid_request");
+            return LoginUiError(options, SignInErrorCode.InvalidRequest);
         }
     }
 
@@ -80,7 +80,7 @@ public static class OAuthEndpoints
     {
         if (request is null)
         {
-            return LoginUiError(options, "invalid_request");
+            return LoginUiError(options, SignInErrorCode.InvalidRequest);
         }
 
         try
@@ -107,14 +107,14 @@ public static class OAuthEndpoints
         if (!string.IsNullOrEmpty(error))
         {
             Logger(loggerFactory).LogWarning("{Provider} returned error {Error}", provider, error);
-            return LoginUiError(options, error == "access_denied" ? "access_denied" : "login_failed");
+            return LoginUiError(options, error == WireNames.Of(OAuthError.AccessDenied) ? SignInErrorCode.AccessDenied : SignInErrorCode.LoginFailed);
         }
 
         var code = query["code"].ToString();
         var state = query["state"].ToString();
         if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
         {
-            return LoginUiError(options, "invalid_request");
+            return LoginUiError(options, SignInErrorCode.InvalidRequest);
         }
 
         try
@@ -143,7 +143,7 @@ public static class OAuthEndpoints
         NoStore(context.Response);
         if (!context.Request.HasFormContentType)
         {
-            return OAuthError(OAuthProtocolException.InvalidRequest("Form-encoded body is required."));
+            return OAuthErrorResponse(OAuthProtocolException.InvalidRequest("Form-encoded body is required."));
         }
 
         var form = await context.Request.ReadFormAsync(context.RequestAborted);
@@ -151,12 +151,17 @@ public static class OAuthEndpoints
 
         try
         {
-            TokenResult result = form["grant_type"].ToString() switch
+            if (!WireNames.TryParse<GrantType>(form["grant_type"].ToString(), out var grantType))
             {
-                "authorization_code" => await sender.Send(
+                throw OAuthProtocolException.UnsupportedGrantType();
+            }
+
+            TokenResult result = grantType switch
+            {
+                GrantType.AuthorizationCode => await sender.Send(
                     new ExchangeAuthCodeCommand(form["code"], clientId, clientSecret, form["redirect_uri"], form["code_verifier"]),
                     context.RequestAborted),
-                "refresh_token" => await sender.Send(
+                GrantType.RefreshToken => await sender.Send(
                     new RefreshSessionCommand(form["refresh_token"], clientId, clientSecret),
                     context.RequestAborted),
                 _ => throw OAuthProtocolException.UnsupportedGrantType(),
@@ -166,7 +171,7 @@ public static class OAuthEndpoints
         }
         catch (OAuthProtocolException ex)
         {
-            return OAuthError(ex);
+            return OAuthErrorResponse(ex);
         }
     }
 
@@ -174,7 +179,7 @@ public static class OAuthEndpoints
     {
         if (!context.Request.HasFormContentType)
         {
-            return OAuthError(OAuthProtocolException.InvalidRequest("Form-encoded body is required."));
+            return OAuthErrorResponse(OAuthProtocolException.InvalidRequest("Form-encoded body is required."));
         }
 
         var form = await context.Request.ReadFormAsync(context.RequestAborted);
@@ -187,7 +192,7 @@ public static class OAuthEndpoints
         }
         catch (OAuthProtocolException ex)
         {
-            return OAuthError(ex);
+            return OAuthErrorResponse(ex);
         }
     }
 
@@ -234,7 +239,7 @@ public static class OAuthEndpoints
         return (form["client_id"].ToString(), form["client_secret"].ToString());
     }
 
-    private static IResult OAuthError(OAuthProtocolException ex)
+    private static IResult OAuthErrorResponse(OAuthProtocolException ex)
         => Results.Json(new { error = ex.Error, error_description = ex.Message }, statusCode: ex.StatusCode);
 
     private static void NoStore(HttpResponse response)
@@ -243,13 +248,13 @@ public static class OAuthEndpoints
         response.Headers.Pragma = "no-cache";
     }
 
-    private static IResult LoginUiError(IOptions<IdentityOptions> options, string code)
-        => Results.Redirect(QueryHelpers.AddQueryString($"{options.Value.ResolveLoginUiBaseUrl()}/error", "code", code));
+    private static IResult LoginUiError(IOptions<IdentityOptions> options, SignInErrorCode code)
+        => Results.Redirect(QueryHelpers.AddQueryString($"{options.Value.ResolveLoginUiBaseUrl()}/error", "code", WireNames.Of(code)));
 
-    private static string ToUiErrorCode(Exception ex)
+    private static SignInErrorCode ToUiErrorCode(Exception ex)
         => ex is AuthorizationRequestExpiredException or AuthorizationRequestCompletedException or AuthorizationRequestNotFoundException
-            ? "request_expired"
-            : "login_failed";
+            ? SignInErrorCode.RequestExpired
+            : SignInErrorCode.LoginFailed;
 
     private static ILogger Logger(ILoggerFactory loggerFactory) => loggerFactory.CreateLogger(typeof(OAuthEndpoints));
 

@@ -80,8 +80,8 @@ auth/
     ├── Vaultly.Identity.SharedKernel/      # AggregateRoot, DomainEvent, DomainException, IUnitOfWork
     ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User + role, Session + SSO, OAuthState,
     │                                       #   AuthorizationRequest for a client or the console, SignInSettings), Entities (AuthCode
-    │                                       #   bound to client/PKCE), ValueObjects, Events, Exceptions, Constants,
-    │                                       #   Services (RoleAssignment)
+    │                                       #   bound to client/PKCE), ValueObjects, Enums (UserRole), Events, Exceptions,
+    │                                       #   Constants, Services (RoleAssignment)
     ├── Vaultly.Identity.Application/       # CQRS
     │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
     │   ├── Commands/<UseCase>/             #   write side: StartAuthorization, StartExternalLogin, HandleOAuthCallback,
@@ -93,7 +93,8 @@ auth/
     │   ├── Interfaces/Repositories/        #   write ports (aggregates)
     │   ├── Interfaces/ReadServices/        #   read ports (DTOs)
     │   ├── Interfaces/Services/            #   other ports (clock, token hashing, JWT, OAuth providers)
-    │   ├── Models/  Options/  Common/       #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors)
+    │   ├── Models/  Options/  Common/       #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors),
+    │   │                                   #   WireNames (snake_case spelling of enums)
     ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
     ├── Vaultly.Identity.Api/               # Minimal API endpoints → ISender (OAuthEndpoints, PasswordEndpoints,
     │                                       #   AdminEndpoints, CsrfHeaderFilter), composition root
@@ -116,6 +117,9 @@ auth/
 ## C# Instructions
 - Latest C# (currently C# 14), `net10.0`, nullable reference types enabled.
 - Prefer primary constructors.
+- Fixed option sets (roles, statuses, error codes, grant types) are enums, never strings. Their outside spelling is
+  the `snake_case` member name: JSON via the global `JsonStringEnumConverter` (`ApiJson`, integers rejected), EF
+  columns, claims and query strings via `WireNames`. Renaming a member changes the wire contract and stored data.
 - Comments: follow the root rule — minimal; `<summary>` only on public API types/members where it adds information;
   inline comments only for genuinely non-obvious reasons (protocol/security constraints, workarounds).
 - Test-driven development; use the `test-writer` skill (NUnit + Moq).

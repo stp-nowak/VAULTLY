@@ -1,4 +1,5 @@
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 

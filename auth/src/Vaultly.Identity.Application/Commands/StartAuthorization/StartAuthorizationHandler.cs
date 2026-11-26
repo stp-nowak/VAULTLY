@@ -56,18 +56,18 @@ public sealed class StartAuthorizationHandler(
         // 2. From here errors go back to the client as ?error=…&state=… (RFC 6749 §4.1.2.1).
         if (!string.Equals(request.ResponseType, "code", StringComparison.Ordinal))
         {
-            return ErrorRedirect(redirectUri, request.State, "unsupported_response_type", "Only response_type=code is supported.");
+            return ErrorRedirect(redirectUri, request.State, OAuthError.UnsupportedResponseType, "Only response_type=code is supported.");
         }
 
         if (string.IsNullOrEmpty(request.State) || request.State.Length > ClientState.MaxLength)
         {
-            return ErrorRedirect(redirectUri, request.State, "invalid_request", "A state parameter is required.");
+            return ErrorRedirect(redirectUri, request.State, OAuthError.InvalidRequest, "A state parameter is required.");
         }
 
         if (!string.Equals(request.CodeChallengeMethod, CodeChallenge.MethodS256, StringComparison.Ordinal)
             || !TryCreateChallenge(request.CodeChallenge, out var codeChallenge))
         {
-            return ErrorRedirect(redirectUri, request.State, "invalid_request", "PKCE with code_challenge_method=S256 is required.");
+            return ErrorRedirect(redirectUri, request.State, OAuthError.InvalidRequest, "PKCE with code_challenge_method=S256 is required.");
         }
 
         var state = new ClientState(request.State);
@@ -124,10 +124,10 @@ public sealed class StartAuthorizationHandler(
                 new Dictionary<string, string?> { ["request"] = authorizationRequest.Id.Value.ToString() }));
     }
 
-    private static AuthorizationResult ErrorRedirect(RedirectUri redirectUri, string? state, string error, string description)
+    private static AuthorizationResult ErrorRedirect(RedirectUri redirectUri, string? state, OAuthError error, string description)
         => new(OAuthFlowUtilities.BuildUrl(redirectUri.Value, new Dictionary<string, string?>
         {
-            ["error"] = error,
+            ["error"] = WireNames.Of(error),
             ["error_description"] = description,
             ["state"] = state is { Length: <= ClientState.MaxLength } ? state : null,
         }));

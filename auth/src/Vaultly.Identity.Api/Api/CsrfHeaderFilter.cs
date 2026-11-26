@@ -16,6 +16,6 @@ public static class CsrfHeaderFilter
 
         return httpContext.Request.Headers[HeaderName] == "1"
             ? next(context)
-            : ValueTask.FromResult<object?>(Results.BadRequest(new { error = "csrf_header_missing" }));
+            : ValueTask.FromResult<object?>(Results.BadRequest(new ApiErrorResponse(ApiError.CsrfHeaderMissing)));
     }
 }
