@@ -1,4 +1,5 @@
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.ValueObjects;
 
 namespace Vaultly.Identity.Application.Interfaces.Services;
 
@@ -34,6 +35,28 @@ public interface ITokenHasher
     /// Hashes the provided token using a stable hashing strategy.
     /// </summary>
     string HashToken(string token);
+}
+
+public enum PasswordVerification
+{
+    Failed,
+    Succeeded,
+
+    /// <summary>Correct, but hashed with outdated parameters: store a new hash.</summary>
+    SucceededRehashNeeded,
+}
+
+public interface IPasswordHasher
+{
+    PasswordHash Hash(Password password);
+
+    PasswordVerification Verify(PasswordHash hash, Password password);
+
+    /// <summary>
+    /// Takes as long as <see cref="Verify"/> without a stored hash, so a failed sign-in for an unknown email or an
+    /// account without a password cannot be told apart by timing.
+    /// </summary>
+    void VerifyWithoutAccount(Password password);
 }
 
 public interface IClock

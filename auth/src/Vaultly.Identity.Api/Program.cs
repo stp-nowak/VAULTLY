@@ -75,6 +75,7 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddPasswordRateLimiting();
 
 var app = builder.Build();
 
@@ -100,11 +101,13 @@ else
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 var endpointErrorHandler = new EndpointErrorHandler(Log.ForContext<EndpointErrorHandler>());
 
 app.MapOAuthEndpoints();
 app.MapAdminEndpoints();
+app.MapPasswordEndpoints();
 
 app.MapGet("/sessions", async (HttpContext httpContext, ISender sender) =>
     await endpointErrorHandler.ExecuteAsync(httpContext, "GET /sessions", async () =>

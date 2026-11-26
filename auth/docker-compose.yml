@@ -33,6 +33,7 @@ services:
       Google__ClientId: ${GOOGLE_CLIENT_ID:-REPLACE_WITH_GOOGLE_CLIENT_ID}
       Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-REPLACE_WITH_GOOGLE_CLIENT_SECRET}
       Identity__BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      Identity__BootstrapAdmin__Password: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     ports:
       - "127.0.0.1:5096:8080"
     volumes:

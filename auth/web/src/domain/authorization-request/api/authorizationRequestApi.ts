@@ -6,6 +6,8 @@ import { parseAuthorizationRequest } from './parsers';
 /** Authorization request endpoints of the Identity API (auth/src), same origin. */
 export const authorizationRequestRoutes = {
   byId: (id: string) => `/api/authorization-requests/${encodeURIComponent(id)}`,
+  passwordSignIn: (id: string) => `/api/authorization-requests/${encodeURIComponent(id)}/password-sign-in`,
+  registration: (id: string) => `/api/authorization-requests/${encodeURIComponent(id)}/registration`,
 } as const;
 
 /**

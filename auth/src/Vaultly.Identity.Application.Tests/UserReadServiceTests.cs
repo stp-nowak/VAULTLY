@@ -40,6 +40,20 @@ public sealed class UserReadServiceTests
         Assert.That(last.Items.Single().SignInMethods, Is.EqualTo(new[] { "google" }));
     }
 
+    [Test]
+    public async Task GetPageAsync_ListsPasswordAsASignInMethodNextToProviders()
+    {
+        await using var dbContext = CreateDbContext();
+        var user = User.RegisterWithPassword(new EmailAddress("ada@example.com"), new PersonName("Ada"), new PasswordHash("hash"), Now);
+        user.LinkExternalIdentity(new ProviderId("google"), new ProviderUserId("g-1"), user.Email, user.Name, Now);
+        dbContext.Users.Add(user);
+        await dbContext.SaveChangesAsync();
+
+        var page = await new UserReadService(dbContext).GetPageAsync(null, 1, 20, CancellationToken.None);
+
+        Assert.That(page.Items.Single().SignInMethods, Is.EqualTo(new[] { "google", "password" }));
+    }
+
     [TestCase("GRACE", "grace@example.com")]
     [TestCase("turing", "alan@example.com")]
     public async Task GetPageAsync_WithSearch_MatchesEmailOrNameIgnoringCase(string search, string expectedEmail)

@@ -8,6 +8,7 @@ import { getAuthorizationRequest } from './authorizationRequestApi';
 const pendingRequest = {
   clientName: 'Vaultly',
   id: '8f1c',
+  passwordSignIn: false,
   providers: [{ id: 'google', name: 'Google', startUrl: '/google/authorize?request=8f1c' }],
   status: 'pending',
 };

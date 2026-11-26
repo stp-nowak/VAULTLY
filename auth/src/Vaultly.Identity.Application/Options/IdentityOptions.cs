@@ -47,11 +47,15 @@ public sealed class IdentityOptions
 
 /// <summary>
 /// The first admin. While no admin exists, startup makes the user with this email an admin, creating the user when
-/// needed; the person then signs in with a provider that has verified this email. Ignored once any admin exists.
+/// needed; the person then signs in with a provider that has verified this email, or with <see cref="Password"/>.
+/// Ignored once any admin exists.
 /// </summary>
 public sealed class BootstrapAdminOptions
 {
     public string Email { get; set; } = string.Empty;
+
+    /// <summary>Optional password for that user when it has none yet. Provide it through the environment only.</summary>
+    public string Password { get; set; } = string.Empty;
 }
 
 /// <summary>

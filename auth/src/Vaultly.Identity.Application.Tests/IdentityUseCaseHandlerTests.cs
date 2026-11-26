@@ -16,6 +16,7 @@ using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
+using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 using Vaultly.Identity.Domain.Aggregates;
@@ -339,10 +340,10 @@ public sealed class IdentityUseCaseHandlerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(pending!.Status, Is.EqualTo("pending"));
+            Assert.That(pending!.Status, Is.EqualTo(AuthorizationRequestStatus.Pending));
             Assert.That(pending.ClientName, Is.EqualTo("Vaultly"));
             Assert.That(pending.Providers.Single().StartUrl, Is.EqualTo($"/google/authorize?request={pendingId}"));
-            Assert.That(expired!.Status, Is.EqualTo("expired"));
+            Assert.That(expired!.Status, Is.EqualTo(AuthorizationRequestStatus.Expired));
             Assert.That(expired.Providers, Is.Empty);
         });
     }

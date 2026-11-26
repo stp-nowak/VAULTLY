@@ -12,8 +12,8 @@ public sealed record SignInMethodInfo(SignInMethod Method, string Name, bool IsC
 /// </summary>
 public sealed class SignInMethodCatalog(IEnumerable<IExternalOAuthProvider> providers)
 {
-    // Email + password sign-in is not implemented yet, so it is listed but never configured.
-    private static readonly SignInMethodInfo Password = new(SignInMethod.Password, "Email and password", IsConfigured: false);
+    // Built in: needs no deployment configuration.
+    private static readonly SignInMethodInfo Password = new(SignInMethod.Password, "Email and password", IsConfigured: true);
 
     public IReadOnlyList<SignInMethodInfo> All { get; } =
         [.. providers.Select(x => new SignInMethodInfo(SignInMethod.Of(x.Id), x.Name, x.IsConfigured)), Password];

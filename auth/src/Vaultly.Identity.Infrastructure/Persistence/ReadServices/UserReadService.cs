@@ -31,11 +31,25 @@ public sealed class UserReadService(IdentityDbContext dbContext) : IUserReadServ
         var users = Search(_dbContext.Users.AsNoTracking(), search);
         var total = await users.CountAsync(cancellationToken);
 
-        var items = await users
+        var rows = await users
             .OrderByDescending(x => x.CreatedAt)
             .ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(x => new
+            {
+                x.Id,
+                x.Email,
+                x.Name,
+                x.Role,
+                x.EmailVerified,
+                x.CreatedAt,
+                Providers = x.ExternalIdentities.Select(e => e.ProviderId).Distinct().ToList(),
+                HasPassword = x.PasswordHash != null,
+            })
+            .ToListAsync(cancellationToken);
+
+        var items = rows
             .Select(x => new UserSummaryDto(
                 x.Id.Value,
                 x.Email.Value,
@@ -43,11 +57,14 @@ public sealed class UserReadService(IdentityDbContext dbContext) : IUserReadServ
                 x.Role.Value,
                 x.EmailVerified,
                 x.CreatedAt,
-                x.ExternalIdentities.Select(e => e.ProviderId.Value).Distinct().ToList()))
-            .ToListAsync(cancellationToken);
+                SignInMethods(x.Providers, x.HasPassword)))
+            .ToList();
 
         return new UserPageDto(items, total, page, pageSize);
     }
+
+    private static List<string> SignInMethods(IEnumerable<ProviderId> providers, bool hasPassword)
+        => [.. providers.Select(x => x.Value), .. hasPassword ? [SignInMethod.Password.Value] : Array.Empty<string>()];
 
     // The explicit string casts of the value objects translate to the plain columns (`lower("Email"::text) LIKE …`),
     // so the filter runs in the database. `.Value` would not translate, and EF.Property<string> makes EF convert the

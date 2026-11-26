@@ -93,6 +93,63 @@ describe('LoginPage', () => {
     server.events.removeAllListeners();
   });
 
+  it('offers email and password next to the providers and links to creating an account', async () => {
+    respondWith(authorizationRequest({ passwordSignIn: true }));
+    await renderLogin('/login?request=8f1c');
+
+    expect(await screen.findByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+    expect(screen.getByText('or')).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'Sign in with email' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute('href', '/register?request=8f1c');
+  });
+
+  it('signs in with email and password and leaves for the app', async () => {
+    let sent: unknown;
+    let csrf: string | null = null;
+    respondWith(authorizationRequest({ passwordSignIn: true, providers: [] }));
+    server.use(
+      http.post('*/api/authorization-requests/:id/password-sign-in', async ({ request }) => {
+        sent = await request.json();
+        csrf = request.headers.get('X-CSRF');
+        return HttpResponse.json({ redirectUrl: 'https://app.test/api/auth/callback?code=c&state=s' });
+      }),
+    );
+    await renderLogin('/login?request=8f1c');
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'ada@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'correct horse battery staple');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    await vi.waitFor(() => expect(navigateToUrl).toHaveBeenCalledWith('https://app.test/api/auth/callback?code=c&state=s'));
+    expect(sent).toEqual({ email: 'ada@example.com', password: 'correct horse battery staple' });
+    expect(csrf).toBe('1');
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
+  });
+
+  it('explains a wrong email or password without saying which', async () => {
+    respondWith(authorizationRequest({ passwordSignIn: true }));
+    server.use(
+      http.post('*/api/authorization-requests/:id/password-sign-in', () =>
+        HttpResponse.json({ error: 'invalid_credentials' }, { status: 400 }),
+      ),
+    );
+    await renderLogin('/login?request=8f1c');
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'ada@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong password value');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Email or password is incorrect.');
+    expect(navigateToUrl).not.toHaveBeenCalled();
+  });
+
+  it('says signing in is unavailable when every method is switched off', async () => {
+    respondWith(authorizationRequest({ passwordSignIn: false, providers: [] }));
+    await renderLogin('/login?request=8f1c');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Signing in is not available right now.');
+  });
+
   it('asks to try again when the sign-in page cannot be loaded', async () => {
     server.use(http.get('*/api/authorization-requests/:id', () => new HttpResponse(null, { status: 500 })));
     await renderLogin('/login?request=8f1c');

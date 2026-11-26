@@ -8,6 +8,11 @@ namespace Vaultly.Identity.Domain.Aggregates;
 
 public sealed class User : AggregateRoot
 {
+    /// <summary>Failed password sign-ins in a row that pause password sign-in for <see cref="LockoutDuration"/>.</summary>
+    public const int MaxFailedSignIns = 5;
+
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     private readonly List<ExternalIdentity> _externalIdentities = new();
 
     /// <summary>
@@ -23,8 +28,12 @@ public sealed class User : AggregateRoot
     public bool EmailVerified { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public UserRole Role { get; private set; } = null!;
+    public PasswordHash? PasswordHash { get; private set; }
+    public int FailedSignInCount { get; private set; }
+    public DateTimeOffset? LockedUntil { get; private set; }
 
     public bool IsAdmin => Role == UserRole.Admin;
+    public bool HasPassword => PasswordHash is not null;
 
     public IReadOnlyCollection<ExternalIdentity> ExternalIdentities => _externalIdentities.AsReadOnly();
 
@@ -45,6 +54,84 @@ public sealed class User : AggregateRoot
 
         user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email, user.Name, user.EmailVerified));
         return user;
+    }
+
+    /// <summary>
+    /// Registers a user who signs in with email and password. The email is not verified: nobody has proven they own it.
+    /// </summary>
+    public static User RegisterWithPassword(EmailAddress email, PersonName name, PasswordHash passwordHash, DateTimeOffset now)
+    {
+        var user = Create(email, name, emailVerified: false, now);
+        user.PasswordHash = passwordHash;
+        return user;
+    }
+
+    public bool IsLockedOut(DateTimeOffset now) => LockedUntil > now;
+
+    /// <summary>Counts a wrong password; the <see cref="MaxFailedSignIns"/>th in a row pauses password sign-in.</summary>
+    public void RecordFailedSignIn(DateTimeOffset now)
+    {
+        FailedSignInCount++;
+        if (FailedSignInCount < MaxFailedSignIns)
+        {
+            return;
+        }
+
+        FailedSignInCount = 0;
+        LockedUntil = now + LockoutDuration;
+        RaiseDomainEvent(new UserLockedOutDomainEvent(Id, LockedUntil.Value));
+    }
+
+    public void RecordSuccessfulSignIn()
+    {
+        FailedSignInCount = 0;
+        LockedUntil = null;
+    }
+
+    public void SetPassword(PasswordHash passwordHash)
+    {
+        PasswordHash = passwordHash;
+        RaiseDomainEvent(new UserPasswordSetDomainEvent(Id));
+    }
+
+    /// <summary>Stores the same password hashed with newer parameters (no change for the user).</summary>
+    public void UpgradePasswordHash(PasswordHash passwordHash)
+    {
+        if (HasPassword)
+        {
+            PasswordHash = passwordHash;
+        }
+    }
+
+    public void ClearPassword()
+    {
+        if (!HasPassword)
+        {
+            return;
+        }
+
+        PasswordHash = null;
+        FailedSignInCount = 0;
+        LockedUntil = null;
+        RaiseDomainEvent(new UserPasswordRemovedDomainEvent(Id));
+    }
+
+    /// <summary>
+    /// A provider that verified the email signs in to this account. If the email was not verified yet (the account was
+    /// registered with a password nobody confirmed), the password is removed, because whoever set it may not own the
+    /// email. Returns whether that happened, so the caller can also end the account's sessions.
+    /// </summary>
+    public bool SecureWithVerifiedEmail()
+    {
+        if (EmailVerified)
+        {
+            return false;
+        }
+
+        ClearPassword();
+        EmailVerified = true;
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, Name, EmailVerified));
+        return true;
     }
 
     /// <summary>

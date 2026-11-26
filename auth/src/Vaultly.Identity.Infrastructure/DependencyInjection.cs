@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<ITokenHasher, Sha256TokenHasher>();
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 
