@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { navigateToUrl } from '@/shared/lib';
+
 import { buildLoginUrl, getCurrentUser, logout as logoutRequest } from '../api/identityApi';
 import { AuthContext, initialAuthState, type AuthContextValue, type AuthState } from './authContext';
 
@@ -40,13 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [ensureReady]);
 
   const login = useCallback((returnUrl?: string) => {
-    window.location.assign(buildLoginUrl(returnUrl));
+    navigateToUrl(buildLoginUrl(returnUrl));
   }, []);
 
   const logout = useCallback(async () => {
     const logoutUrl = await logoutRequest();
     setState(signedOutState);
-    window.location.assign(logoutUrl);
+    navigateToUrl(logoutUrl);
   }, []);
 
   const value = useMemo<AuthContextValue>(

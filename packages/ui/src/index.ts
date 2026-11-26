@@ -1,4 +1,6 @@
 // Public API of @vaultly/ui. Import styles separately: `@import '@vaultly/ui/styles.css';` after Tailwind.
+export { BrandMark } from './components/BrandMark';
+export type { BrandMarkProps } from './components/BrandMark';
 export { Button } from './components/Button';
 export type { ButtonProps, ButtonVariant } from './components/Button';
 export { Card } from './components/Card';
