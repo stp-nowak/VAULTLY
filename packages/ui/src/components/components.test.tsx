@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { cn } from '../lib/cn';
 import { Badge } from './Badge';
@@ -79,18 +79,30 @@ describe('Badge', () => {
 });
 
 describe('Select', () => {
-  it('is a labelled native select whose wrapper takes className', () => {
-    const { container } = render(
-      <Select aria-label="Role" className="w-36" defaultValue="admin">
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-      </Select>,
-    );
+  const roles = [
+    { label: 'User', value: 'user' },
+    { label: 'Admin', value: 'admin' },
+    { disabled: true, label: 'Owner', value: 'owner' },
+  ] as const;
+
+  it('renders its options in a labelled native select whose wrapper takes className', () => {
+    const { container } = render(<Select aria-label="Role" className="w-36" defaultValue="admin" options={roles} />);
 
     const select = screen.getByRole('combobox', { name: 'Role' });
     expect(select).toHaveValue('admin');
     expect(select.className).toContain('appearance-none');
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['User', 'Admin', 'Owner']);
+    expect(screen.getByRole('option', { name: 'Owner' })).toBeDisabled();
     expect(container.firstElementChild?.className).toContain('w-36');
+  });
+
+  it('reports the picked value', () => {
+    const onValueChange = vi.fn();
+    render(<Select aria-label="Role" defaultValue="user" onValueChange={onValueChange} options={roles} />);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Role' }), { target: { value: 'admin' } });
+
+    expect(onValueChange).toHaveBeenCalledExactlyOnceWith('admin');
   });
 });
 
