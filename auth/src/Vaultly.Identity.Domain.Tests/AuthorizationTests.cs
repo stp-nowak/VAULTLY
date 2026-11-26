@@ -1,6 +1,7 @@
 using NUnit.Framework;
 
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Constants;
 using Vaultly.Identity.Domain.Events;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -53,6 +54,33 @@ public sealed class AuthorizationTests
             Assert.That(() => request.Complete(Now.AddMinutes(2)), Throws.TypeOf<AuthorizationRequestCompletedException>());
         });
     }
+
+    [Test]
+    public void AuthorizationRequest_CreateForConsole_RemembersConsoleUrlWithoutClientBinding()
+    {
+        var consoleUrl = new RedirectUri("https://identity.test/admin");
+
+        var request = AuthorizationRequest.CreateForConsole(consoleUrl, Now, Now.AddMinutes(10));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(request.IsForConsole, Is.True);
+            Assert.That(request.ClientId, Is.EqualTo(ConsoleClient.Id));
+            Assert.That(request.RedirectUri, Is.EqualTo(consoleUrl));
+            Assert.That(request.State, Is.Null);
+            Assert.That(request.CodeChallenge, Is.Null);
+        });
+    }
+
+    [Test]
+    public void AuthorizationRequest_Create_ForClient_IsNotForConsole()
+        => Assert.That(CreateRequest().IsForConsole, Is.False);
+
+    [Test]
+    public void AuthorizationRequest_Create_WithConsoleClientId_Throws()
+        => Assert.That(
+            () => AuthorizationRequest.Create(ConsoleClient.Id, Callback, new ClientState("s"), new CodeChallenge(Challenge), Now, Now.AddMinutes(10)),
+            Throws.TypeOf<InvalidValueException>());
 
     [Test]
     public void AuthorizationRequest_EnsurePending_WhenExpired_Throws()

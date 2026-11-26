@@ -39,4 +39,6 @@ public sealed record EmailAddress
     /// Returns the email address as a string.
     /// </summary>
     public override string ToString() => Value;
+
+    public static explicit operator string(EmailAddress email) => email.Value;
 }

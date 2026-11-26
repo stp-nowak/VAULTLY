@@ -4,7 +4,9 @@
 > service**, Keycloak-style. Client apps (e.g. the web API) redirect the browser to the Identity service
 > (`/authorize`), which sends it to this UI to choose a sign-in provider. The UI is hosted by its own web server
 > (nginx image, Vite in development) that proxies the Identity API paths, so every call is same-origin; the Identity
-> API (`auth/src`) never serves it. This SPA never sees tokens and holds no credentials.
+> API (`auth/src`) never serves it. It is also the Identity service's **admin console** (`/admin`). This SPA never
+> sees tokens and holds no credentials: the console's API is authenticated by the Identity service's own HttpOnly SSO
+> cookie, and every call sends `X-CSRF: 1` (`fetchJson`).
 
 ## Routes (`src/app/routes`, TanStack file routes)
 
@@ -14,6 +16,8 @@
 | `/error?code=<code>` | `pages/sign-in-error` | "Sign-in didn't complete" + message for `login_failed`, `access_denied`, `invalid_request`, `request_expired` (anything else → `login_failed`). |
 | `/logged-out` | `pages/logged-out` | "You're signed out." |
 | `/` | — | Redirects to `/logged-out`. |
+| `/admin` | `pages/admin-console` | Layout of the admin console: loads `GET /api/admin/me`; admin → console frame (`widgets/console-shell`) + child page; 403 → "No access" + sign out; 401 → "Signing you in…" and a full-page navigation to `/api/admin/sign-in`. `/admin/` redirects to `/admin/users`. |
+| `/admin/users?search=&page=` | `pages/admin-users` | Users newest first with role select (`features/assign-user-role`), sign-in methods and join date; search by email or name; pages of 20. |
 | unknown URL / route error | `pages/route-error` | Root `notFoundComponent` / `errorComponent`. |
 
 Search params are kept as raw strings (`shared/lib/searchParams.ts`): the router's default JSON parsing would turn
@@ -34,6 +38,16 @@ ids such as `8e10` into numbers.
 
 Client, parser, types and `authorizationRequestQueryOptions` live in `src/domain/authorization-request`.
 
+Admin console (`X-CSRF: 1` required; 401 = no SSO session, 403 = not an admin):
+
+- `GET /api/admin/sign-in` — page navigation that signs the browser in and returns to `/admin`.
+- `GET /api/admin/me` → `{ "id", "email", "name", "role": "admin" }` (`domain/console-admin`).
+- `GET /api/admin/users?search=&page=&pageSize=` → `{ "items": [{ "id", "email", "name", "role", "emailVerified",
+  "createdAt", "signInMethods": ["google"] }], "total", "page", "pageSize" }` (`domain/user`).
+- `PUT /api/admin/users/{id}/role` with `{ "role": "admin" | "user" }` → 204; 404 unknown user; 409
+  `{ "error": "last_admin" }` (`features/assign-user-role`).
+- Sign out: navigation to `/logout`.
+
 ## Commands (from the repository root)
 - `pnpm install` — once for the whole workspace
 - `pnpm --filter @vaultly/auth-web dev` — http://localhost:5174, proxies `/api`, `/authorize`, `/google`, `/logout`,
@@ -49,12 +63,15 @@ Client, parser, types and `authorizationRequestQueryOptions` live in `src/domain
 - **No `if`/early-return chains that render JSX.** Derive one state value in a pure, tested function (prefer lookup
   maps such as `Record<QueryStatus, Notice>` over `if` chains), map it to a small view model at a single branch point
   (e.g. `{ heading, body }`) and render shared markup once. Never repeat the same element (heading, wrapper) per state.
-- **Feature-Sliced Design with `domain` instead of `entities`**: `app → pages → features → domain → shared`.
+- **Feature-Sliced Design with `domain` instead of `entities`**: `app → pages → widgets → features → domain → shared`.
   Import only from lower layers, never between slices of one layer, and only through a slice's `index.ts`;
   relative imports inside a slice, `@/` across slices. Enforced by `no-restricted-imports` in `eslint.config.js`.
   - `app/routes/*` stay thin (search validation, loader prefetch) and render a page.
   - `domain/authorization-request` ↔ the AuthorizationRequest aggregate of the Identity service.
+  - `domain/console-admin` — who may use the admin console; `domain/user` ↔ the User aggregate (read side).
   - `features/sign-in-with-provider` — the provider buttons (user action).
+  - `features/assign-user-role` — the role select; writes are mutations in `features/*/api`.
+  - `widgets/console-shell` — frame of the admin console pages.
 - **Styling**: Tailwind CSS v4 + `@vaultly/ui` only (`Button`, `Card`, `CenteredScreen`, `Eyebrow`, `StatusNotice`, …,
   tokens such as `text-muted`). No hex colors, no Sass/CSS modules; global CSS is only `app/styles/index.css`.
 - **No circular dependencies**: `src/app/circularDependencies/circularDependencies.test.ts` (madge from

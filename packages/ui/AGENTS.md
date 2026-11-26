@@ -13,7 +13,8 @@ base styles and React primitives. Part of the root pnpm workspace; apps depend o
 src/
 ├── styles.css        # @theme tokens (colors, fonts, tracking, shadows, animations), @utility bg-panel, base layer, @source
 ├── lib/cn.ts         # clsx + tailwind-merge
-├── components/       # BrandMark, Button, Card, CenteredScreen, Eyebrow, InfoTile, StatusNotice (+ tests)
+├── components/       # Badge, BrandMark, Button, Card, CenteredScreen, Eyebrow, InfoTile, Select, StatusNotice,
+│                     #   Table, TextField (+ tests)
 └── index.ts          # Public API — the only entry point apps import from
 ```
 

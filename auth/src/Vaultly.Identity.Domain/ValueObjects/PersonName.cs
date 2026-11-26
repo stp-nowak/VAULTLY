@@ -34,4 +34,6 @@ public sealed record PersonName
     /// Returns the name as a string.
     /// </summary>
     public override string ToString() => Value;
+
+    public static explicit operator string(PersonName name) => name.Value;
 }

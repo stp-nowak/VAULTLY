@@ -1,4 +1,6 @@
 // Public API of @vaultly/ui. Import styles separately: `@import '@vaultly/ui/styles.css';` after Tailwind.
+export { Badge } from './components/Badge';
+export type { BadgeProps, BadgeTone } from './components/Badge';
 export { BrandMark } from './components/BrandMark';
 export type { BrandMarkProps } from './components/BrandMark';
 export { Button } from './components/Button';
@@ -11,6 +13,12 @@ export { Eyebrow } from './components/Eyebrow';
 export type { EyebrowProps } from './components/Eyebrow';
 export { InfoTile } from './components/InfoTile';
 export type { InfoTileProps } from './components/InfoTile';
+export { Select } from './components/Select';
+export type { SelectProps } from './components/Select';
 export { StatusNotice } from './components/StatusNotice';
 export type { StatusNoticeProps, StatusTone } from './components/StatusNotice';
+export { Table } from './components/Table';
+export type { TableProps } from './components/Table';
+export { TextField } from './components/TextField';
+export type { TextFieldProps } from './components/TextField';
 export { cn } from './lib/cn';

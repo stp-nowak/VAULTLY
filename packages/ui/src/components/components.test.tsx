@@ -2,11 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { cn } from '../lib/cn';
+import { Badge } from './Badge';
 import { BrandMark } from './BrandMark';
 import { Button } from './Button';
 import { Card } from './Card';
 import { InfoTile } from './InfoTile';
+import { Select } from './Select';
 import { StatusNotice } from './StatusNotice';
+import { Table } from './Table';
+import { TextField } from './TextField';
 
 describe('cn', () => {
   it('lets later Tailwind classes override earlier ones', () => {
@@ -63,6 +67,52 @@ describe('StatusNotice', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Failed');
     expect(screen.getByRole('status')).toHaveTextContent('Loading');
+  });
+});
+
+describe('Badge', () => {
+  it('renders its label with the chosen tone', () => {
+    render(<Badge tone="accent">Admin</Badge>);
+
+    expect(screen.getByText('Admin').className).toContain('text-accent');
+  });
+});
+
+describe('Select', () => {
+  it('is a labelled native select', () => {
+    render(
+      <Select aria-label="Role" defaultValue="admin">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </Select>,
+    );
+
+    expect(screen.getByRole('combobox', { name: 'Role' })).toHaveValue('admin');
+  });
+});
+
+describe('TextField', () => {
+  it('links the label to the input and styles the wrapper with className', () => {
+    const { container } = render(<TextField className="w-64" label="Search" name="search" />);
+
+    expect(screen.getByRole('textbox', { name: 'Search' })).toHaveAttribute('name', 'search');
+    expect(container.firstElementChild?.className).toContain('w-64');
+  });
+});
+
+describe('Table', () => {
+  it('renders an accessible table', () => {
+    render(
+      <Table aria-label="Users">
+        <tbody>
+          <tr>
+            <td>Ada</td>
+          </tr>
+        </tbody>
+      </Table>,
+    );
+
+    expect(screen.getByRole('table', { name: 'Users' })).toHaveTextContent('Ada');
   });
 });
 

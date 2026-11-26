@@ -9,6 +9,7 @@ using Serilog;
 using Vaultly.Identity.Api;
 using Vaultly.Identity.Api.Configuration;
 using Vaultly.Identity.Application;
+using Vaultly.Identity.Application.Commands.EnsureBootstrapAdmin;
 using Vaultly.Identity.Application.Commands.RevokeSession;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
@@ -82,6 +83,12 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     await app.Services.MigrateIdentityDatabaseAsync();
 }
 
+if (!string.IsNullOrWhiteSpace(identityOptions.BootstrapAdmin.Email))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<ISender>().Send(new EnsureBootstrapAdminCommand());
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -97,6 +104,7 @@ app.UseAuthorization();
 var endpointErrorHandler = new EndpointErrorHandler(Log.ForContext<EndpointErrorHandler>());
 
 app.MapOAuthEndpoints();
+app.MapAdminEndpoints();
 
 app.MapGet("/sessions", async (HttpContext httpContext, ISender sender) =>
     await endpointErrorHandler.ExecuteAsync(httpContext, "GET /sessions", async () =>

@@ -49,5 +49,7 @@ cookie; the browser then returns to the registered post-logout URI.
 
 ## Using access tokens
 
-Send `Authorization: Bearer <access_token>`; tokens are short-lived JWTs (RS256) with `sub` (user) and `sid`
-(session). `GET /sessions` and `DELETE /sessions/{id}` let a user manage their sessions.
+Send `Authorization: Bearer <access_token>`; tokens are short-lived JWTs (RS256) with `sub` (user), `sid`
+(session) and `role` (`user` or `admin`). The role in a token is a snapshot from when it was issued; it can be
+changed in the Identity admin console and reaches clients with the next refresh. `GET /sessions` and
+`DELETE /sessions/{id}` let a user manage their sessions.

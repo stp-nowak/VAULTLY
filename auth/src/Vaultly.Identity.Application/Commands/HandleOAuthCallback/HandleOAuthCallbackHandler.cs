@@ -127,14 +127,7 @@ public sealed class HandleOAuthCallbackHandler(
 
         _sessionRepository.Add(session);
 
-        var authCode = _tokenGenerator.GenerateToken(32);
-        session.IssueAuthCode(
-            new CodeHash(_tokenHasher.HashToken(authCode)),
-            now.AddMinutes(_identityOptions.AuthCodeTtlMinutes),
-            authorizationRequest.ClientId,
-            authorizationRequest.RedirectUri,
-            authorizationRequest.CodeChallenge);
-        authorizationRequest.Complete(now);
+        var redirectUrl = SignInCompletion.Complete(authorizationRequest, session, _tokenGenerator, _tokenHasher, _identityOptions, now);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -145,9 +138,6 @@ public sealed class HandleOAuthCallbackHandler(
             user.Id.Value,
             authorizationRequest.ClientId.Value);
 
-        return new AuthCallbackResult(
-            ClientRedirect.WithCode(authorizationRequest.RedirectUri, authCode, authorizationRequest.State),
-            ssoToken,
-            ssoExpiresAt);
+        return new AuthCallbackResult(redirectUrl, ssoToken, ssoExpiresAt);
     }
 }
