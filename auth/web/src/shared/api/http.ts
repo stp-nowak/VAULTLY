@@ -52,12 +52,14 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
 }
 
 /**
- * Calls the Identity API on the same origin and parses the JSON response.
+ * Calls the Identity API on the same origin and parses the JSON response. Sends `X-CSRF: 1`, which the admin API
+ * requires: a cross-site page cannot add that header without a CORS preflight.
  * Throws {@link HttpError} for non-2xx responses.
  */
 export async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set('Accept', 'application/json');
+  headers.set('X-CSRF', '1');
 
   const response = await fetch(input, { ...init, credentials: 'same-origin', headers });
   const payload = await parseResponseBody(response);

@@ -22,6 +22,9 @@ public sealed class User : AggregateRoot
     public PersonName Name { get; private set; } = null!;
     public bool EmailVerified { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
+    public UserRole Role { get; private set; } = null!;
+
+    public bool IsAdmin => Role == UserRole.Admin;
 
     public IReadOnlyCollection<ExternalIdentity> ExternalIdentities => _externalIdentities.AsReadOnly();
 
@@ -36,7 +39,8 @@ public sealed class User : AggregateRoot
             Email = email,
             Name = name,
             EmailVerified = emailVerified,
-            CreatedAt = now
+            CreatedAt = now,
+            Role = UserRole.User
         };
 
         user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email, user.Name, user.EmailVerified));
@@ -56,6 +60,22 @@ public sealed class User : AggregateRoot
         {
             RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, Name, EmailVerified));
         }
+    }
+
+    /// <summary>
+    /// Gives the user another role. Only <see cref="Services.RoleAssignment"/> calls it, because whether an admin
+    /// may lose the role depends on the other users.
+    /// </summary>
+    internal void ChangeRole(UserRole role)
+    {
+        if (Role == role)
+        {
+            return;
+        }
+
+        var previousRole = Role;
+        Role = role;
+        RaiseDomainEvent(new UserRoleChangedDomainEvent(Id, previousRole, role));
     }
 
     /// <summary>

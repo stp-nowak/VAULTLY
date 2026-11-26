@@ -21,6 +21,11 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(UserId userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Counts the users with the admin role, needed to keep at least one admin.
+    /// </summary>
+    Task<int> CountAdminsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Adds a new user aggregate to the repository.
     /// </summary>
     void Add(User user);

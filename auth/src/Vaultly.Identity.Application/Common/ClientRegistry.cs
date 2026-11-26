@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 
 using Vaultly.Identity.Application.Options;
+using Vaultly.Identity.Domain.Constants;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 
@@ -34,6 +35,11 @@ public sealed class RegisteredClient
     {
         Id = new ClientId(options.ClientId);
         DisplayName = string.IsNullOrWhiteSpace(options.DisplayName) ? options.ClientId : options.DisplayName;
+
+        if (Id == ConsoleClient.Id)
+        {
+            throw new InvalidOperationException($"Client id '{options.ClientId}' is reserved for the admin console.");
+        }
 
         if (string.IsNullOrWhiteSpace(options.ClientSecret))
         {

@@ -1,0 +1,99 @@
+using NUnit.Framework;
+
+using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.Events;
+using Vaultly.Identity.Domain.Exceptions;
+using Vaultly.Identity.Domain.Services;
+using Vaultly.Identity.Domain.ValueObjects;
+
+namespace Vaultly.Identity.Domain.Tests;
+
+[TestFixture]
+public sealed class RoleAssignmentTests
+{
+    private static readonly DateTimeOffset Now = new(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+    [Test]
+    public void NewUser_IsARegularUser()
+    {
+        var user = CreateUser();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(user.Role, Is.EqualTo(UserRole.User));
+            Assert.That(user.IsAdmin, Is.False);
+        });
+    }
+
+    [Test]
+    public void Assign_WhenPromotingToAdmin_ChangesRoleAndRaisesEvent()
+    {
+        var user = CreateUser();
+        user.ClearDomainEvents();
+
+        RoleAssignment.Assign(user, UserRole.Admin, adminCount: 0);
+
+        var domainEvent = user.DomainEvents.OfType<UserRoleChangedDomainEvent>().Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(user.IsAdmin, Is.True);
+            Assert.That(domainEvent.UserId, Is.EqualTo(user.Id));
+            Assert.That(domainEvent.PreviousRole, Is.EqualTo(UserRole.User));
+            Assert.That(domainEvent.Role, Is.EqualTo(UserRole.Admin));
+        });
+    }
+
+    [Test]
+    public void Assign_WhenDemotingOneOfSeveralAdmins_ChangesRole()
+    {
+        var admin = CreateAdmin();
+
+        RoleAssignment.Assign(admin, UserRole.User, adminCount: 2);
+
+        Assert.That(admin.Role, Is.EqualTo(UserRole.User));
+    }
+
+    [Test]
+    public void Assign_WhenDemotingTheLastAdmin_ThrowsAndKeepsRole()
+    {
+        var admin = CreateAdmin();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => RoleAssignment.Assign(admin, UserRole.User, adminCount: 1), Throws.TypeOf<LastAdminException>());
+            Assert.That(admin.IsAdmin, Is.True);
+        });
+    }
+
+    [Test]
+    public void Assign_WhenRoleUnchanged_RaisesNoEvent()
+    {
+        var admin = CreateAdmin();
+        admin.ClearDomainEvents();
+
+        RoleAssignment.Assign(admin, UserRole.Admin, adminCount: 1);
+
+        Assert.That(admin.DomainEvents, Is.Empty);
+    }
+
+    [TestCase("admin")]
+    [TestCase(" Admin ")]
+    public void UserRole_Parse_AcceptsKnownRolesCaseInsensitively(string value)
+        => Assert.That(UserRole.Parse(value), Is.EqualTo(UserRole.Admin));
+
+    [TestCase("owner")]
+    [TestCase("")]
+    [TestCase(null)]
+    public void UserRole_Parse_RejectsUnknownRoles(string? value)
+        => Assert.That(() => UserRole.Parse(value), Throws.TypeOf<InvalidValueException>());
+
+    private static User CreateUser()
+        => User.Create(new EmailAddress("user@example.com"), new PersonName("Test User"), true, Now);
+
+    private static User CreateAdmin()
+    {
+        var user = CreateUser();
+        RoleAssignment.Assign(user, UserRole.Admin, adminCount: 0);
+        return user;
+    }
+}

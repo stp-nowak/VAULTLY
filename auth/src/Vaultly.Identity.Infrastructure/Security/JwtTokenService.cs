@@ -32,7 +32,8 @@ public sealed class JwtTokenService(IOptions<IdentityOptions> options, RsaKeyPro
             new("sid", session.Id.Value.ToString()),
             new("amr", session.AuthMethod.Value),
             new("email", user.Email.Value),
-            new("name", user.Name.Value)
+            new("name", user.Name.Value),
+            new("role", user.Role.Value)
         };
 
         var credentials = new SigningCredentials(_keyProvider.SecurityKey, SecurityAlgorithms.RsaSha256);

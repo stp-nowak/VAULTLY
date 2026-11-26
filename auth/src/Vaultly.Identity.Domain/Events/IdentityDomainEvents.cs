@@ -21,6 +21,14 @@ public sealed record UserProfileUpdatedDomainEvent(
     bool EmailVerified) : DomainEvent;
 
 /// <summary>
+/// Raised when a user gets a different role.
+/// </summary>
+public sealed record UserRoleChangedDomainEvent(
+    UserId UserId,
+    UserRole PreviousRole,
+    UserRole Role) : DomainEvent;
+
+/// <summary>
 /// Raised when a user links an external identity.
 /// </summary>
 public sealed record ExternalIdentityLinkedDomainEvent(

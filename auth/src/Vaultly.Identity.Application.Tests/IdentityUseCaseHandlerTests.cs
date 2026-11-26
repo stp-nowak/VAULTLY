@@ -123,7 +123,7 @@ public sealed class IdentityUseCaseHandlerTests
         Assert.Multiple(() =>
         {
             Assert.That(stored, Is.Not.Null);
-            Assert.That(stored!.CodeChallenge.Value, Is.EqualTo(Challenge));
+            Assert.That(stored!.CodeChallenge?.Value, Is.EqualTo(Challenge));
             Assert.That(stored.ExpiresAt, Is.EqualTo(Now.AddMinutes(10)));
             Assert.That(result.RedirectUrl, Is.EqualTo($"https://identity.test/login?request={stored.Id.Value}"));
         });

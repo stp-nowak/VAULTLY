@@ -33,7 +33,6 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("CodeChallenge")
-                        .IsRequired()
                         .HasMaxLength(43)
                         .HasColumnType("character varying(43)");
 
@@ -52,7 +51,6 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(2048)");
 
                     b.Property<string>("State")
-                        .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
@@ -168,6 +166,11 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
 

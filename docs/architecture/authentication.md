@@ -45,7 +45,7 @@ flowchart LR
 | Web SPA | `web/src/web` | The app and its public landing page. Calls only same-origin `/api/*`. No sign-in screen, no tokens; sign-in starts only when the user clicks "Log in". |
 | Web API (BFF) | `web/src/api` | Confidential OIDC client `vaultly-web`. Owns the browser session, stores tokens in Redis, forwards API calls to the backend with a bearer token. |
 | Auth service | `auth/src` | OAuth 2.0 / OIDC authorization server: `/authorize`, `/token`, `/revoke`, `/logout`, SSO session, JWT signing. |
-| Auth UI | `auth/web` | The auth service's own login pages (`/login`, `/error`, `/logged-out`), hosted by their own web server, which proxies the auth API paths. |
+| Auth UI | `auth/web` | The auth service's own login pages (`/login`, `/error`, `/logged-out`) and admin console (`/admin`), hosted by their own web server, which proxies the auth API paths. |
 | Google | – | Identity provider used by the auth service. |
 | Backend gateway | `backend/` | Business APIs; trusts JWTs issued by the auth service. |
 
@@ -61,7 +61,8 @@ flowchart LR
 | `Session` | Identity DB | User sign-in = SSO session (12 h), owns auth codes and refresh tokens |
 | `AuthCode` | Identity DB | Hashed, single use, 2 min, bound to client + redirect URI + PKCE challenge |
 | `RefreshToken` | Identity DB | Hashed, rotated on every use, 30 days |
-| Access token | JWT (RS256) | 15 min, claims `sub` (user) and `sid` (session); validated with `/.well-known/jwks.json` |
+| Access token | JWT (RS256) | 15 min, claims `sub` (user), `sid` (session), `role` (`user` or `admin`); validated with `/.well-known/jwks.json` |
+| User role | Identity DB | `user` (default) or `admin`; admins use the admin console. At least one admin always remains |
 
 ## 1. First sign-in
 
@@ -211,6 +212,49 @@ sequenceDiagram
 Only the browser can send and clear the auth-domain SSO cookie, which is why sign-out ends with a navigation to the
 auth service rather than a server-to-server call alone.
 
+## 5. Admin console
+
+The auth UI's `/admin` is the Identity service's own admin console (users and their roles). It is not an OAuth
+client and holds no tokens: its API (`/api/admin/*`) is authenticated by the `vaultly_sso` cookie, and the user's role
+is read from the database on every call, so revoking the session or the role takes effect at once.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Admin
+    participant UI as Auth UI
+    participant A as Auth service
+    participant G as Google
+
+    U->>UI: open /admin
+    UI->>A: GET /api/admin/me (X-CSRF: 1)
+    A-->>UI: 401 (no SSO session)
+    UI->>A: full-page navigation GET /api/admin/sign-in
+    alt active SSO session
+        A-->>U: 302 to /admin
+    else no SSO session
+        Note over A: store an AuthorizationRequest for the console<br/>(no client state, no PKCE challenge)
+        A-->>U: 302 to /login?request=id ("Sign in to Vaultly Admin")
+        U->>A: GET /google/authorize?request=id
+        A-->>U: 302 to Google, back to /google/callback
+        U->>G: sign in
+        Note over A: find or create User, start Session with SSO token<br/>complete the request without issuing a code
+        A-->>U: Set-Cookie vaultly_sso, 302 to /admin
+    end
+    UI->>A: GET /api/admin/me (cookie vaultly_sso, X-CSRF: 1)
+    alt role admin
+        A-->>UI: 200 admin
+        UI->>A: GET /api/admin/users, PUT /api/admin/users/{id}/role
+    else other role
+        A-->>UI: 403, the console shows "No access"
+    end
+```
+
+The first admin comes from configuration: while no admin exists, startup makes the user with
+`Identity:BootstrapAdmin:Email` an admin (creating the user when needed); that person then signs in with Google,
+which must have verified the address. The last admin can never lose the role (`409 last_admin`). Signing out of the
+console is the usual `GET /logout`.
+
 ## Lifecycles
 
 ```mermaid
@@ -246,6 +290,9 @@ stateDiagram-v2
 |---|---|---|
 | Token theft from the browser (XSS) | Tokens never reach the browser; only HttpOnly cookies | BFF + Redis |
 | CSRF against cookie-authenticated API | `X-CSRF: 1` required on every `/api/*` call; `SameSite=Strict` session cookie | `CsrfHeaderMiddleware` |
+| CSRF against the admin console API | `X-CSRF: 1` required on every `/api/admin/*` call except the sign-in navigation; responses are `no-store` | `AdminEndpoints.RequireCsrfHeader` |
+| Admin console used without the role, or after losing it | Role read from the database on every admin call, not from a token | `AdminEndpoints.RequireAdminAsync`, `GetConsoleUser` |
+| Locking everyone out of the console | The last admin cannot be demoted | `RoleAssignment` |
 | Login CSRF / forged callback | `state` bound to the encrypted `vaultly-login` cookie, compared in constant time | `AuthEndpoints.CallbackAsync` |
 | Intercepted authorization code | PKCE S256, code bound to client + redirect URI, client secret at `/token`, single use, burned on failure | `Session.ConsumeAuthCode`, `CodeChallenge` |
 | Open redirect | Clients and redirect/post-logout URIs registered per client; invalid ones are never redirected; `returnUrl` must be a local path in the SPA and in the BFF | `ClientRegistry`, `StartAuthorizationHandler`, `SanitizeReturnUrl`, `readLocalPath` |
@@ -277,6 +324,7 @@ stateDiagram-v2
 | `Identity:AuthCodeTtlMinutes` | auth | 2 | |
 | `Identity:AuthorizationRequestTtlMinutes` | auth | 10 | |
 | `Identity:SsoSessionTtlHours` | auth | 12 | |
+| `Identity:BootstrapAdmin:Email` | auth | empty | First admin, applied at startup only while no admin exists. Docker: `BOOTSTRAP_ADMIN_EMAIL` in `auth/.env` |
 | `Auth:IdentityBaseUrl`, `Auth:ClientId`, `Auth:ClientSecret` | web API | – | Secret only via environment (`Auth__ClientSecret`) |
 | `Auth:IdentityInternalBaseUrl` | web API | unset (= `Auth:IdentityBaseUrl`) | Server-to-server address of the auth service (`/token`, `/revoke`, `/sessions`) when it differs from the browser-facing one, e.g. `http://identity-api:8080` in Docker |
 | `Auth:PublicOrigin` | web API | – | Callback and post-logout URLs are built from it |
@@ -300,7 +348,8 @@ its API share one origin for cookies.
 | BFF session, refresh, lock, Redis store | `web/src/api/Vaultly.Web.Api/Features/Auth/Sessions/` |
 | BFF client of the auth service | `web/src/api/Vaultly.Web.Api/Features/Auth/IdentityService/IdentityServiceClient.cs` |
 | API forwarding to the backend | `web/src/api/Vaultly.Web.Api/Features/Web/ApiProxy/` |
-| Auth HTTP endpoints | `auth/src/Vaultly.Identity.Api/Api/OAuthEndpoints.cs` |
-| Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Commands/*`, `Queries/GetAuthorizationRequest` |
+| Auth HTTP endpoints | `auth/src/Vaultly.Identity.Api/Api/OAuthEndpoints.cs`, `AdminEndpoints.cs` (admin console) |
+| Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Commands/*`, `Queries/*` |
 | Auth domain rules | `AuthorizationRequest`, `Session`, `AuthCode`, `CodeChallenge` in `auth/src/Vaultly.Identity.Domain` |
 | Login UI | `auth/web/src/pages/{login,sign-in-error,logged-out}` |
+| Admin console | `auth/web/src/pages/{admin-console,admin-users}`, `auth/web/src/features/assign-user-role` |

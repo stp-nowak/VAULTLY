@@ -38,6 +38,7 @@ public static class DependencyInjection
         // Read side (CQRS): query handlers depend on read services, never on repositories.
         services.AddScoped<ISessionReadService, SessionReadService>();
         services.AddScoped<IAuthorizationRequestReadService, AuthorizationRequestReadService>();
+        services.AddScoped<IUserReadService, UserReadService>();
 
         services.AddScoped<IExternalOAuthProvider, GoogleOAuthClient>();
 

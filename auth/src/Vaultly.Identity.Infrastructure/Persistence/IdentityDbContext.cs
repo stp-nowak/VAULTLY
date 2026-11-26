@@ -41,6 +41,11 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(name => name.Value, value => new PersonName(value))
                 .HasMaxLength(PersonName.MaxLength)
                 .IsRequired();
+            entity.Property(x => x.Role)
+                .HasConversion(role => role.Value, value => UserRole.Parse(value))
+                .HasMaxLength(UserRole.MaxLength)
+                .IsRequired();
+            entity.Ignore(x => x.IsAdmin);
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasMany(x => x.ExternalIdentities)
                 .WithOne()
@@ -201,15 +206,15 @@ public sealed class IdentityDbContext : DbContext
                 .HasConversion(uri => uri.Value, value => new RedirectUri(value))
                 .HasMaxLength(RedirectUri.MaxLength)
                 .IsRequired();
+            // Both are null for an admin console sign-in, which is bound to no client.
             entity.Property(x => x.State)
-                .HasConversion(state => state.Value, value => new ClientState(value))
-                .HasMaxLength(ClientState.MaxLength)
-                .IsRequired();
+                .HasConversion(state => state!.Value, value => new ClientState(value))
+                .HasMaxLength(ClientState.MaxLength);
             entity.Property(x => x.CodeChallenge)
-                .HasConversion(challenge => challenge.Value, value => new CodeChallenge(value))
-                .HasMaxLength(CodeChallenge.Length)
-                .IsRequired();
+                .HasConversion(challenge => challenge!.Value, value => new CodeChallenge(value))
+                .HasMaxLength(CodeChallenge.Length);
             entity.Ignore(x => x.IsCompleted);
+            entity.Ignore(x => x.IsForConsole);
             entity.HasIndex(x => x.ExpiresAt);
         });
     }

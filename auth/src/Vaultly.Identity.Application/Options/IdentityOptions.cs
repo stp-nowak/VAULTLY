@@ -32,11 +32,26 @@ public sealed class IdentityOptions
     /// <summary>Maximum lifetime of the single sign-on session (cookie on the auth domain).</summary>
     public int SsoSessionTtlHours { get; set; } = 12;
 
+    /// <summary>The first admin, set up at startup while the service has no admin at all.</summary>
+    public BootstrapAdminOptions BootstrapAdmin { get; set; } = new();
+
     /// <summary>
     /// Base URL of the login UI, falling back to this service's public URL.
     /// </summary>
     public string ResolveLoginUiBaseUrl()
         => (string.IsNullOrWhiteSpace(LoginUiBaseUrl) ? PublicBaseUrl : LoginUiBaseUrl).TrimEnd('/');
+
+    /// <summary>The admin console, part of the login UI.</summary>
+    public string ResolveConsoleUrl() => $"{ResolveLoginUiBaseUrl()}/admin";
+}
+
+/// <summary>
+/// The first admin. While no admin exists, startup makes the user with this email an admin, creating the user when
+/// needed; the person then signs in with a provider that has verified this email. Ignored once any admin exists.
+/// </summary>
+public sealed class BootstrapAdminOptions
+{
+    public string Email { get; set; } = string.Empty;
 }
 
 /// <summary>

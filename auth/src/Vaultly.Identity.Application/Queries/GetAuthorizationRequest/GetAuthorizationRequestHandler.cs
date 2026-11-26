@@ -3,6 +3,7 @@ using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Models;
+using Vaultly.Identity.Domain.Constants;
 
 namespace Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 
@@ -15,6 +16,8 @@ public sealed class GetAuthorizationRequestHandler(
     IEnumerable<IExternalOAuthProvider> providers,
     IClock clock) : IQueryHandler<GetAuthorizationRequestQuery, AuthorizationRequestDto?>
 {
+    public const string ConsoleDisplayName = "Vaultly Admin";
+
     private readonly IAuthorizationRequestReadService _readService = readService;
     private readonly IClientRegistry _clientRegistry = clientRegistry;
     private readonly IReadOnlyList<IExternalOAuthProvider> _providers = providers.ToList();
@@ -42,7 +45,11 @@ public sealed class GetAuthorizationRequestHandler(
                 .ToList()
             : [];
 
-        var clientName = _clientRegistry.Find(model.ClientId)?.DisplayName ?? model.ClientId;
-        return new AuthorizationRequestDto(model.Id, clientName, status, providers);
+        return new AuthorizationRequestDto(model.Id, ResolveClientName(model.ClientId), status, providers);
     }
+
+    private string ResolveClientName(string clientId)
+        => clientId == ConsoleClient.Id.Value
+            ? ConsoleDisplayName
+            : _clientRegistry.Find(clientId)?.DisplayName ?? clientId;
 }

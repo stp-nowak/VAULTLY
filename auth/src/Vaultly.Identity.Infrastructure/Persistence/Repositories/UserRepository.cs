@@ -38,6 +38,12 @@ public sealed class UserRepository(IdentityDbContext dbContext) : IUserRepositor
         => _dbContext.Users.SingleOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
     /// <summary>
+    /// Counts the users with the admin role.
+    /// </summary>
+    public Task<int> CountAdminsAsync(CancellationToken cancellationToken)
+        => _dbContext.Users.CountAsync(x => x.Role == UserRole.Admin, cancellationToken);
+
+    /// <summary>
     /// Adds a new user aggregate to the EF Core change tracker.
     /// </summary>
     public void Add(User user) => _dbContext.Users.Add(user);
