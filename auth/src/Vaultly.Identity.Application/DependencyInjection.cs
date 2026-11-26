@@ -19,6 +19,7 @@ public static class DependencyInjection
 
         // Registered clients are static configuration: parse and validate them once.
         services.AddSingleton<IClientRegistry, ClientRegistry>();
+        services.AddScoped<SignInMethodCatalog>();
 
         return services;
     }

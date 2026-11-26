@@ -19,7 +19,7 @@ src/
 │   ├── actions/      #   Button
 │   ├── data/         #   Badge, InfoTile, Table
 │   ├── feedback/     #   StatusNotice
-│   ├── forms/        #   SearchField, Select, TextField
+│   ├── forms/        #   SearchField, Select, Switch, TextField
 │   ├── layout/       #   Card, CenteredScreen
 │   └── typography/   #   Eyebrow
 └── index.ts          # Public API — the only entry point apps import from

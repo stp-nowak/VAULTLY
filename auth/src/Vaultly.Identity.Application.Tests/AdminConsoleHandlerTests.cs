@@ -123,6 +123,7 @@ public sealed class AdminConsoleHandlerTests
             _sessions.Object,
             _unitOfWork.Object,
             [new TestProvider(new ExternalIdentityInfo("subject-1", "admin@example.com", true, "Admin", "nonce"))],
+            new Mock<ISignInSettingsRepository>().Object,
             tokenGenerator.Object,
             _tokenHasher.Object,
             Clock(),
@@ -292,6 +293,7 @@ public sealed class AdminConsoleHandlerTests
             readService.Object,
             new ClientRegistry(Microsoft.Extensions.Options.Options.Create(_identityOptions)),
             [],
+            IdentityUseCaseHandlerTests.NoDisabledMethods(),
             Clock());
 
         var result = await handler.Handle(new GetAuthorizationRequestQuery(id), CancellationToken.None);
@@ -343,7 +345,7 @@ public sealed class AdminConsoleHandlerTests
     {
         public ProviderId Id { get; } = new("google");
         public string Name => "Google";
-        public bool IsEnabled => true;
+        public bool IsConfigured => true;
         public string AuthorizationEndpoint => "https://provider.test/auth";
         public string ClientId => "client";
         public string RedirectUri => "https://identity.test/callback";

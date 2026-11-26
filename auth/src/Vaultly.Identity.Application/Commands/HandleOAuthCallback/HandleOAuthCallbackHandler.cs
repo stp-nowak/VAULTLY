@@ -25,6 +25,7 @@ public sealed class HandleOAuthCallbackHandler(
     ISessionRepository sessionRepository,
     IUnitOfWork unitOfWork,
     IEnumerable<IExternalOAuthProvider> providers,
+    ISignInSettingsRepository signInSettingsRepository,
     ITokenGenerator tokenGenerator,
     ITokenHasher tokenHasher,
     IClock clock,
@@ -32,6 +33,7 @@ public sealed class HandleOAuthCallbackHandler(
     ILogger logger)
     : ICommandHandler<HandleOAuthCallbackCommand, AuthCallbackResult>
 {
+    private readonly ISignInSettingsRepository _signInSettingsRepository = signInSettingsRepository;
     private readonly IOAuthStateRepository _oauthStateRepository = oauthStateRepository;
     private readonly IAuthorizationRequestRepository _authorizationRequestRepository = authorizationRequestRepository;
     private readonly IUserRepository _userRepository = userRepository;
@@ -47,11 +49,7 @@ public sealed class HandleOAuthCallbackHandler(
     public async Task<AuthCallbackResult> Handle(HandleOAuthCallbackCommand request, CancellationToken cancellationToken)
     {
         var provider = OAuthFlowUtilities.GetProvider(_providers, new ProviderId(request.ProviderId));
-        if (!provider.IsEnabled)
-        {
-            _logger.Warning("OAuth provider {ProviderId} is disabled", provider.Id.Value);
-            throw new InvalidOperationException("OAuth provider is disabled.");
-        }
+        await SignInMethodGuard.EnsureUsableAsync(provider, _signInSettingsRepository, cancellationToken);
 
         var now = _clock.UtcNow;
         var oauthState = await _oauthStateRepository.GetByStateAsync(new OAuthStateValue(request.State), cancellationToken);

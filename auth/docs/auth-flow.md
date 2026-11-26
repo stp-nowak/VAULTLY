@@ -19,7 +19,8 @@ access tokens).
    redirects the browser to
    `GET /authorize?response_type=code&client_id=…&redirect_uri=…&state=…&code_challenge=…&code_challenge_method=S256`.
 2. If the browser has an active SSO session (`vaultly_sso` cookie on the Identity domain), the user is sent straight
-   back. Otherwise the Identity login UI (`/login`) lets the user pick a provider (Google) and signs them in.
+   back. Otherwise the Identity login UI (`/login`) lets the user pick a provider (Google) and signs them in. Which
+   providers are offered is set by admins in the Identity admin console.
 3. The browser returns to `redirect_uri?code=…&state=…`. The client checks `state` against what it stored.
    Errors come back as `redirect_uri?error=…&state=…`; an unknown client or unregistered `redirect_uri` is never
    redirected (the Identity error page is shown instead).

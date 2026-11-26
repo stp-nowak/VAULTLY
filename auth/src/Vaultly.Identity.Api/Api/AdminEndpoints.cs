@@ -1,9 +1,11 @@
 using MediatR;
 
 using Vaultly.Identity.Application.Commands.AssignUserRole;
+using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Commands.StartConsoleSignIn;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Queries.GetConsoleUser;
+using Vaultly.Identity.Application.Queries.GetSignInSettings;
 using Vaultly.Identity.Application.Queries.GetUsers;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -35,6 +37,8 @@ public static class AdminEndpoints
         api.MapGet("/me", GetCurrentAdmin);
         api.MapGet("/users", GetUsersAsync);
         api.MapPut("/users/{id:guid}/role", AssignRoleAsync);
+        api.MapGet("/sign-in-settings", GetSignInSettingsAsync);
+        api.MapPut("/sign-in-settings/methods/{method:regex(^[a-z0-9-]+$)}", SetSignInMethodEnabledAsync);
         return app;
     }
 
@@ -99,6 +103,24 @@ public static class AdminEndpoints
         }
     }
 
+    internal static async Task<IResult> GetSignInSettingsAsync(ISender sender, CancellationToken cancellationToken)
+        => Results.Ok(new { methods = await sender.Send(new GetSignInSettingsQuery(), cancellationToken) });
+
+    internal static async Task<IResult> SetSignInMethodEnabledAsync(string method, SetSignInMethodRequest body, HttpContext context, ISender sender)
+    {
+        try
+        {
+            var changed = await sender.Send(
+                new SetSignInMethodEnabledCommand(CurrentAdmin(context).Id, method, body.Enabled),
+                context.RequestAborted);
+            return changed ? Results.NoContent() : Results.NotFound();
+        }
+        catch (LastSignInMethodException)
+        {
+            return Results.Conflict(new { error = "last_sign_in_method" });
+        }
+    }
+
     private static ConsoleUserDto CurrentAdmin(HttpContext context) => (ConsoleUserDto)context.Items[AdminItemKey]!;
 
     private static ILogger Logger(HttpContext context)
@@ -106,4 +128,7 @@ public static class AdminEndpoints
 
     /// <summary>Body of <c>PUT /api/admin/users/{id}/role</c>.</summary>
     public sealed record AssignRoleRequest(string Role);
+
+    /// <summary>Body of <c>PUT /api/admin/sign-in-settings/methods/{method}</c>.</summary>
+    public sealed record SetSignInMethodRequest(bool Enabled);
 }

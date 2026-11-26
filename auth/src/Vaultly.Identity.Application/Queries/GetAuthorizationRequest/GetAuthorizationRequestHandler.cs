@@ -14,6 +14,7 @@ public sealed class GetAuthorizationRequestHandler(
     IAuthorizationRequestReadService readService,
     IClientRegistry clientRegistry,
     IEnumerable<IExternalOAuthProvider> providers,
+    ISignInSettingsReadService signInSettingsReadService,
     IClock clock) : IQueryHandler<GetAuthorizationRequestQuery, AuthorizationRequestDto?>
 {
     public const string ConsoleDisplayName = "Vaultly Admin";
@@ -21,6 +22,7 @@ public sealed class GetAuthorizationRequestHandler(
     private readonly IAuthorizationRequestReadService _readService = readService;
     private readonly IClientRegistry _clientRegistry = clientRegistry;
     private readonly IReadOnlyList<IExternalOAuthProvider> _providers = providers.ToList();
+    private readonly ISignInSettingsReadService _signInSettingsReadService = signInSettingsReadService;
     private readonly IClock _clock = clock;
 
     public async Task<AuthorizationRequestDto?> Handle(GetAuthorizationRequestQuery request, CancellationToken cancellationToken)
@@ -35,17 +37,22 @@ public sealed class GetAuthorizationRequestHandler(
             ? "completed"
             : model.ExpiresAt <= _clock.UtcNow ? "expired" : "pending";
 
-        var providers = status == "pending"
-            ? _providers
-                .Where(x => x.IsEnabled)
-                .Select(x => new LoginProviderDto(
-                    x.Id.Value,
-                    x.Name,
-                    OAuthFlowUtilities.BuildRelativeUrl($"/{x.Id.Value}/authorize", "request", model.Id.ToString())))
-                .ToList()
-            : [];
+        var providers = status == "pending" ? await GetUsableProvidersAsync(model.Id, cancellationToken) : [];
 
         return new AuthorizationRequestDto(model.Id, ResolveClientName(model.ClientId), status, providers);
+    }
+
+    private async Task<List<LoginProviderDto>> GetUsableProvidersAsync(Guid requestId, CancellationToken cancellationToken)
+    {
+        var disabled = await _signInSettingsReadService.GetDisabledMethodsAsync(cancellationToken);
+
+        return _providers
+            .Where(x => x.IsConfigured && !disabled.Contains(x.Id.Value))
+            .Select(x => new LoginProviderDto(
+                x.Id.Value,
+                x.Name,
+                OAuthFlowUtilities.BuildRelativeUrl($"/{x.Id.Value}/authorize", "request", requestId.ToString())))
+            .ToList();
     }
 
     private string ResolveClientName(string clientId)

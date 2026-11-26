@@ -29,6 +29,16 @@ public sealed record UserRoleChangedDomainEvent(
     UserRole Role) : DomainEvent;
 
 /// <summary>
+/// Raised when an admin switches a sign-in method on.
+/// </summary>
+public sealed record SignInMethodEnabledDomainEvent(SignInMethod Method) : DomainEvent;
+
+/// <summary>
+/// Raised when an admin switches a sign-in method off.
+/// </summary>
+public sealed record SignInMethodDisabledDomainEvent(SignInMethod Method) : DomainEvent;
+
+/// <summary>
 /// Raised when a user links an external identity.
 /// </summary>
 public sealed record ExternalIdentityLinkedDomainEvent(

@@ -20,7 +20,7 @@ public sealed class GoogleOAuthClient(IHttpClientFactory httpClientFactory, IOpt
 
     public ProviderId Id => ProviderIds.Google;
     public string Name => "Google";
-    public bool IsEnabled => _options.Enabled;
+    public bool IsConfigured => _options.Enabled && !string.IsNullOrWhiteSpace(_options.ClientId);
     public string AuthorizationEndpoint => _options.AuthorizationEndpoint;
     public string ClientId => _options.ClientId;
     public string RedirectUri => _options.RedirectUri;

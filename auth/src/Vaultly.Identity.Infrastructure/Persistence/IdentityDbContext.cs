@@ -21,6 +21,7 @@ public sealed class IdentityDbContext : DbContext
     public DbSet<AuthCode> AuthCodes => Set<AuthCode>();
     public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
     public DbSet<AuthorizationRequest> AuthorizationRequests => Set<AuthorizationRequest>();
+    public DbSet<SignInSettings> SignInSettings => Set<SignInSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -216,6 +217,15 @@ public sealed class IdentityDbContext : DbContext
             entity.Ignore(x => x.IsCompleted);
             entity.Ignore(x => x.IsForConsole);
             entity.HasIndex(x => x.ExpiresAt);
+        });
+
+        modelBuilder.Entity<SignInSettings>(entity =>
+        {
+            entity.Ignore(x => x.DomainEvents);
+            entity.Ignore(x => x.DisabledMethods);
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
+            entity.PrimitiveCollection<List<string>>("DisabledMethodValues").HasColumnName("DisabledMethods");
         });
     }
 }

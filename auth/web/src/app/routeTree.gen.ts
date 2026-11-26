@@ -16,6 +16,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminSignInMethodsRouteImport } from './routes/admin/sign-in-methods'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -52,6 +53,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSignInMethodsRoute = AdminSignInMethodsRouteImport.update({
+  id: '/sign-in-methods',
+  path: '/sign-in-methods',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/error': typeof ErrorRoute
   '/logged-out': typeof LoggedOutRoute
   '/login': typeof LoginRoute
+  '/admin/sign-in-methods': typeof AdminSignInMethodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/error': typeof ErrorRoute
   '/logged-out': typeof LoggedOutRoute
   '/login': typeof LoginRoute
+  '/admin/sign-in-methods': typeof AdminSignInMethodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/error': typeof ErrorRoute
   '/logged-out': typeof LoggedOutRoute
   '/login': typeof LoginRoute
+  '/admin/sign-in-methods': typeof AdminSignInMethodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -88,10 +97,18 @@ export interface FileRouteTypes {
     | '/error'
     | '/logged-out'
     | '/login'
+    | '/admin/sign-in-methods'
     | '/admin/users'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/error' | '/logged-out' | '/login' | '/admin/users' | '/admin'
+  to:
+    | '/'
+    | '/error'
+    | '/logged-out'
+    | '/login'
+    | '/admin/sign-in-methods'
+    | '/admin/users'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -99,6 +116,7 @@ export interface FileRouteTypes {
     | '/error'
     | '/logged-out'
     | '/login'
+    | '/admin/sign-in-methods'
     | '/admin/users'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -162,15 +180,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/sign-in-methods': {
+      id: '/admin/sign-in-methods'
+      path: '/sign-in-methods'
+      fullPath: '/admin/sign-in-methods'
+      preLoaderRoute: typeof AdminSignInMethodsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminSignInMethodsRoute: typeof AdminSignInMethodsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminSignInMethodsRoute: AdminSignInMethodsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

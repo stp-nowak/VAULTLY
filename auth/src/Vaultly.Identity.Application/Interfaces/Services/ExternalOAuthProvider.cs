@@ -6,7 +6,8 @@ public interface IExternalOAuthProvider
 {
     ProviderId Id { get; }
     string Name { get; }
-    bool IsEnabled { get; }
+    /// <summary>Whether this deployment is set up for the provider (enabled in configuration, with a client id).</summary>
+    bool IsConfigured { get; }
     string AuthorizationEndpoint { get; }
     string ClientId { get; }
     string RedirectUri { get; }
