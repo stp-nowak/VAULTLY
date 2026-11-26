@@ -29,7 +29,7 @@ export function AdminSignInMethodsPage() {
         </p>
       </header>
 
-      {query.data ? (
+      {query.data !== undefined && (
         <Card aria-label="Sign-in methods" className="max-w-180 gap-0 p-0">
           <ul className="divide-y divide-line">
             {query.data.map((method) => (
@@ -43,9 +43,8 @@ export function AdminSignInMethodsPage() {
             ))}
           </ul>
         </Card>
-      ) : (
-        <StatusNotice tone={notice.tone}>{notice.text}</StatusNotice>
       )}
+      {query.data === undefined && <StatusNotice tone={notice.tone}>{notice.text}</StatusNotice>}
     </div>
   );
 }

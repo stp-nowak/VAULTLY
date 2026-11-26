@@ -17,14 +17,14 @@ export function SessionSummary() {
         </h2>
       </div>
 
-      {sessionsQuery.isLoading ? <StatusNotice>Loading your sessions…</StatusNotice> : null}
-      {sessionsQuery.isError ? (
+      {sessionsQuery.isLoading && <StatusNotice>Loading your sessions…</StatusNotice>}
+      {sessionsQuery.isError && (
         <StatusNotice tone="error">
           {sessionsQuery.error instanceof Error ? sessionsQuery.error.message : 'Unable to load your sessions.'}
         </StatusNotice>
-      ) : null}
+      )}
 
-      {sessionsQuery.data?.length ? (
+      {sessionsQuery.data && sessionsQuery.data.length > 0 && (
         <ul className="grid gap-3.5">
           {sessionsQuery.data.map((session) => (
             <li className="rounded-[1.25rem] border border-line bg-surface p-4" key={session.id}>
@@ -37,7 +37,7 @@ export function SessionSummary() {
             </li>
           ))}
         </ul>
-      ) : null}
+      )}
     </Card>
   );
 }

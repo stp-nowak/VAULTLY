@@ -40,24 +40,29 @@ export function AdminConsoleLayout() {
     }
   }, [access.status]);
 
-  return access.status === 'admin' ? (
-    <ConsoleShell admin={access.admin}>
-      <Outlet />
-    </ConsoleShell>
-  ) : (
-    <CenteredScreen>
-      <Card aria-labelledby="console-access-heading" size="hero">
-        <Eyebrow>Vaultly Admin</Eyebrow>
-        <h1 className="text-3xl" id="console-access-heading">
-          {notices[access.status].heading}
-        </h1>
-        <StatusNotice>{notices[access.status].text}</StatusNotice>
-        {notices[access.status].showSignOut ? (
-          <a className="justify-self-start border-b border-line-strong pb-0.5 hover:border-accent" href={consoleRoutes.signOut}>
-            Sign out
-          </a>
-        ) : null}
-      </Card>
-    </CenteredScreen>
+  return (
+    <>
+      {access.status === 'admin' && (
+        <ConsoleShell admin={access.admin}>
+          <Outlet />
+        </ConsoleShell>
+      )}
+      {access.status !== 'admin' && (
+        <CenteredScreen>
+          <Card aria-labelledby="console-access-heading" size="hero">
+            <Eyebrow>Vaultly Admin</Eyebrow>
+            <h1 className="text-3xl" id="console-access-heading">
+              {notices[access.status].heading}
+            </h1>
+            <StatusNotice>{notices[access.status].text}</StatusNotice>
+            {notices[access.status].showSignOut && (
+              <a className="justify-self-start border-b border-line-strong pb-0.5 hover:border-accent" href={consoleRoutes.signOut}>
+                Sign out
+              </a>
+            )}
+          </Card>
+        </CenteredScreen>
+      )}
+    </>
   );
 }

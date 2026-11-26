@@ -32,11 +32,10 @@ export function UsersTable({ users }: UsersTableProps) {
             </td>
             <td>
               <div className="flex flex-wrap gap-1.5">
-                {user.signInMethods.length > 0 ? (
-                  user.signInMethods.map((method) => <Badge key={method}>{method}</Badge>)
-                ) : (
-                  <span className="text-sm text-muted">Not signed in yet</span>
-                )}
+                {user.signInMethods.map((method) => (
+                  <Badge key={method}>{method}</Badge>
+                ))}
+                {user.signInMethods.length === 0 && <span className="text-sm text-muted">Not signed in yet</span>}
               </div>
             </td>
             <td className="text-sm whitespace-nowrap text-muted">{joinedFormat.format(new Date(user.createdAt))}</td>

@@ -22,7 +22,7 @@ export function LogoutCard() {
         <InfoTile label="Signed in as" value={<strong>{auth.user?.email ?? 'Unknown user'}</strong>} />
       </dl>
 
-      {errorMessage ? <StatusNotice tone="error">{errorMessage}</StatusNotice> : null}
+      {errorMessage && <StatusNotice tone="error">{errorMessage}</StatusNotice>}
 
       <Button
         disabled={isSubmitting}
