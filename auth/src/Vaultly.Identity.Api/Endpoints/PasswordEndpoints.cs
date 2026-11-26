@@ -2,13 +2,15 @@ using System.Threading.RateLimiting;
 
 using MediatR;
 
+using Vaultly.Identity.Api.Contracts;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Commands.RegisterWithPassword;
 using Vaultly.Identity.Application.Commands.SignInWithPassword;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Domain.Exceptions;
 
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Endpoints;
 
 /// <summary>
 /// Email and password sign-in and registration for the login UI. Both continue a pending authorization request; on

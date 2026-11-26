@@ -7,6 +7,8 @@ using MediatR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 
+using Vaultly.Identity.Api.Contracts;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Commands.EndSession;
 using Vaultly.Identity.Application.Commands.ExchangeAuthCode;
 using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
@@ -21,7 +23,7 @@ using Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.SharedKernel;
 
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Endpoints;
 
 /// <summary>
 /// OAuth 2.0 / OIDC endpoints of the authorization server and the JSON API used by the login UI (auth/web).

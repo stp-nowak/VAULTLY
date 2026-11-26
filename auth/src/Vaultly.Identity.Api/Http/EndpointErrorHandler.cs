@@ -1,6 +1,6 @@
 using Vaultly.Identity.SharedKernel;
 
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Http;
 
 public sealed class EndpointErrorHandler(Serilog.ILogger logger)
 {

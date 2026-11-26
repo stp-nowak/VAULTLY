@@ -8,7 +8,9 @@ using Moq;
 
 using NUnit.Framework;
 
-using Vaultly.Identity.Api;
+using Vaultly.Identity.Api.Contracts;
+using Vaultly.Identity.Api.Endpoints;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Commands.RegisterWithPassword;
 using Vaultly.Identity.Application.Commands.SignInWithPassword;
 using Vaultly.Identity.Application.Common;

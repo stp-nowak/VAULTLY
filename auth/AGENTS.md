@@ -96,8 +96,12 @@ auth/
     │   ├── Models/  Options/  Common/       #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors),
     │   │                                   #   WireNames (snake_case spelling of enums)
     ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
-    ├── Vaultly.Identity.Api/               # Minimal API endpoints → ISender (OAuthEndpoints, PasswordEndpoints,
-    │                                       #   AdminEndpoints, CsrfHeaderFilter), composition root
+    ├── Vaultly.Identity.Api/               # Minimal API → ISender; Program.cs is only the composition root
+    │   ├── Endpoints/                      #   one static class per area with Map<Area>Endpoints (OAuth, Password,
+    │   │                                   #   Admin, Session, Discovery); IdentityEndpoints maps them all
+    │   ├── Contracts/                      #   wire-only types: ApiError, GrantType, SignInErrorCode
+    │   ├── Http/                           #   HTTP plumbing: ApiJson, CsrfHeaderFilter, SsoCookie, claims, EndpointErrorHandler
+    │   └── Configuration/                  #   .env loading, JWT signing key
     ├── Vaultly.Identity.Domain.Tests/
     └── Vaultly.Identity.Application.Tests/ # incl. CqrsConventionTests guarding CQRS rules
 ```
@@ -113,6 +117,8 @@ auth/
   return DTOs, no side effects, never depend on repositories or `IUnitOfWork`.
 - One use case = one folder with `<UseCase>Command.cs|Query.cs` and `<UseCase>Handler.cs`.
 - `CqrsConventionTests` must stay green; extend it rather than bypass it.
+- Endpoints live in `Vaultly.Identity.Api/Endpoints/<Area>Endpoints.cs` as `internal static` handlers mapped by `Map<Area>Endpoints`
+  (registered in `IdentityEndpoints`), never inline in `Program.cs`.
 
 ## C# Instructions
 - Latest C# (currently C# 14), `net10.0`, nullable reference types enabled.

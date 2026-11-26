@@ -1,4 +1,4 @@
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Contracts;
 
 /// <summary>Why the login UI or admin console API refused a call; sent as <c>{ "error": "snake_case" }</c>.</summary>
 public enum ApiError

@@ -2,7 +2,9 @@ using System.Text.Json;
 
 using NUnit.Framework;
 
-using Vaultly.Identity.Api;
+using Vaultly.Identity.Api.Contracts;
+using Vaultly.Identity.Api.Endpoints;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Domain.Enums;
 

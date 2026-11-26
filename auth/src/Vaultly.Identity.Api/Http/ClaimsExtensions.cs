@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Http;
 
 public static class ClaimsExtensions
 {
