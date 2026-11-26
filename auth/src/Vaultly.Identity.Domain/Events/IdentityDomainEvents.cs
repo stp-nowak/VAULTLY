@@ -21,6 +21,21 @@ public sealed record UserProfileUpdatedDomainEvent(
     bool EmailVerified) : DomainEvent;
 
 /// <summary>
+/// Raised when a user gets a password (registration excluded, see <see cref="UserRegisteredDomainEvent"/>).
+/// </summary>
+public sealed record UserPasswordSetDomainEvent(UserId UserId) : DomainEvent;
+
+/// <summary>
+/// Raised when a user's password is removed, e.g. because a provider verified the email of an unverified account.
+/// </summary>
+public sealed record UserPasswordRemovedDomainEvent(UserId UserId) : DomainEvent;
+
+/// <summary>
+/// Raised when too many failed password sign-ins pause password sign-in for a user.
+/// </summary>
+public sealed record UserLockedOutDomainEvent(UserId UserId, DateTimeOffset LockedUntil) : DomainEvent;
+
+/// <summary>
 /// Raised when a user gets a different role.
 /// </summary>
 public sealed record UserRoleChangedDomainEvent(

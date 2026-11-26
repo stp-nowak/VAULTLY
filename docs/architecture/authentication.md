@@ -63,6 +63,7 @@ flowchart LR
 | `RefreshToken` | Identity DB | Hashed, rotated on every use, 30 days |
 | Access token | JWT (RS256) | 15 min, claims `sub` (user), `sid` (session), `role` (`user` or `admin`); validated with `/.well-known/jwks.json` |
 | User role | Identity DB | `user` (default) or `admin`; admins use the admin console. At least one admin always remains |
+| Password | Identity DB | Only a salted PBKDF2 hash, plus the count of failed sign-ins and the end of a lockout |
 | Sign-in settings | Identity DB | One row listing the sign-in methods admins switched off; every other method is on |
 
 ## 1. First sign-in
@@ -265,6 +266,38 @@ A switched-off provider disappears from the login page, and `/{provider}/authori
 it, so a sign-in started before the switch cannot finish. Existing sessions are not ended. The last configured,
 enabled method cannot be switched off (`409 last_sign_in_method`), so nobody can be locked out.
 
+## 6. Email and password
+
+Email and password is built into the Identity service (always configured; admins can switch it off like any method).
+The login page shows the form below the providers and links to `/register`; both post to the Identity API from the
+login UI, which then navigates to the returned URL.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant UI as Auth UI
+    participant A as Auth service
+
+    U->>UI: /login?request=id (or /register?request=id)
+    UI->>A: POST /api/authorization-requests/id/password-sign-in<br/>(or /registration) X-CSRF: 1, email + password
+    Note over A: request must be pending, password sign-in enabled<br/>verify (or create) the user, start Session (amr password)<br/>issue AuthCode for a client, or nothing for the console
+    A-->>UI: 200 redirectUrl, Set-Cookie vaultly_sso
+    UI->>U: full-page navigation to redirectUrl<br/>(client callback with code + state, or /admin)
+```
+
+- Passwords are 12–128 characters, hashed with ASP.NET Core Identity's `PasswordHasher` (PBKDF2, per-password salt,
+  upgraded on sign-in when the format changes). They are never logged.
+- A failed sign-in always answers `invalid_credentials`, whether the email is unknown, the account has no password or
+  is paused, after the same hashing work, so responses do not reveal which accounts exist.
+- Five wrong passwords in a row pause password sign-in for that account for 15 minutes. Both endpoints are also
+  rate-limited per client address (20 per minute). Behind the login UI's proxy that address is the proxy's until
+  forwarded headers are configured.
+- Registration rejects an email that already has an account (`409 email_taken`). Accounts created with a password are
+  **unverified** (there is no email verification yet). If someone later signs in with a provider that verified the
+  same email, the Identity service removes the password from that account and ends its sessions before linking the
+  provider, because whoever registered it may not own the email.
+
 ## Lifecycles
 
 ```mermaid
@@ -305,6 +338,10 @@ stateDiagram-v2
 | Locking everyone out of the console | The last admin cannot be demoted | `RoleAssignment` |
 | Locking everyone out of signing in | The last configured, enabled sign-in method cannot be switched off | `SignInSettings.Disable` |
 | Signing in with a switched-off method | Checked when the provider login starts and again on its callback | `SignInMethodGuard` |
+| Password guessing | Per-account lockout after 5 failures (15 min); per-address rate limit on the password endpoints | `User.RecordFailedSignIn`, `PasswordEndpoints` |
+| Account enumeration through sign-in | One answer (`invalid_credentials`) and the same hashing work for every failure | `SignInWithPasswordHandler`, `IPasswordHasher.VerifyWithoutAccount` |
+| Login CSRF on the password endpoints | `X-CSRF: 1` required; no CORS | `CsrfHeaderFilter` |
+| Pre-registering someone else's email | Unverified password accounts lose their password and sessions when a provider proves who owns the email | `User.SecureWithVerifiedEmail`, `HandleOAuthCallbackHandler` |
 | Login CSRF / forged callback | `state` bound to the encrypted `vaultly-login` cookie, compared in constant time | `AuthEndpoints.CallbackAsync` |
 | Intercepted authorization code | PKCE S256, code bound to client + redirect URI, client secret at `/token`, single use, burned on failure | `Session.ConsumeAuthCode`, `CodeChallenge` |
 | Open redirect | Clients and redirect/post-logout URIs registered per client; invalid ones are never redirected; `returnUrl` must be a local path in the SPA and in the BFF | `ClientRegistry`, `StartAuthorizationHandler`, `SanitizeReturnUrl`, `readLocalPath` |
@@ -337,6 +374,7 @@ stateDiagram-v2
 | `Identity:AuthorizationRequestTtlMinutes` | auth | 10 | |
 | `Identity:SsoSessionTtlHours` | auth | 12 | |
 | `Identity:BootstrapAdmin:Email` | auth | empty | First admin, applied at startup only while no admin exists. Docker: `BOOTSTRAP_ADMIN_EMAIL` in `auth/.env` |
+| `Identity:BootstrapAdmin:Password` | auth | empty | Optional password for that admin when it has none (environment only). Docker: `BOOTSTRAP_ADMIN_PASSWORD` |
 | `Auth:IdentityBaseUrl`, `Auth:ClientId`, `Auth:ClientSecret` | web API | – | Secret only via environment (`Auth__ClientSecret`) |
 | `Auth:IdentityInternalBaseUrl` | web API | unset (= `Auth:IdentityBaseUrl`) | Server-to-server address of the auth service (`/token`, `/revoke`, `/sessions`) when it differs from the browser-facing one, e.g. `http://identity-api:8080` in Docker |
 | `Auth:PublicOrigin` | web API | – | Callback and post-logout URLs are built from it |
@@ -363,5 +401,6 @@ its API share one origin for cookies.
 | Auth HTTP endpoints | `auth/src/Vaultly.Identity.Api/Api/OAuthEndpoints.cs`, `AdminEndpoints.cs` (admin console) |
 | Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Commands/*`, `Queries/*` |
 | Auth domain rules | `AuthorizationRequest`, `Session`, `AuthCode`, `CodeChallenge` in `auth/src/Vaultly.Identity.Domain` |
-| Login UI | `auth/web/src/pages/{login,sign-in-error,logged-out}` |
+| Login UI | `auth/web/src/pages/{login,register,sign-in-error,logged-out}`, `auth/web/src/features/{sign-in-with-provider,sign-in-with-password,register-with-password}` |
+| Password sign-in and registration | `auth/src/Vaultly.Identity.Api/Api/PasswordEndpoints.cs`, `Commands/{SignInWithPassword,RegisterWithPassword}` |
 | Admin console | `auth/web/src/pages/{admin-console,admin-users,admin-sign-in-methods}`, `auth/web/src/features/{assign-user-role,toggle-sign-in-method}` |

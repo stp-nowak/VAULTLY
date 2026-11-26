@@ -2,22 +2,22 @@ import { useQuery } from '@tanstack/react-query';
 
 import { StatusNotice, type StatusTone } from '@vaultly/ui';
 
-import { authorizationRequestQueryOptions } from '@/domain/authorization-request';
-import { ProviderButtons } from '@/features/sign-in-with-provider';
+import { authorizationRequestQueryOptions, resolveSignInState, type SignInNotice } from '@/domain/authorization-request';
 
-import { resolveSignInState, type SignInNotice } from '../model/signInState';
+import { SignInOptions } from './SignInOptions';
 
 const notices: Record<SignInNotice, { text: string; tone: StatusTone }> = {
   invalid: { text: 'This sign-in link is no longer valid. Go back to the app and try again.', tone: 'error' },
   loadFailed: { text: "We couldn't load the sign-in page. Please try again.", tone: 'error' },
   loading: { text: 'Loading…', tone: 'info' },
+  unavailable: { text: 'Signing in is not available right now. Please try again later.', tone: 'error' },
 };
 
 interface SignInRequestProps {
   requestId: string | undefined;
 }
 
-/** Content of the sign-in card for one authorization request: the provider choice, or a notice why it is missing. */
+/** Content of the sign-in card for one authorization request: the ways to sign in, or a notice why they are missing. */
 export function SignInRequest({ requestId }: SignInRequestProps) {
   const query = useQuery({ ...authorizationRequestQueryOptions(requestId ?? ''), enabled: requestId !== undefined });
   const state = resolveSignInState(requestId !== undefined, query);
@@ -25,7 +25,7 @@ export function SignInRequest({ requestId }: SignInRequestProps) {
   const view =
     state.kind === 'ready'
       ? {
-          body: <ProviderButtons providers={state.request.providers} />,
+          body: <SignInOptions request={state.request} />,
           heading: `Sign in to ${state.request.clientName}`,
         }
       : {

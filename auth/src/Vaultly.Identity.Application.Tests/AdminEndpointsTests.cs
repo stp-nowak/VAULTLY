@@ -37,7 +37,7 @@ public sealed class AdminEndpointsTests
     {
         var httpContext = CreateHttpContext();
 
-        var result = await AdminEndpoints.RequireCsrfHeader(Invocation(httpContext), Next);
+        var result = await CsrfHeaderFilter.Require(Invocation(httpContext), Next);
 
         Assert.Multiple(() =>
         {
@@ -51,9 +51,9 @@ public sealed class AdminEndpointsTests
     public async Task RequireCsrfHeader_WithHeader_Continues()
     {
         var httpContext = CreateHttpContext();
-        httpContext.Request.Headers[AdminEndpoints.CsrfHeaderName] = "1";
+        httpContext.Request.Headers[CsrfHeaderFilter.HeaderName] = "1";
 
-        await AdminEndpoints.RequireCsrfHeader(Invocation(httpContext), Next);
+        await CsrfHeaderFilter.Require(Invocation(httpContext), Next);
 
         Assert.That(_nextCalled, Is.True);
     }

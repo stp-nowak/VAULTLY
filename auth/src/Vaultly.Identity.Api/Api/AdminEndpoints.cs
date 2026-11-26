@@ -18,7 +18,6 @@ namespace Vaultly.Identity.Api;
 /// </summary>
 public static class AdminEndpoints
 {
-    public const string CsrfHeaderName = "X-CSRF";
     public const int DefaultPageSize = 20;
 
     private const string AdminItemKey = "vaultly.console-admin";
@@ -31,7 +30,7 @@ public static class AdminEndpoints
         app.MapGet("/api/admin/sign-in", SignInAsync);
 
         var api = app.MapGroup("/api/admin")
-            .AddEndpointFilter(RequireCsrfHeader)
+            .AddEndpointFilter(CsrfHeaderFilter.Require)
             .AddEndpointFilter(RequireAdminAsync);
 
         api.MapGet("/me", GetCurrentAdmin);
@@ -46,18 +45,6 @@ public static class AdminEndpoints
     {
         var result = await sender.Send(new StartConsoleSignInCommand(SsoCookie.Read(context.Request)), context.RequestAborted);
         return Results.Redirect(result.RedirectUrl);
-    }
-
-    // The SSO cookie is SameSite=Lax, which still lets a cross-site top-level navigation carry it. A custom header
-    // cannot be sent cross-site without a CORS preflight (and there is no CORS), so requiring it blocks CSRF.
-    internal static ValueTask<object?> RequireCsrfHeader(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
-    {
-        var httpContext = context.HttpContext;
-        httpContext.Response.Headers.CacheControl = "no-store";
-
-        return httpContext.Request.Headers[CsrfHeaderName] == "1"
-            ? next(context)
-            : ValueTask.FromResult<object?>(Results.BadRequest(new { error = "csrf_header_missing" }));
     }
 
     internal static async ValueTask<object?> RequireAdminAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

@@ -1,0 +1,101 @@
+using System.Threading.RateLimiting;
+
+using MediatR;
+
+using Vaultly.Identity.Application.Commands.RegisterWithPassword;
+using Vaultly.Identity.Application.Commands.SignInWithPassword;
+using Vaultly.Identity.Application.Common;
+using Vaultly.Identity.Application.Models;
+using Vaultly.Identity.Domain.Exceptions;
+
+namespace Vaultly.Identity.Api;
+
+/// <summary>
+/// Email and password sign-in and registration for the login UI. Both continue a pending authorization request; on
+/// success they set the SSO cookie and return where the browser goes next.
+/// </summary>
+public static class PasswordEndpoints
+{
+    public const string RateLimitPolicy = "password";
+
+    /// <summary>Attempts per client address per minute, on top of the per-account lockout.</summary>
+    public const int AttemptsPerMinute = 20;
+
+    public static IServiceCollection AddPasswordRateLimiting(this IServiceCollection services)
+        => services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy(RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = AttemptsPerMinute, Window = TimeSpan.FromMinutes(1) }));
+        });
+
+    /// <summary>
+    /// Maps <c>POST /api/authorization-requests/{id}/password-sign-in</c> and <c>…/registration</c>.
+    /// </summary>
+    public static IEndpointRouteBuilder MapPasswordEndpoints(this IEndpointRouteBuilder app)
+    {
+        var api = app.MapGroup("/api/authorization-requests/{id:guid}")
+            .AddEndpointFilter(CsrfHeaderFilter.Require)
+            .RequireRateLimiting(RateLimitPolicy);
+
+        api.MapPost("/password-sign-in", SignInAsync);
+        api.MapPost("/registration", RegisterAsync);
+        return app;
+    }
+
+    internal static Task<IResult> SignInAsync(Guid id, PasswordSignInRequest body, HttpContext context, ISender sender)
+        => SignInBrowserAsync(context, () => sender.Send(
+            new SignInWithPasswordCommand(id, body.Email ?? string.Empty, body.Password ?? string.Empty, UserAgent(context), IpAddress(context)),
+            context.RequestAborted));
+
+    internal static Task<IResult> RegisterAsync(Guid id, RegistrationRequest body, HttpContext context, ISender sender)
+        => SignInBrowserAsync(context, () => sender.Send(
+            new RegisterWithPasswordCommand(
+                id, body.Name ?? string.Empty, body.Email ?? string.Empty, body.Password ?? string.Empty, UserAgent(context), IpAddress(context)),
+            context.RequestAborted));
+
+    private static async Task<IResult> SignInBrowserAsync(HttpContext context, Func<Task<AuthCallbackResult>> signIn)
+    {
+        try
+        {
+            var result = await signIn();
+            SsoCookie.Set(context.Response, result.SsoToken, result.SsoExpiresAt);
+            return Results.Ok(new { redirectUrl = result.RedirectUrl });
+        }
+        catch (PasswordSignInException ex) when (ex.Code == PasswordSignInException.EmailTaken)
+        {
+            return Results.Conflict(new { error = ex.Code });
+        }
+        catch (PasswordSignInException ex)
+        {
+            return Results.BadRequest(new { error = ex.Code });
+        }
+        catch (WeakPasswordException)
+        {
+            return Results.BadRequest(new { error = "weak_password" });
+        }
+        catch (Exception ex) when (ex is AuthorizationRequestExpiredException or AuthorizationRequestCompletedException or AuthorizationRequestNotFoundException)
+        {
+            return Results.BadRequest(new { error = "request_expired" });
+        }
+        catch (InvalidValueException)
+        {
+            return Results.BadRequest(new { error = "invalid_input" });
+        }
+        catch (InvalidOperationException)
+        {
+            return Results.Json(new { error = "sign_in_method_disabled" }, statusCode: StatusCodes.Status403Forbidden);
+        }
+    }
+
+    private static string UserAgent(HttpContext context) => context.Request.Headers.UserAgent.ToString();
+
+    private static string? IpAddress(HttpContext context) => context.Connection.RemoteIpAddress?.ToString();
+
+    /// <summary>Body of <c>…/password-sign-in</c>.</summary>
+    public sealed record PasswordSignInRequest(string? Email, string? Password);
+
+    /// <summary>Body of <c>…/registration</c>.</summary>
+    public sealed record RegistrationRequest(string? Name, string? Email, string? Password);
+}

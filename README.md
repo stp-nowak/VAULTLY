@@ -16,7 +16,9 @@ docker compose up --build
 
 starts everything; open http://localhost:5173. To sign in, first copy `auth/.env.example` to `auth/.env` and fill in
 the Google OAuth client (redirect URI `http://localhost:5096/google/callback`). Put your Google email in
-`BOOTSTRAP_ADMIN_EMAIL` there to become the first admin of the Identity admin console (http://localhost:5174/admin).
+`BOOTSTRAP_ADMIN_EMAIL` there to become the first admin of the Identity admin console (http://localhost:5174/admin);
+add `BOOTSTRAP_ADMIN_PASSWORD` to sign in to it with a password instead. Anyone can also create an account with email
+and password on the sign-in page.
 
 Each service has its own compose file with only what that service alone needs, so it can be started on its own:
 

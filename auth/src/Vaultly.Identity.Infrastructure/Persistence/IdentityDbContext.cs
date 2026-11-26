@@ -47,6 +47,10 @@ public sealed class IdentityDbContext : DbContext
                 .HasMaxLength(UserRole.MaxLength)
                 .IsRequired();
             entity.Ignore(x => x.IsAdmin);
+            entity.Property(x => x.PasswordHash)
+                .HasConversion(hash => hash!.Value, value => new PasswordHash(value))
+                .HasMaxLength(PasswordHash.MaxLength);
+            entity.Ignore(x => x.HasPassword);
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasMany(x => x.ExternalIdentities)
                 .WithOne()

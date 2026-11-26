@@ -55,9 +55,9 @@ public sealed class SignInMethodHandlerTests
             {
                 ("google", "Google", true),
                 ("github", "GitHub", false),
-                ("password", "Email and password", false),
+                ("password", "Email and password", true),
             }));
-            Assert.That(catalog.Configured, Is.EqualTo(new[] { new SignInMethod("google") }));
+            Assert.That(catalog.Configured, Is.EqualTo(new[] { new SignInMethod("google"), SignInMethod.Password }));
             Assert.That(catalog.Find(" GOOGLE ")?.Method.Value, Is.EqualTo("google"));
             Assert.That(catalog.Find("facebook"), Is.Null);
         });
@@ -92,8 +92,11 @@ public sealed class SignInMethodHandlerTests
     }
 
     [Test]
-    public void SetSignInMethodEnabled_DisablingTheOnlyConfiguredMethod_ThrowsWithoutSaving()
+    public void SetSignInMethodEnabled_DisablingTheLastEnabledConfiguredMethod_ThrowsWithoutSaving()
     {
+        _stored = SignInSettings.CreateDefault();
+        _stored.Disable(SignInMethod.Password, [new SignInMethod("google"), SignInMethod.Password]);
+
         Assert.ThrowsAsync<LastSignInMethodException>(() => CreateSetHandler(Catalog(google: true, github: false))
             .Handle(new SetSignInMethodEnabledCommand(Guid.NewGuid(), "google", false), CancellationToken.None));
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -122,7 +125,7 @@ public sealed class SignInMethodHandlerTests
         {
             ("google", true, true),
             ("github", true, false),
-            ("password", false, true),
+            ("password", true, true),
         }));
     }
 

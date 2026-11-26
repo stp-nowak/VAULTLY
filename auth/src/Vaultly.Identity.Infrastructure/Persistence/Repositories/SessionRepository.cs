@@ -53,4 +53,10 @@ public sealed class SessionRepository(IdentityDbContext dbContext) : ISessionRep
             .Include(x => x.RefreshTokens)
             .Include(x => x.AuthCodes)
             .SingleOrDefaultAsync(x => x.SsoTokenHash == ssoTokenHash, cancellationToken);
+
+    public async Task<IReadOnlyList<Session>> GetActiveForUserAsync(UserId userId, CancellationToken cancellationToken)
+        => await _dbContext.Sessions
+            .Include(x => x.RefreshTokens)
+            .Where(x => x.UserId == userId && !x.IsRevoked)
+            .ToListAsync(cancellationToken);
 }

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LoggedOutRouteImport } from './routes/logged-out'
 import { Route as ErrorRouteImport } from './routes/error'
@@ -18,6 +19,11 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSignInMethodsRouteImport } from './routes/admin/sign-in-methods'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/error': typeof ErrorRoute
   '/logged-out': typeof LoggedOutRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/admin/sign-in-methods': typeof AdminSignInMethodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/error': typeof ErrorRoute
   '/logged-out': typeof LoggedOutRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/admin/sign-in-methods': typeof AdminSignInMethodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin': typeof AdminIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/error': typeof ErrorRoute
   '/logged-out': typeof LoggedOutRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/admin/sign-in-methods': typeof AdminSignInMethodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/error'
     | '/logged-out'
     | '/login'
+    | '/register'
     | '/admin/sign-in-methods'
     | '/admin/users'
     | '/admin/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/error'
     | '/logged-out'
     | '/login'
+    | '/register'
     | '/admin/sign-in-methods'
     | '/admin/users'
     | '/admin'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/error'
     | '/logged-out'
     | '/login'
+    | '/register'
     | '/admin/sign-in-methods'
     | '/admin/users'
     | '/admin/'
@@ -127,10 +139,18 @@ export interface RootRouteChildren {
   ErrorRoute: typeof ErrorRoute
   LoggedOutRoute: typeof LoggedOutRoute
   LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -210,6 +230,7 @@ const rootRouteChildren: RootRouteChildren = {
   ErrorRoute: ErrorRoute,
   LoggedOutRoute: LoggedOutRoute,
   LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

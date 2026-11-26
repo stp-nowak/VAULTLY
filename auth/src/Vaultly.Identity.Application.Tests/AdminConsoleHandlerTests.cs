@@ -229,6 +229,22 @@ public sealed class AdminConsoleHandlerTests
         _users.Verify(x => x.Add(It.IsAny<User>()), Times.Never);
     }
 
+    [Test]
+    public async Task EnsureBootstrapAdmin_WithAConfiguredPassword_GivesTheAdminThatPassword()
+    {
+        _identityOptions.BootstrapAdmin.Email = "owner@example.com";
+        _identityOptions.BootstrapAdmin.Password = "correct horse battery staple";
+        User? created = null;
+        _users.Setup(x => x.CountAdminsAsync(CancellationToken.None)).ReturnsAsync(0);
+        _users.Setup(x => x.Add(It.IsAny<User>())).Callback<User>(x => created = x);
+
+        await CreateEnsureBootstrapAdminHandler().Handle(new EnsureBootstrapAdminCommand(), CancellationToken.None);
+
+        var verification = new Infrastructure.Security.IdentityPasswordHasher()
+            .Verify(created!.PasswordHash!, new Password("correct horse battery staple"));
+        Assert.That(verification, Is.EqualTo(PasswordVerification.Succeeded));
+    }
+
     [TestCase("owner@example.com", 1)]
     [TestCase("", 0)]
     public async Task EnsureBootstrapAdmin_WhenAdminExistsOrNoEmailConfigured_DoesNothing(string email, int adminCount)
@@ -325,7 +341,7 @@ public sealed class AdminConsoleHandlerTests
     private AssignUserRoleHandler CreateAssignUserRoleHandler() => new(_users.Object, _unitOfWork.Object, Logger());
 
     private EnsureBootstrapAdminHandler CreateEnsureBootstrapAdminHandler()
-        => new(_users.Object, _unitOfWork.Object, Clock(), Microsoft.Extensions.Options.Options.Create(_identityOptions), Logger());
+        => new(_users.Object, _unitOfWork.Object, new Infrastructure.Security.IdentityPasswordHasher(), Clock(), Microsoft.Extensions.Options.Options.Create(_identityOptions), Logger());
 
     private static User CreateUser() => User.Create(new EmailAddress("user@example.com"), new PersonName("Test User"), true, Now);
 

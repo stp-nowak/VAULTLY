@@ -4,6 +4,7 @@ using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Domain.Constants;
+using Vaultly.Identity.Domain.ValueObjects;
 
 namespace Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 
@@ -34,26 +35,32 @@ public sealed class GetAuthorizationRequestHandler(
         }
 
         var status = model.CompletedAt.HasValue
-            ? "completed"
-            : model.ExpiresAt <= _clock.UtcNow ? "expired" : "pending";
+            ? AuthorizationRequestStatus.Completed
+            : model.ExpiresAt <= _clock.UtcNow ? AuthorizationRequestStatus.Expired : AuthorizationRequestStatus.Pending;
 
-        var providers = status == "pending" ? await GetUsableProvidersAsync(model.Id, cancellationToken) : [];
+        var clientName = ResolveClientName(model.ClientId);
+        if (status != AuthorizationRequestStatus.Pending)
+        {
+            return new AuthorizationRequestDto(model.Id, clientName, status, [], PasswordSignIn: false);
+        }
 
-        return new AuthorizationRequestDto(model.Id, ResolveClientName(model.ClientId), status, providers);
+        var disabled = await _signInSettingsReadService.GetDisabledMethodsAsync(cancellationToken);
+        return new AuthorizationRequestDto(
+            model.Id,
+            clientName,
+            status,
+            UsableProviders(model.Id, disabled),
+            PasswordSignIn: !disabled.Contains(SignInMethod.Password.Value));
     }
 
-    private async Task<List<LoginProviderDto>> GetUsableProvidersAsync(Guid requestId, CancellationToken cancellationToken)
-    {
-        var disabled = await _signInSettingsReadService.GetDisabledMethodsAsync(cancellationToken);
-
-        return _providers
+    private List<LoginProviderDto> UsableProviders(Guid requestId, IReadOnlySet<string> disabled)
+        => _providers
             .Where(x => x.IsConfigured && !disabled.Contains(x.Id.Value))
             .Select(x => new LoginProviderDto(
                 x.Id.Value,
                 x.Name,
                 OAuthFlowUtilities.BuildRelativeUrl($"/{x.Id.Value}/authorize", "request", requestId.ToString())))
             .ToList();
-    }
 
     private string ResolveClientName(string clientId)
         => clientId == ConsoleClient.Id.Value

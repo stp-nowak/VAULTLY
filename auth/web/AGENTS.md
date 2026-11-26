@@ -13,6 +13,7 @@
 | URL | Page | What it shows |
 |---|---|---|
 | `/login?request=<id>` | `pages/login` | Loads the authorization request; `pending` → "Sign in to {clientName}" + one "Continue with {name}" button per provider (full-page navigation to `startUrl`). Missing `request`, 404, `expired` or `completed` → "This sign-in link is no longer valid…". Loading → "Loading…"; network/5xx → "We couldn't load the sign-in page…". |
+| `/register?request=<id>` | `pages/register` | "Create your {clientName} account": name, email and password (`features/register-with-password`), link back to sign-in. Notices as on `/login`; password sign-in switched off → "not available". |
 | `/error?code=<code>` | `pages/sign-in-error` | "Sign-in didn't complete" + message for `login_failed`, `access_denied`, `invalid_request`, `request_expired` (anything else → `login_failed`). |
 | `/logged-out` | `pages/logged-out` | "You're signed out." |
 | `/` | — | Redirects to `/logged-out`. |
@@ -34,6 +35,12 @@ ids such as `8e10` into numbers.
 ```
 
 - `status`: `"pending" | "expired" | "completed"`; unknown id → HTTP 404 (treated as an invalid link).
+- `passwordSignIn`: `/login` then shows the email and password form (`features/sign-in-with-password`) and a link to
+  `/register`. A pending request without providers and without `passwordSignIn` shows "Signing in is not available".
+- `POST /api/authorization-requests/{id}/password-sign-in` `{ email, password }` and `…/registration`
+  `{ name, email, password }` → `{ redirectUrl }` (absolute http(s), checked by `parseSignInResponse`; the browser
+  navigates there). Errors `{ error }` are mapped to messages per feature (`signInFailureOf`); a failed sign-in never
+  says whether the account exists.
 - `startUrl` must be a same-origin path (`/…`); anything else is rejected by the parser.
 - Server-side sign-in failures redirect the browser to `/error?code=<code>`; sign-out ends on `/logged-out`.
 
@@ -68,6 +75,10 @@ Admin console (`X-CSRF: 1` required; 401 = no SSO session, 403 = not an admin):
 - **No `if`/early-return chains that render JSX.** Derive one state value in a pure, tested function (prefer lookup
   maps such as `Record<QueryStatus, Notice>` over `if` chains), map it to a small view model at a single branch point
   (e.g. `{ heading, body }`) and render shared markup once. Never repeat the same element (heading, wrapper) per state.
+- **Conditional JSX elements use `&&`:** `{condition && <X />}` instead of `{condition ? <X /> : null}`; two branches
+  spanning several lines as `{condition && (…)}{!condition && (…)}` instead of `{condition ? (…) : (…)}`. A two-branch
+  ternary that fits on one line may stay. Keep `condition` a boolean (`items.length > 0 &&`, not `items.length &&`,
+  which renders `0`). Ternaries that compute values (text, `className`, props, view models) are not affected.
 - **Feature-Sliced Design with `domain` instead of `entities`**: `app → pages → widgets → features → domain → shared`.
   Import only from lower layers, never between slices of one layer, and only through a slice's `index.ts`;
   relative imports inside a slice, `@/` across slices. Enforced by `no-restricted-imports` in `eslint.config.js`.
@@ -77,6 +88,7 @@ Admin console (`X-CSRF: 1` required; 401 = no SSO session, 403 = not an admin):
     `domain/sign-in-settings` ↔ the SignInSettings aggregate.
   - `features/toggle-sign-in-method` — the sign-in method switch.
   - `features/sign-in-with-provider` — the provider buttons (user action).
+  - `features/sign-in-with-password`, `features/register-with-password` — the email and password forms.
   - `features/assign-user-role` — the role select; writes are mutations in `features/*/api`.
   - `widgets/console-shell` — frame of the admin console pages.
 - **Styling**: Tailwind CSS v4 + `@vaultly/ui` only (`Button`, `Card`, `CenteredScreen`, `Eyebrow`, `StatusNotice`, …,

@@ -16,12 +16,14 @@ namespace Vaultly.Identity.Application.Commands.EnsureBootstrapAdmin;
 public sealed class EnsureBootstrapAdminHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
+    IPasswordHasher passwordHasher,
     IClock clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger) : ICommandHandler<EnsureBootstrapAdminCommand>
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IPasswordHasher _passwordHasher = passwordHasher;
     private readonly IClock _clock = clock;
     private readonly BootstrapAdminOptions _options = identityOptions.Value.BootstrapAdmin;
     private readonly ILogger _logger = logger.ForContext<EnsureBootstrapAdminHandler>();
@@ -43,10 +45,14 @@ public sealed class EnsureBootstrapAdminHandler(
         var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
         if (user is null)
         {
-            // Treated as verified: the operator vouches for this address, and the first sign-in still has to come
-            // from a provider that verified it.
+            // Treated as verified: the operator vouches for this address.
             user = User.Create(email, NameFrom(email), emailVerified: true, _clock.UtcNow);
             _userRepository.Add(user);
+        }
+
+        if (!string.IsNullOrEmpty(_options.Password) && !user.HasPassword)
+        {
+            user.SetPassword(_passwordHasher.Hash(new Password(_options.Password)));
         }
 
         RoleAssignment.Assign(user, UserRole.Admin, adminCount);

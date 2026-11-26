@@ -35,7 +35,8 @@ Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
 | Endpoint | Purpose |
 |---|---|
 | `GET /authorize` | Authorization code + PKCE (S256 only, `state` required). Silent sign-in with an active SSO cookie, otherwise redirect to the login UI `/login?request=<id>` |
-| `GET /api/authorization-requests/{id}` | Login UI data: client name, status, providers |
+| `GET /api/authorization-requests/{id}` | Login UI data: client name, status, providers, `passwordSignIn` |
+| `POST /api/authorization-requests/{id}/password-sign-in`, `…/registration` | Email + password sign-in / account creation for a pending request (`X-CSRF: 1`, rate-limited per client address); sets the `vaultly_sso` cookie and returns `{ redirectUrl }`; errors `{ error }`: `invalid_credentials`, `email_taken` (409), `weak_password`, `invalid_input`, `request_expired`, `sign_in_method_disabled` (403), 429 |
 | `GET /{provider}/authorize?request=<id>`, `GET /{provider}/callback` | External provider login; the callback sets the `vaultly_sso` cookie and redirects to the client with `code` + `state` |
 | `POST /token` | Form-encoded; `authorization_code` (code, `code_verifier`, `redirect_uri`) and `refresh_token` grants; client auth `client_secret_post` or `client_secret_basic`; refresh token in the body |
 | `POST /revoke` | RFC 7009 refresh-token revocation (ends the session) |
@@ -60,6 +61,14 @@ Sign-in methods (external providers, later email + password) are *configured* by
 (`SignInMethodGuard` on provider start and callback, the login UI's provider list); the last configured, enabled
 method cannot be switched off. `SignInMethodCatalog` lists every known method.
 
+Email + password is built in (always configured, admins can switch it off). Passwords (12–128 characters) are hashed
+with ASP.NET Core Identity's `PasswordHasher` behind `IPasswordHasher`; never log them (`Password.ToString()` hides
+the value, the commands redact it). A failed sign-in never tells whether the account exists: unknown email, account
+without a password and a paused account all answer `invalid_credentials` after the same hashing work. Five wrong
+passwords in a row pause password sign-in for 15 minutes. Accounts created with a password are unverified; when a
+provider with a verified email later signs in to such an account, its password is removed and its sessions ended
+(the registrant may not own the email).
+
 ## Structure
 
 ```
@@ -77,7 +86,8 @@ auth/
     │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
     │   ├── Commands/<UseCase>/             #   write side: StartAuthorization, StartExternalLogin, HandleOAuthCallback,
     │   │                                   #   ExchangeAuthCode, RefreshSession, RevokeToken, EndSession, RevokeSession,
-    │   │                                   #   StartConsoleSignIn, AssignUserRole, EnsureBootstrapAdmin, SetSignInMethodEnabled
+    │   │                                   #   StartConsoleSignIn, AssignUserRole, EnsureBootstrapAdmin, SetSignInMethodEnabled,
+    │   │                                   #   SignInWithPassword, RegisterWithPassword
     │   ├── Queries/<UseCase>/              #   read side: GetAuthorizationRequest, GetSessions, GetConsoleUser, GetUsers,
     │   │                                   #   GetSignInSettings
     │   ├── Interfaces/Repositories/        #   write ports (aggregates)
@@ -85,7 +95,8 @@ auth/
     │   ├── Interfaces/Services/            #   other ports (clock, token hashing, JWT, OAuth providers)
     │   ├── Models/  Options/  Common/       #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors)
     ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
-    ├── Vaultly.Identity.Api/               # Minimal API endpoints → ISender (OAuthEndpoints, AdminEndpoints), composition root
+    ├── Vaultly.Identity.Api/               # Minimal API endpoints → ISender (OAuthEndpoints, PasswordEndpoints,
+    │                                       #   AdminEndpoints, CsrfHeaderFilter), composition root
     ├── Vaultly.Identity.Domain.Tests/
     └── Vaultly.Identity.Application.Tests/ # incl. CqrsConventionTests guarding CQRS rules
 ```

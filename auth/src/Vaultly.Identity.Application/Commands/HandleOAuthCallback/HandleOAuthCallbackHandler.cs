@@ -105,37 +105,48 @@ public sealed class HandleOAuthCallbackHandler(
                 _userRepository.Add(user);
                 _logger.Information("Created user {UserId} from provider {ProviderId}", user.Id.Value, provider.Id.Value);
             }
+            else
+            {
+                await SecureUnverifiedAccountAsync(user, now, cancellationToken);
+            }
 
             user.LinkExternalIdentity(provider.Id, providerUserId, email, name, now);
         }
 
         user.UpdateProfile(new PersonName(identityInfo.Name), identityInfo.EmailVerified);
 
-        // New SSO session: its token goes into the auth service's cookie, only the hash is stored.
-        var ssoToken = _tokenGenerator.GenerateToken(32);
-        var ssoExpiresAt = now.AddHours(_identityOptions.SsoSessionTtlHours);
-        var session = Session.Create(
-            user.Id,
-            new AuthMethod(provider.Id.Value),
-            UserAgent.FromNullable(OAuthFlowUtilities.Truncate(request.UserAgent, 512)),
-            IpAddress.FromNullable(OAuthFlowUtilities.Truncate(request.IpAddress, 64)),
-            new TokenHash(_tokenHasher.HashToken(ssoToken)),
-            now,
-            ssoExpiresAt);
+        var started = SsoSessions.Start(
+            user.Id, new AuthMethod(provider.Id.Value), request.UserAgent, request.IpAddress, _tokenGenerator, _tokenHasher, _identityOptions, now);
+        _sessionRepository.Add(started.Session);
 
-        _sessionRepository.Add(session);
-
-        var redirectUrl = SignInCompletion.Complete(authorizationRequest, session, _tokenGenerator, _tokenHasher, _identityOptions, now);
+        var redirectUrl = SignInCompletion.Complete(authorizationRequest, started.Session, _tokenGenerator, _tokenHasher, _identityOptions, now);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.Information(
             "Handled OAuth callback for provider {ProviderId}, session {SessionId}, user {UserId}, client {ClientId}",
             provider.Id.Value,
-            session.Id.Value,
+            started.Session.Id.Value,
             user.Id.Value,
             authorizationRequest.ClientId.Value);
 
-        return new AuthCallbackResult(redirectUrl, ssoToken, ssoExpiresAt);
+        return new AuthCallbackResult(redirectUrl, started.SsoToken, started.ExpiresAt);
+    }
+
+    // Someone may have registered this email with a password without owning it. The provider has now proven who owns
+    // it, so that password and every session started with it are removed before the owner gets in.
+    private async Task SecureUnverifiedAccountAsync(User user, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (!user.SecureWithVerifiedEmail())
+        {
+            return;
+        }
+
+        foreach (var session in await _sessionRepository.GetActiveForUserAsync(user.Id, cancellationToken))
+        {
+            session.RevokeWithTokens(now);
+        }
+
+        _logger.Warning("Removed the password and ended the sessions of unverified user {UserId} on provider sign-in", user.Id.Value);
     }
 }

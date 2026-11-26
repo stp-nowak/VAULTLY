@@ -55,7 +55,23 @@ export function parseAuthorizationRequest(value: unknown): AuthorizationRequest 
   return {
     clientName: requireString(record, 'clientName', message),
     id: requireString(record, 'id', message),
+    passwordSignIn: record.passwordSignIn === true,
     providers: record.providers.map(parseProvider),
     status: record.status,
   };
+}
+
+/**
+ * Where the browser goes after a password sign-in or registration: the client's registered callback or the admin
+ * console, both absolute http(s) URLs chosen by the Identity service.
+ */
+export function parseSignInResponse(value: unknown): string {
+  const message = 'Sign-in response was invalid.';
+  const redirectUrl = requireString(asRecord(value, message), 'redirectUrl', message);
+
+  if (!/^https?:\/\//.test(redirectUrl)) {
+    throw new Error(message);
+  }
+
+  return redirectUrl;
 }
