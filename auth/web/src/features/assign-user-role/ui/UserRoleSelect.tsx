@@ -40,11 +40,11 @@ export function UserRoleSelect({ user }: UserRoleSelectProps) {
         options={roleOptions}
         value={mutation.isPending ? mutation.variables : user.role}
       />
-      {mutation.isError ? (
+      {mutation.isError && (
         <p className="max-w-64 text-sm text-danger" role="alert">
           {roleChangeErrorMessage(mutation.error)}
         </p>
-      ) : null}
+      )}
     </div>
   );
 }

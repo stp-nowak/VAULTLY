@@ -40,7 +40,7 @@ export function AdminUsersPage() {
         />
       </header>
 
-      {view.kind === 'table' ? (
+      {view.kind === 'table' && (
         <section aria-label="User list" className="grid gap-5">
           <UsersTable users={view.page.items} />
           <nav aria-label="Pages" className="flex items-center justify-between gap-4 text-sm text-muted">
@@ -62,9 +62,8 @@ export function AdminUsersPage() {
             </span>
           </nav>
         </section>
-      ) : (
-        <StatusNotice tone={notices[view.kind].tone}>{notices[view.kind].text}</StatusNotice>
       )}
+      {view.kind !== 'table' && <StatusNotice tone={notices[view.kind].tone}>{notices[view.kind].text}</StatusNotice>}
     </div>
   );
 }

@@ -57,9 +57,7 @@ export function ConsoleShell({ admin, children }: ConsoleShellProps) {
         <span className="font-display text-lg font-semibold tracking-display">Admin console</span>
       </header>
 
-      {isMenuOpen ? (
-        <div aria-hidden className="fixed inset-0 z-20 bg-canvas/70 backdrop-blur-sm lg:hidden" onClick={closeMenu} />
-      ) : null}
+      {isMenuOpen && <div aria-hidden className="fixed inset-0 z-20 bg-canvas/70 backdrop-blur-sm lg:hidden" onClick={closeMenu} />}
 
       {/* Closed on narrow screens it is `invisible`, which also takes it out of the tab order and the accessibility tree. */}
       <aside

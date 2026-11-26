@@ -27,11 +27,11 @@ export function SignInMethodSwitch({ method }: SignInMethodSwitchProps) {
         disabled={!method.isConfigured || mutation.isPending}
         onCheckedChange={(enabled) => mutation.mutate(enabled)}
       />
-      {mutation.isError ? (
+      {mutation.isError && (
         <p className="max-w-64 text-right text-sm text-danger" role="alert">
           {toggleErrorMessage(mutation.error)}
         </p>
-      ) : null}
+      )}
     </div>
   );
 }

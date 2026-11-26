@@ -113,6 +113,10 @@ disabling the test. `pnpm --filter @vaultly/web deps:circular` writes a JSON rep
 - **No `if`/early-return chains that render JSX.** Derive one state value in a pure, tested function (prefer lookup
   maps such as `Record<QueryStatus, Notice>` over `if` chains), map it to a small view model at a single branch point
   (e.g. `{ heading, body }`) and render shared markup once. Never repeat the same element (heading, wrapper) per state.
+- **Conditional JSX elements use `&&`:** `{condition && <X />}` instead of `{condition ? <X /> : null}`; two branches
+  spanning several lines as `{condition && (…)}{!condition && (…)}` instead of `{condition ? (…) : (…)}`. A two-branch
+  ternary that fits on one line may stay. Keep `condition` a boolean (`items.length > 0 &&`, not `items.length &&`,
+  which renders `0`). Ternaries that compute values (text, `className`, props, view models) are not affected.
 - Keep components small and focused — extract logic into custom hooks
 - Use **composition over configuration** — prefer `children` and slot patterns over large prop APIs
 - Avoid prop drilling beyond 2 levels — lift to context or a store
