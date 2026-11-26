@@ -14,7 +14,7 @@ export type { EyebrowProps } from './components/Eyebrow';
 export { InfoTile } from './components/InfoTile';
 export type { InfoTileProps } from './components/InfoTile';
 export { Select } from './components/Select';
-export type { SelectProps } from './components/Select';
+export type { SelectOption, SelectProps } from './components/Select';
 export { StatusNotice } from './components/StatusNotice';
 export type { StatusNoticeProps, StatusTone } from './components/StatusNotice';
 export { Table } from './components/Table';
