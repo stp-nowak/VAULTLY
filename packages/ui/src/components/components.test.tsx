@@ -79,15 +79,18 @@ describe('Badge', () => {
 });
 
 describe('Select', () => {
-  it('is a labelled native select', () => {
-    render(
-      <Select aria-label="Role" defaultValue="admin">
+  it('is a labelled native select whose wrapper takes className', () => {
+    const { container } = render(
+      <Select aria-label="Role" className="w-36" defaultValue="admin">
         <option value="user">User</option>
         <option value="admin">Admin</option>
       </Select>,
     );
 
-    expect(screen.getByRole('combobox', { name: 'Role' })).toHaveValue('admin');
+    const select = screen.getByRole('combobox', { name: 'Role' });
+    expect(select).toHaveValue('admin');
+    expect(select.className).toContain('appearance-none');
+    expect(container.firstElementChild?.className).toContain('w-36');
   });
 });
 
