@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 
-import { Button, Eyebrow, StatusNotice, TextField, type StatusTone } from '@vaultly/ui';
+import { Eyebrow, SearchField, StatusNotice, type StatusTone } from '@vaultly/ui';
 
 import { usersQueryOptions } from '@/domain/user';
 
@@ -33,20 +33,14 @@ export function AdminUsersPage() {
           <Eyebrow>People</Eyebrow>
           <h1 className="text-4xl">Users</h1>
         </div>
-        <form
-          className="flex flex-wrap items-end gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const value = new FormData(event.currentTarget).get('search');
-            void navigate({ search: { search: typeof value === 'string' && value.trim() ? value.trim() : undefined } });
-          }}
-          role="search"
-        >
-          <TextField className="w-72" defaultValue={search} key={search} label="Search" name="search" placeholder="Email or name" type="search" />
-          <Button type="submit" variant="secondary">
-            Search
-          </Button>
-        </form>
+        <SearchField
+          className="w-full sm:w-80"
+          defaultValue={search}
+          key={search}
+          label="Search"
+          onSearch={(term) => void navigate({ search: { search: term || undefined } })}
+          placeholder="Email or name"
+        />
       </header>
 
       {view.kind === 'table' ? (
