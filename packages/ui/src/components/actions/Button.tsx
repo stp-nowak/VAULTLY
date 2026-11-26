@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn';
+import { cn } from '../../lib/cn';
 
 const variants = {
   ghost: 'border-line bg-transparent text-muted',

@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn';
+import { cn } from '../../lib/cn';
 
 const tones = {
   error: 'border-danger-line bg-danger-soft text-danger-ink',

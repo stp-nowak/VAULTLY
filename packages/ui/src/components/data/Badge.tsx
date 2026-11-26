@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn';
+import { cn } from '../../lib/cn';
 
 const tones = {
   accent: 'border-line-strong bg-accent-soft text-accent',

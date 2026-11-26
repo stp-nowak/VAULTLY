@@ -13,8 +13,14 @@ base styles and React primitives. Part of the root pnpm workspace; apps depend o
 src/
 ├── styles.css        # @theme tokens (colors, fonts, tracking, shadows, animations), @utility bg-panel, base layer, @source
 ├── lib/cn.ts         # clsx + tailwind-merge
-├── components/       # Badge, BrandMark, Button, Card, CenteredScreen, Eyebrow, InfoTile, Select, StatusNotice,
-│                     #   Table, TextField (+ tests)
+├── icons/            # SVG graphics in the current text color: BrandMark (logo), ChevronDownIcon, SearchIcon
+├── components/       # React primitives, one folder per kind:
+│   ├── actions/      #   Button
+│   ├── data/         #   Badge, InfoTile, Table
+│   ├── feedback/     #   StatusNotice
+│   ├── forms/        #   SearchField, Select, TextField
+│   ├── layout/       #   Card, CenteredScreen
+│   └── typography/   #   Eyebrow
 └── index.ts          # Public API — the only entry point apps import from
 ```
 
@@ -36,7 +42,9 @@ The package ships TypeScript/TSX source (`exports` → `src`); the consuming app
 - Only business-agnostic primitives live here (no API calls, routing, auth or app copy). A component belongs here
   once a second app needs it or it encodes a design-system pattern.
 - Every component: function component, typed props, accepts `className` and merges it last via `cn`, accessible
-  semantics (roles, labels), and a test in `components/*.test.tsx`.
+  semantics (roles, labels), and a test in its folder's `<folder>.test.tsx` (e.g. `components/forms/forms.test.tsx`).
+- Put a component in the folder of its kind; add a folder only for a new kind. Icons live in `icons/`, never inside
+  a component file: they are `*Icon` components (decorative, `aria-hidden`, `currentColor`, size via `className`).
 - No circular dependencies: `src/circularDependencies/circularDependencies.test.ts` (madge from `src/index.ts`)
   must stay green; `pnpm --filter @vaultly/ui deps:circular` writes a JSON report.
 - Export everything public from `src/index.ts`; never deep-import package internals from apps.
