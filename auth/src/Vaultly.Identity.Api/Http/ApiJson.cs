@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 using Vaultly.Identity.Application.Common;
 
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Http;
 
 /// <summary>JSON settings of the Identity API: every enum is a <see cref="WireNames"/> string, never a number.</summary>
 public static class ApiJson

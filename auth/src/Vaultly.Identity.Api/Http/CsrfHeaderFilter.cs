@@ -1,4 +1,6 @@
-namespace Vaultly.Identity.Api;
+using Vaultly.Identity.Api.Contracts;
+
+namespace Vaultly.Identity.Api.Http;
 
 /// <summary>
 /// Requires <c>X-CSRF: 1</c> on JSON calls from the login UI and the admin console, and marks responses

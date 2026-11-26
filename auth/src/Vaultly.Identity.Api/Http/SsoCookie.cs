@@ -1,4 +1,4 @@
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Http;
 
 /// <summary>
 /// The single sign-on cookie of the auth service. It identifies the browser's SSO session so a later

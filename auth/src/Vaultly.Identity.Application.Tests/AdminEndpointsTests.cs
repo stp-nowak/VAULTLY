@@ -8,7 +8,8 @@ using Moq;
 
 using NUnit.Framework;
 
-using Vaultly.Identity.Api;
+using Vaultly.Identity.Api.Endpoints;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Commands.AssignUserRole;
 using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Models;

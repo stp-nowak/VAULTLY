@@ -1,20 +1,16 @@
 using MediatR;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Serilog;
 
-using Vaultly.Identity.Api;
 using Vaultly.Identity.Api.Configuration;
+using Vaultly.Identity.Api.Endpoints;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application;
 using Vaultly.Identity.Application.Commands.EnsureBootstrapAdmin;
-using Vaultly.Identity.Application.Commands.RevokeSession;
-using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Application.Queries.GetSessions;
 using Vaultly.Identity.Infrastructure;
 using Vaultly.Identity.Infrastructure.Options;
 using Vaultly.Identity.Infrastructure.Persistence;
@@ -34,6 +30,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 builder.Services.AddSingleton(Log.Logger);
+builder.Services.AddSingleton(new EndpointErrorHandler(Log.ForContext<EndpointErrorHandler>()));
 
 builder.Services.AddOpenApi();
 
@@ -105,71 +102,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-var endpointErrorHandler = new EndpointErrorHandler(Log.ForContext<EndpointErrorHandler>());
-
-app.MapOAuthEndpoints();
-app.MapAdminEndpoints();
-app.MapPasswordEndpoints();
-
-app.MapGet("/sessions", async (HttpContext httpContext, ISender sender) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "GET /sessions", async () =>
-    {
-        var userId = httpContext.User.GetUserId();
-        var currentSessionId = httpContext.User.GetSessionId();
-        if (userId is null || currentSessionId is null)
-        {
-            return endpointErrorHandler.Unauthorized(httpContext, "GET /sessions", "Required session claims are missing.");
-        }
-
-        var sessions = await sender.Send(
-            new GetSessionsQuery(userId.Value, currentSessionId.Value),
-            httpContext.RequestAborted);
-
-        return Results.Ok(new { sessions });
-    })).RequireAuthorization();
-
-app.MapDelete("/sessions/{id:guid}", async (HttpContext httpContext, ISender sender, Guid id) =>
-    await endpointErrorHandler.ExecuteAsync(httpContext, "DELETE /sessions/{id}", async () =>
-    {
-        var userId = httpContext.User.GetUserId();
-        if (userId is null)
-        {
-            return endpointErrorHandler.Unauthorized(httpContext, "DELETE /sessions/{id}", "User claim is missing.");
-        }
-
-        var revoked = await sender.Send(new RevokeSessionCommand(userId.Value, id), httpContext.RequestAborted);
-        return revoked
-            ? Results.NoContent()
-            : endpointErrorHandler.NotFound(httpContext, "DELETE /sessions/{id}", "Session was not found for the current user.");
-    })).RequireAuthorization();
-
-app.MapGet("/.well-known/openid-configuration", (IOptions<IdentityOptions> options) =>
-{
-    var config = options.Value;
-    var baseUrl = config.PublicBaseUrl.TrimEnd('/');
-    return Results.Ok(new
-    {
-        issuer = config.Issuer,
-        authorization_endpoint = $"{baseUrl}/authorize",
-        token_endpoint = $"{baseUrl}/token",
-        revocation_endpoint = $"{baseUrl}/revoke",
-        end_session_endpoint = $"{baseUrl}/logout",
-        jwks_uri = $"{baseUrl}/.well-known/jwks.json",
-        response_types_supported = new[] { "code" },
-        grant_types_supported = WireNames.All<GrantType>(),
-        code_challenge_methods_supported = new[] { "S256" },
-        subject_types_supported = new[] { "public" },
-        id_token_signing_alg_values_supported = new[] { "RS256" },
-        scopes_supported = new[] { "openid", "email", "profile" },
-        token_endpoint_auth_methods_supported = new[] { "client_secret_basic", "client_secret_post" }
-    });
-});
-
-app.MapGet("/.well-known/jwks.json", (IJwtKeyProvider keyProvider) =>
-{
-    var jwk = keyProvider.GetJwk();
-    return Results.Ok(new { keys = new[] { jwk } });
-});
+app.MapIdentityEndpoints();
 
 app.Run();
 

@@ -1,5 +1,7 @@
 using MediatR;
 
+using Vaultly.Identity.Api.Contracts;
+using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Commands.AssignUserRole;
 using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Commands.StartConsoleSignIn;
@@ -11,7 +13,7 @@ using Vaultly.Identity.Domain.Enums;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 
-namespace Vaultly.Identity.Api;
+namespace Vaultly.Identity.Api.Endpoints;
 
 /// <summary>
 /// API of the admin console (login UI <c>/admin</c>). The console is authenticated by the SSO cookie, and the role is
