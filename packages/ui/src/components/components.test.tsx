@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { cn } from '../lib/cn';
+import { BrandMark } from './BrandMark';
 import { Button } from './Button';
 import { Card } from './Card';
 import { InfoTile } from './InfoTile';
@@ -10,6 +11,21 @@ import { StatusNotice } from './StatusNotice';
 describe('cn', () => {
   it('lets later Tailwind classes override earlier ones', () => {
     expect(cn('p-6 text-ink', false, 'p-4')).toBe('text-ink p-4');
+  });
+});
+
+describe('BrandMark', () => {
+  it('is decorative unless it gets a title', () => {
+    const { container } = render(
+      <>
+        <BrandMark />
+        <BrandMark title="Vaultly" />
+      </>,
+    );
+
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    expect(screen.getByRole('img', { name: 'Vaultly' })).toBeInTheDocument();
+    expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
   });
 });
 

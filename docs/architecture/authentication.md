@@ -42,7 +42,7 @@ flowchart LR
 
 | Participant | Where | Responsibility |
 |---|---|---|
-| Web SPA | `web/src/web` | The app. Calls only same-origin `/api/*`. No sign-in screen, no tokens. |
+| Web SPA | `web/src/web` | The app and its public landing page. Calls only same-origin `/api/*`. No sign-in screen, no tokens; sign-in starts only when the user clicks "Log in". |
 | Web API (BFF) | `web/src/api` | Confidential OIDC client `vaultly-web`. Owns the browser session, stores tokens in Redis, forwards API calls to the backend with a bearer token. |
 | Auth service | `auth/src` | OAuth 2.0 / OIDC authorization server: `/authorize`, `/token`, `/revoke`, `/logout`, SSO session, JWT signing. |
 | Auth UI | `auth/web` | The auth service's own login pages (`/login`, `/error`, `/logged-out`), hosted by their own web server, which proxies the auth API paths. |
@@ -76,9 +76,11 @@ sequenceDiagram
     participant UI as Auth UI
     participant G as Google
 
-    U->>SPA: open /app
+    U->>SPA: open /
     SPA->>BFF: GET /api/auth/user
     BFF-->>SPA: 401 (no session)
+    SPA-->>U: landing page with "Log in"
+    U->>SPA: click "Log in"
     SPA->>BFF: full-page navigation GET /api/auth/login?returnUrl=/app
     Note over BFF: create state + PKCE code_verifier<br/>store them encrypted in cookie vaultly-login
     BFF-->>U: 302 to /authorize
@@ -111,10 +113,14 @@ sequenceDiagram
     BFF-->>SPA: 200 user (no tokens)
 ```
 
+The SPA never starts sign-in by itself. With a session, `/` opens `/app` straight away. Without one, `/` shows the
+landing page and `/app` redirects to `/?returnUrl=<where the user was going>`; "Log in" then sends that local path as
+`returnUrl`, so the user lands where they wanted to be.
+
 ## 2. Silent sign-in with an active SSO session
 
 When the web session is gone (cookie expired, new tab after clearing it, another app) but the auth service still
-has an active SSO session, the user never sees a login page.
+has an active SSO session, the user sees the landing page, and after clicking "Log in" never sees a login page.
 
 ```mermaid
 sequenceDiagram
@@ -161,7 +167,7 @@ sequenceDiagram
         A-->>BFF: 400 invalid_grant (expired, revoked or reused)
         BFF->>R: delete session
         BFF-->>SPA: 401 + clear cookie
-        Note over SPA: route guard sends the user to sign-in<br/>(silent if SSO is still active)
+        Note over SPA: route guard returns to the landing page<br/>("Log in" is silent if SSO is still active)
     end
     opt session still active
         BFF->>B: GET /budgets, Authorization: Bearer access token, no cookies
@@ -195,7 +201,7 @@ sequenceDiagram
     Note over A: end SSO session (idempotent), delete vaultly_sso<br/>post_logout_redirect_uri must be registered
     alt registered post-logout URI
         A-->>U: 302 to web app /
-        U->>SPA: open the app with no session, so sign-in shows the full login page
+        U->>SPA: open the app with no session, so the landing page shows
     else not registered
         A-->>U: 302 to Auth UI /logged-out
         U->>UI: "You're signed out."
@@ -242,7 +248,7 @@ stateDiagram-v2
 | CSRF against cookie-authenticated API | `X-CSRF: 1` required on every `/api/*` call; `SameSite=Strict` session cookie | `CsrfHeaderMiddleware` |
 | Login CSRF / forged callback | `state` bound to the encrypted `vaultly-login` cookie, compared in constant time | `AuthEndpoints.CallbackAsync` |
 | Intercepted authorization code | PKCE S256, code bound to client + redirect URI, client secret at `/token`, single use, burned on failure | `Session.ConsumeAuthCode`, `CodeChallenge` |
-| Open redirect | Clients and redirect/post-logout URIs registered per client; invalid ones are never redirected; BFF `returnUrl` must be a local path | `ClientRegistry`, `StartAuthorizationHandler`, `SanitizeReturnUrl` |
+| Open redirect | Clients and redirect/post-logout URIs registered per client; invalid ones are never redirected; `returnUrl` must be a local path in the SPA and in the BFF | `ClientRegistry`, `StartAuthorizationHandler`, `SanitizeReturnUrl`, `readLocalPath` |
 | Session fixation | New random session id on every sign-in, previous session deleted | `UserSessionService.SignInAsync` |
 | Refresh token replay | Rotation on every use; reuse revokes the whole session | `RefreshSessionHandler` |
 | Redis dump | Keys are hashed session ids, payloads encrypted | `DistributedWebSessionStore` |
@@ -257,7 +263,8 @@ stateDiagram-v2
 | Google denied or failed, callback error | Auth UI `/error?code=access_denied`, `login_failed` or `request_expired` |
 | Unknown client or unregistered `redirect_uri` at `/authorize` | Auth UI `/error?code=invalid_request` |
 | `state` mismatch or failed code exchange in the BFF | Web `/login?error=invalid_state` or `login_failed` with "Try again" |
-| Session ended (refresh rejected) | Back to sign-in; silent if the SSO session is still active |
+| Session ended (refresh rejected) | Web landing page; "Log in" is silent if the SSO session is still active |
+| `/app` opened without a session | Web landing page; "Log in" returns to the page the user asked for |
 
 ## Configuration
 
@@ -288,7 +295,7 @@ its API share one origin for cookies.
 
 | Step | Code |
 |---|---|
-| SPA route guards, login redirect, logout navigation | `web/src/web/src/app/routes/*`, `web/src/web/src/domain/identity` |
+| SPA route guards, landing page, login and logout navigation | `web/src/web/src/app/routes/*`, `web/src/web/src/pages/landing`, `web/src/web/src/features/login`, `web/src/web/src/domain/identity` |
 | BFF login, callback, logout, user, sessions | `web/src/api/Vaultly.Web.Api/Features/Auth/AuthEndpoints.cs` |
 | BFF session, refresh, lock, Redis store | `web/src/api/Vaultly.Web.Api/Features/Auth/Sessions/` |
 | BFF client of the auth service | `web/src/api/Vaultly.Web.Api/Features/Auth/IdentityService/IdentityServiceClient.cs` |

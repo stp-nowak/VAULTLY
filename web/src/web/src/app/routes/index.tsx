@@ -1,13 +1,21 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { buildLoginUrl } from '@/domain/identity';
+import { LandingPage } from '@/pages/landing';
+import { readLocalPath } from '@/shared/lib';
 
+interface LandingSearch {
+  returnUrl?: string;
+}
+
+// The home page never starts sign-in by itself: it only checks for a session and otherwise waits for "Log in".
 export const Route = createFileRoute('/')({
+  validateSearch: (search): LandingSearch => ({ returnUrl: readLocalPath(search.returnUrl) }),
   beforeLoad: async ({ context }) => {
     await context.auth.ensureReady();
 
-    throw context.auth.isAuthenticated
-      ? redirect({ to: '/app' })
-      : redirect({ href: buildLoginUrl('/app'), reloadDocument: true });
+    if (context.auth.isAuthenticated) {
+      throw redirect({ to: '/app' });
+    }
   },
+  component: LandingPage,
 });

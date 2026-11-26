@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { buildLoginUrl } from '@/domain/identity';
 import { LoginPage } from '@/pages/login';
+import { readLocalPath } from '@/shared/lib';
 
 interface LoginSearch {
   error?: string;
@@ -9,11 +9,11 @@ interface LoginSearch {
 }
 
 // Sign-in itself happens on the Identity service's own UI. This route only shows why a sign-in failed
-// (`?error=` from the web API callback); without an error it forwards straight to sign-in.
+// (`?error=` from the web API callback); without an error there is nothing to show, so it opens the home page.
 export const Route = createFileRoute('/login')({
   validateSearch: (search): LoginSearch => ({
     error: typeof search.error === 'string' ? search.error : undefined,
-    returnUrl: typeof search.returnUrl === 'string' && search.returnUrl.startsWith('/') ? search.returnUrl : undefined,
+    returnUrl: readLocalPath(search.returnUrl),
   }),
   beforeLoad: async ({ context, search }) => {
     await context.auth.ensureReady();
@@ -23,7 +23,7 @@ export const Route = createFileRoute('/login')({
     }
 
     if (!search.error) {
-      throw redirect({ href: buildLoginUrl(search.returnUrl), reloadDocument: true });
+      throw redirect({ to: '/', search: { returnUrl: search.returnUrl } });
     }
   },
   component: LoginPage,

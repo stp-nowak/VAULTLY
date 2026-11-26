@@ -3,7 +3,7 @@
  * Consumers import it right after Tailwind:
  *   @import 'tailwindcss';
  *   @import '@vaultly/ui/styles.css';
- * Tokens below become utilities (bg-canvas, text-muted, border-line, font-display, shadow-panel, …).
+ * Tokens below become utilities (bg-canvas, text-muted, border-line, font-display, shadow-panel, animate-rise, …).
  * Apps must not redefine colors or fonts — extend the theme here instead.
  */
 
@@ -50,6 +50,21 @@
 
   /* Elevation */
   --shadow-panel: 0 24px 80px rgb(0 0 0 / 0.45);
+
+  /* Motion: entrance of page content; stagger with animation-delay and gate with motion-safe. */
+  --animate-rise: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 1rem;
+    }
+
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
 }
 
 /* Gradient fill of raised panels (cards, dialogs). */

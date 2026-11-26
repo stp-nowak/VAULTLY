@@ -48,7 +48,7 @@ src/
 └── shared/                   # Business-agnostic code, no slices — only segments
     ├── api/                  # HTTP client (fetchJson, HttpError)
     ├── config/               # Env/app configuration
-    ├── lib/                  # Generic helpers
+    ├── lib/                  # Generic helpers (readLocalPath, navigateToUrl for leaving the SPA)
     └── test/                 # Test utilities, MSW handlers/server
 ```
 
@@ -172,7 +172,10 @@ export function Card({ title, children }: Props) {
 - Use **file-based routing** (`src/app/routes/`); route files stay thin and render a page from `src/pages/`
 - Define loaders for data fetching at the route level (avoids waterfall)
 - Use **search params** for shareable UI state (filters, pagination)
-- Protect private routes with `beforeLoad` guards
+- Protect private routes with `beforeLoad` guards; a guard sends a visitor without a session to the landing page
+  (`/?returnUrl=…`), never straight to sign-in
+- Test guards and redirects through the real route tree with `renderApp` (`src/app/test`); leaving the SPA goes
+  through `navigateToUrl` (`shared/lib`) so tests can mock it
 - Always define route params and search params with TypeScript via `Route.createFileRoute()`
 - When a route owns server data, preload it into TanStack Query in the loader instead of fetching the same resource twice
 
@@ -211,7 +214,7 @@ export const Route = createFileRoute('/users/$userId')({
 - Colors, fonts, shadows and base styles come from the shared design system **`@vaultly/ui`** (`packages/ui`).
   Use its tokens (`bg-canvas`, `text-muted`, `border-line`, `text-accent`, `font-display`, `shadow-panel`, …);
   never hard-code hex values or redefine tokens in the app. Need a new token? Add it to `packages/ui/src/styles.css`.
-- Primitive UI (`Button`, `Card`, `Eyebrow`, `InfoTile`, `StatusNotice`, `CenteredScreen`) is imported from
+- Primitive UI (`BrandMark`, `Button`, `Card`, `Eyebrow`, `InfoTile`, `StatusNotice`, `CenteredScreen`) is imported from
   `@vaultly/ui` — do not recreate primitives in `shared/ui`. A primitive needed by more than one app belongs in the package.
 - Compose conditional classes with `cn` from `@vaultly/ui` (clsx + tailwind-merge; later classes win).
 - Avoid inline styles except for truly dynamic values; prefer arbitrary values (`max-w-[42rem]`) sparingly.
