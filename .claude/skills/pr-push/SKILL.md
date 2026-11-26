@@ -43,10 +43,10 @@ If anything fails, fix it (or stop and report). Record the results — they go i
 
 ## 3. Choose the base branch
 
-- Default base is `develop` (all previous PRs target it).
-- If the branch is stacked on another unmerged branch (`git log --oneline origin/develop..HEAD` shows commits
+- The base is `main`, the only long-lived branch (there is no `develop`); feature branches start from `origin/main`.
+- If the branch is stacked on another unmerged branch (`git log --oneline origin/main..HEAD` shows commits
   from another issue), target that branch instead so the diff contains only this PR's work, and say so in the
-  description ("Stacked on #<n>; retarget to develop after it merges").
+  description ("Stacked on #<n>; retarget to main after it merges").
 
 ## 4. Screenshots (mandatory when the UI changed)
 
@@ -82,7 +82,7 @@ row reads as a direct comparison.
 <2–4 sentences: what and why.>
 
 Closes #<issue>   <!-- or "Part of #<issue>" -->
-<Stacked on #<n> / branch `...`; retarget to `develop` after it merges.>   <!-- only when stacked -->
+<Stacked on #<n> / branch `...`; retarget to `main` after it merges.>   <!-- only when stacked -->
 
 ## Before → After
 | Area | Before | After |
@@ -161,8 +161,8 @@ The issue must show that a PR exists for it. Do all of the following:
 
 1. **Closing keyword** in the PR body: `Closes #<issue>` (already in the template). GitHub links it in the issue's
    *Development* sidebar and closes the issue on merge — **only when the PR targets the default branch** (`main`).
-2. Because PRs here target `develop` (or a stacked branch), also **comment on the issue** with the PR link; the
-   reference appears in the issue timeline:
+2. A stacked PR targets another branch, so the keyword does not link it: **comment on the issue** with the PR link;
+   the reference appears in the issue timeline:
    `gh issue comment <issue> --body "Pull request: #<pr> — <one-line summary>"`
 3. Reference the issue in the PR title (`(#<issue>)`, from proper-commit) and copy the issue's labels to the PR.
 4. Check: `gh issue view <issue> --comments` shows the comment, and `gh pr view <pr> --json body` contains `Closes #<issue>`.
@@ -173,7 +173,7 @@ Then report the PR URL to the user, plus anything that needs their attention (st
 open questions).
 
 ## Rules
-- Never push to `develop`/`main` directly and never force-push someone else's branch.
+- Never push to `main` directly and never force-push someone else's branch.
 - Never put secrets, tokens, cookies or real personal data in descriptions or screenshots.
 - Screenshots must come from the code in this PR (build the current branch), not from mocks drawn by hand.
 - If the PR is updated later, update the description and re-shoot changed views (see *Updating screenshots*).
