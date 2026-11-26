@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn';
+import { cn } from '../../lib/cn';
 
 const sizes = {
   default: 'gap-5 rounded-3xl p-6',

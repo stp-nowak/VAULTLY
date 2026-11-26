@@ -1,4 +1,5 @@
-import { cn } from '../lib/cn';
+import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
+import { cn } from '../../lib/cn';
 
 export interface SelectOption<TValue extends string = string> {
   disabled?: boolean;
@@ -43,14 +44,7 @@ export function Select<TValue extends string = string>({ className, onValueChang
           </option>
         ))}
       </select>
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted"
-        fill="none"
-        viewBox="0 0 16 16"
-      >
-        <path d="m4 6 4 4 4-4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
-      </svg>
+      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted" />
     </div>
   );
 }
