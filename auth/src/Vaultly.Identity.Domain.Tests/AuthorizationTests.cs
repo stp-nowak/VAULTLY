@@ -54,7 +54,7 @@ public sealed class AuthorizationTests
         Assert.Multiple(() =>
         {
             Assert.That(request.IsCompleted, Is.True);
-            Assert.That(request.DomainEvents.OfType<AuthorizationRequestCompletedDomainEvent>().Single().AuthorizationRequestId, Is.EqualTo(request.Id));
+            Assert.That(request.DomainEvents.OfType<AuthorizationRequestCompleted>().Single().AuthorizationRequestId, Is.EqualTo(request.Id));
             Assert.That(() => request.Complete(Now.AddMinutes(2)), Throws.TypeOf<AuthorizationRequestCompletedException>());
         });
     }

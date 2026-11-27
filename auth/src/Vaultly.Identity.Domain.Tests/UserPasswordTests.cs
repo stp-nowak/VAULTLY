@@ -23,7 +23,7 @@ public sealed class UserPasswordTests
             Assert.That(user.HasPassword, Is.True);
             Assert.That(user.EmailVerified, Is.False);
             Assert.That(user.Role, Is.EqualTo(UserRole.User));
-            Assert.That(user.DomainEvents.OfType<UserRegisteredDomainEvent>(), Has.Exactly(1).Items);
+            Assert.That(user.DomainEvents.OfType<UserRegistered>(), Has.Exactly(1).Items);
         });
     }
 
@@ -45,7 +45,7 @@ public sealed class UserPasswordTests
         {
             Assert.That(user.IsLockedOut(Now), Is.True);
             Assert.That(user.IsLockedOut(Now + User.LockoutDuration), Is.False);
-            Assert.That(user.DomainEvents.OfType<UserLockedOutDomainEvent>().Single().LockedUntil, Is.EqualTo(Now + User.LockoutDuration));
+            Assert.That(user.DomainEvents.OfType<UserLockedOut>().Single().LockedUntil, Is.EqualTo(Now + User.LockoutDuration));
         });
     }
 
@@ -73,7 +73,7 @@ public sealed class UserPasswordTests
             Assert.That(secured, Is.True);
             Assert.That(user.HasPassword, Is.False);
             Assert.That(user.EmailVerified, Is.True);
-            Assert.That(user.DomainEvents.OfType<UserPasswordRemovedDomainEvent>(), Has.Exactly(1).Items);
+            Assert.That(user.DomainEvents.OfType<UserPasswordRemoved>(), Has.Exactly(1).Items);
         });
     }
 

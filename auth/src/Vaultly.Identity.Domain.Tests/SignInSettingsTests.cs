@@ -35,7 +35,7 @@ public sealed class SignInSettingsTests
         {
             Assert.That(settings.IsEnabled(Google), Is.False);
             Assert.That(settings.DisabledMethods, Is.EqualTo(new[] { Google }));
-            Assert.That(settings.DomainEvents.OfType<SignInMethodDisabledDomainEvent>().Single().Method, Is.EqualTo(Google));
+            Assert.That(settings.DomainEvents.OfType<SignInMethodDisabled>().Single().Method, Is.EqualTo(Google));
         });
     }
 
@@ -74,7 +74,7 @@ public sealed class SignInSettingsTests
         Assert.Multiple(() =>
         {
             Assert.That(settings.IsEnabled(Google), Is.True);
-            Assert.That(settings.DomainEvents.OfType<SignInMethodEnabledDomainEvent>().Single().Method, Is.EqualTo(Google));
+            Assert.That(settings.DomainEvents.OfType<SignInMethodEnabled>().Single().Method, Is.EqualTo(Google));
         });
     }
 

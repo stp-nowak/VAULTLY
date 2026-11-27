@@ -55,7 +55,7 @@ public sealed class User : AggregateRoot
             Role = UserRole.User
         };
 
-        user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email, user.Name, user.EmailVerified));
+        user.RaiseDomainEvent(new UserRegistered(user.Id, user.Email, user.Name, user.EmailVerified));
         return user;
     }
 
@@ -82,7 +82,7 @@ public sealed class User : AggregateRoot
 
         FailedSignInCount = 0;
         LockedUntil = now + LockoutDuration;
-        RaiseDomainEvent(new UserLockedOutDomainEvent(Id, LockedUntil.Value));
+        RaiseDomainEvent(new UserLockedOut(Id, LockedUntil.Value));
     }
 
     public void RecordSuccessfulSignIn()
@@ -94,7 +94,7 @@ public sealed class User : AggregateRoot
     public void SetPassword(PasswordHash passwordHash)
     {
         PasswordHash = passwordHash;
-        RaiseDomainEvent(new UserPasswordSetDomainEvent(Id));
+        RaiseDomainEvent(new UserPasswordSet(Id));
     }
 
     /// <summary>Stores the same password hashed with newer parameters (no change for the user).</summary>
@@ -116,7 +116,7 @@ public sealed class User : AggregateRoot
         PasswordHash = null;
         FailedSignInCount = 0;
         LockedUntil = null;
-        RaiseDomainEvent(new UserPasswordRemovedDomainEvent(Id));
+        RaiseDomainEvent(new UserPasswordRemoved(Id));
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ public sealed class User : AggregateRoot
 
         ClearPassword();
         EmailVerified = true;
-        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, Name, EmailVerified));
+        RaiseDomainEvent(new UserProfileUpdated(Id, Name, EmailVerified));
         return true;
     }
 
@@ -148,7 +148,7 @@ public sealed class User : AggregateRoot
 
         if (changed)
         {
-            RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, Name, EmailVerified));
+            RaiseDomainEvent(new UserProfileUpdated(Id, Name, EmailVerified));
         }
     }
 
@@ -165,7 +165,7 @@ public sealed class User : AggregateRoot
 
         var previousRole = Role;
         Role = role;
-        RaiseDomainEvent(new UserRoleChangedDomainEvent(Id, previousRole, role));
+        RaiseDomainEvent(new UserRoleChanged(Id, previousRole, role));
     }
 
     /// <summary>
@@ -185,7 +185,7 @@ public sealed class User : AggregateRoot
 
         var identity = ExternalIdentity.Create(Id, providerId, providerUserId, email, name, now);
         _externalIdentities.Add(identity);
-        RaiseDomainEvent(new ExternalIdentityLinkedDomainEvent(Id, identity.Id, providerId, providerUserId));
+        RaiseDomainEvent(new ExternalIdentityLinked(Id, identity.Id, providerId, providerUserId));
         return identity;
     }
 }

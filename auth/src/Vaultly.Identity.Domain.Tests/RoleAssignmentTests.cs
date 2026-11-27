@@ -31,7 +31,7 @@ public sealed class RoleAssignmentTests
 
         RoleAssignment.Assign(user, UserRole.Admin, adminCount: 0);
 
-        var domainEvent = user.DomainEvents.OfType<UserRoleChangedDomainEvent>().Single();
+        var domainEvent = user.DomainEvents.OfType<UserRoleChanged>().Single();
         Assert.Multiple(() =>
         {
             Assert.That(user.IsAdmin, Is.True);

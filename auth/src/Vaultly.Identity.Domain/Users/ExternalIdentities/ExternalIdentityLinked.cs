@@ -6,7 +6,7 @@ namespace Vaultly.Identity.Domain.Users.ExternalIdentities;
 /// <summary>
 /// Raised when a user links an external identity.
 /// </summary>
-public sealed record ExternalIdentityLinkedDomainEvent(
+public sealed record ExternalIdentityLinked(
     UserId UserId,
     ExternalIdentityId ExternalIdentityId,
     ProviderId ProviderId,

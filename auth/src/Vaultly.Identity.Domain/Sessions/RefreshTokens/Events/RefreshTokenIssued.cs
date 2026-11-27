@@ -3,10 +3,9 @@ using Vaultly.Core;
 namespace Vaultly.Identity.Domain.Sessions.RefreshTokens.Events;
 
 /// <summary>
-/// Raised when a refresh token is rotated.
+/// Raised when a refresh token is issued for a session.
 /// </summary>
-public sealed record SessionRefreshTokenRotatedDomainEvent(
+public sealed record RefreshTokenIssued(
     SessionId SessionId,
-    RefreshTokenId PreviousRefreshTokenId,
     RefreshTokenId RefreshTokenId,
     DateTimeOffset ExpiresAt) : DomainEvent;

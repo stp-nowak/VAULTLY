@@ -21,7 +21,7 @@ public sealed class OAuthStateTests
             now.AddMinutes(5),
             AuthorizationRequestId.New());
 
-        Assert.That(state.DomainEvents.OfType<OAuthStateCreatedDomainEvent>().Single().OAuthStateId, Is.EqualTo(state.Id));
+        Assert.That(state.DomainEvents.OfType<OAuthStateCreated>().Single().OAuthStateId, Is.EqualTo(state.Id));
     }
 
     [Test]
