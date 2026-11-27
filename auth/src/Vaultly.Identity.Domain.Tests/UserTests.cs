@@ -3,6 +3,7 @@ using NUnit.Framework;
 
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Events;
 using Vaultly.Identity.Domain.Users.ExternalIdentities;
 
 namespace Vaultly.Identity.Domain.Tests;

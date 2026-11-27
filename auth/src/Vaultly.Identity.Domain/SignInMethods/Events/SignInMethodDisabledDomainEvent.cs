@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.SignInMethods;
+namespace Vaultly.Identity.Domain.SignInMethods.Events;
 
 /// <summary>
 /// Raised when an admin switches a sign-in method off.

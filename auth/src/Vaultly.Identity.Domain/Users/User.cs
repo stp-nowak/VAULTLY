@@ -1,7 +1,9 @@
 using Vaultly.Core;
 using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users.Events;
 using Vaultly.Identity.Domain.Users.ExternalIdentities;
 using Vaultly.Identity.Domain.Users.Passwords;
+using Vaultly.Identity.Domain.Users.Passwords.Events;
 using Vaultly.Identity.Domain.Users.Roles;
 using Vaultly.Identity.PublicTypes;
 

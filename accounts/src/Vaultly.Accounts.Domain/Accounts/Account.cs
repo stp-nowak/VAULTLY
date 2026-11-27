@@ -1,3 +1,4 @@
+using Vaultly.Accounts.Domain.Accounts.Events;
 using Vaultly.Core;
 
 namespace Vaultly.Accounts.Domain.Accounts;

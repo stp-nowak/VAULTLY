@@ -1,6 +1,7 @@
 using NUnit.Framework;
 
 using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.SignInMethods.Events;
 
 namespace Vaultly.Identity.Domain.Tests;
 

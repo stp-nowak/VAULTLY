@@ -1,4 +1,5 @@
 using Vaultly.Core;
+using Vaultly.Identity.Domain.SignInMethods.Events;
 
 namespace Vaultly.Identity.Domain.SignInMethods;
 

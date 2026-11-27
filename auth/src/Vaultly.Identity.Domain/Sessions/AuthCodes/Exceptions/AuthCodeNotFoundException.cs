@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Sessions.AuthCodes;
+namespace Vaultly.Identity.Domain.Sessions.AuthCodes.Exceptions;
 
 public sealed class AuthCodeNotFoundException : DomainException
 {

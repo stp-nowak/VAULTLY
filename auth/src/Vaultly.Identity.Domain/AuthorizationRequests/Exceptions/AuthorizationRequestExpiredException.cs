@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.AuthorizationRequests;
+namespace Vaultly.Identity.Domain.AuthorizationRequests.Exceptions;
 
 public sealed class AuthorizationRequestExpiredException : DomainException
 {

@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Sessions.RefreshTokens;
+namespace Vaultly.Identity.Domain.Sessions.RefreshTokens.Events;
 
 /// <summary>
 /// Raised when a refresh token is rotated.

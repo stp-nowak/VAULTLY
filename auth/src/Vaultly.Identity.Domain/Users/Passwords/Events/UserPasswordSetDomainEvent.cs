@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Users.Passwords;
+namespace Vaultly.Identity.Domain.Users.Passwords.Events;
 
 /// <summary>
 /// Raised when a user gets a password (registration excluded, see <see cref="UserRegisteredDomainEvent"/>).
