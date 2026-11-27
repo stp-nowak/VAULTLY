@@ -10,5 +10,5 @@ name: vaultly
 include:
   - infra/docker-compose.yml
   - auth/docker-compose.yml
-  - backend/docker-compose.yml
+  - gateway/docker-compose.yml
   - web/docker-compose.yml
