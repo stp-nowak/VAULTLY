@@ -2,8 +2,10 @@ import { Link } from '@tanstack/react-router';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { BrandMark, CloseIcon, cn, Eyebrow, MenuIcon } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
-import { consoleRoutes, type ConsoleAdmin } from '@/domain/console-admin';
+import type { ConsoleAdmin } from '@/domain/console-admin';
+import { SignOutLink } from '@/features/sign-out';
 
 interface ConsoleShellProps {
   admin: ConsoleAdmin;
@@ -21,6 +23,7 @@ const iconButton =
  * the sidebar is a drawer that slides in from the left, opened from a menu button in a slim top bar.
  */
 export function ConsoleShell({ admin, children }: ConsoleShellProps) {
+  const { t } = useTranslation(['widgets/console-shell', 'common']);
   const menuId = useId();
   const closeButton = useRef<HTMLButtonElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -47,14 +50,14 @@ export function ConsoleShell({ admin, children }: ConsoleShellProps) {
         <button
           aria-controls={menuId}
           aria-expanded={isMenuOpen}
-          aria-label="Open menu"
+          aria-label={t('openMenu')}
           className={iconButton}
           onClick={() => setIsMenuOpen(true)}
           type="button"
         >
           <MenuIcon />
         </button>
-        <span className="font-display text-lg font-semibold tracking-display">Admin console</span>
+        <span className="font-display text-lg font-semibold tracking-display">{t('title')}</span>
       </header>
 
       {isMenuOpen && <div aria-hidden className="fixed inset-0 z-20 bg-canvas/70 backdrop-blur-sm lg:hidden" onClick={closeMenu} />}
@@ -73,23 +76,23 @@ export function ConsoleShell({ admin, children }: ConsoleShellProps) {
           <div className="flex items-center gap-3">
             <BrandMark />
             <p className="grid leading-tight">
-              <Eyebrow>Vaultly</Eyebrow>
-              <span className="font-display text-xl font-semibold tracking-display whitespace-nowrap">Admin console</span>
+              <Eyebrow>{t('common:brand.name')}</Eyebrow>
+              <span className="font-display text-xl font-semibold tracking-display whitespace-nowrap">{t('title')}</span>
             </p>
           </div>
-          <button aria-label="Close menu" className={cn(iconButton, 'lg:hidden')} onClick={closeMenu} ref={closeButton} type="button">
+          <button aria-label={t('closeMenu')} className={cn(iconButton, 'lg:hidden')} onClick={closeMenu} ref={closeButton} type="button">
             <CloseIcon />
           </button>
         </div>
 
-        <nav aria-label="Admin console" className="grid gap-1.5">
+        <nav aria-label={t('title')} className="grid gap-1.5">
           <Link
             activeProps={{ className: 'border-line-strong bg-accent-soft text-ink' }}
             className={navLink}
             onClick={closeMenu}
             to="/admin/users"
           >
-            Users
+            {t('nav.users')}
           </Link>
           <Link
             activeProps={{ className: 'border-line-strong bg-accent-soft text-ink' }}
@@ -97,15 +100,13 @@ export function ConsoleShell({ admin, children }: ConsoleShellProps) {
             onClick={closeMenu}
             to="/admin/sign-in-methods"
           >
-            Sign-in methods
+            {t('nav.signInMethods')}
           </Link>
         </nav>
 
         <div className="mt-auto grid gap-2 border-t border-line pt-5 text-sm">
           <span className="break-all text-muted">{admin.email}</span>
-          <a className="justify-self-start border-b border-line-strong pb-0.5 hover:border-accent" href={consoleRoutes.signOut}>
-            Sign out
-          </a>
+          <SignOutLink />
         </div>
       </aside>
 

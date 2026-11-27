@@ -1,39 +1,41 @@
 import { useState } from 'react';
 
 import { Button, Card, Eyebrow, InfoTile, StatusNotice } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/domain/identity';
 
 export function LogoutCard() {
   const auth = useAuth();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { t } = useTranslation('features/logout');
+  const [hasFailed, setHasFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <Card aria-labelledby="account-heading">
       <div>
-        <Eyebrow>Account</Eyebrow>
+        <Eyebrow>{t('eyebrow')}</Eyebrow>
         <h2 className="text-2xl" id="account-heading">
-          Your account
+          {t('heading')}
         </h2>
       </div>
 
       <dl className="grid gap-3.5">
-        <InfoTile label="Signed in as" value={<strong>{auth.user?.email ?? 'Unknown user'}</strong>} />
+        <InfoTile label={t('signedInAs')} value={<strong>{auth.user?.email ?? t('unknownUser')}</strong>} />
       </dl>
 
-      {errorMessage && <StatusNotice tone="error">{errorMessage}</StatusNotice>}
+      {hasFailed && <StatusNotice tone="error">{t('failed')}</StatusNotice>}
 
       <Button
         disabled={isSubmitting}
         onClick={() => {
-          setErrorMessage(null);
+          setHasFailed(false);
           setIsSubmitting(true);
 
           void auth
             .logout()
-            .catch((error: unknown) => {
-              setErrorMessage(error instanceof Error ? error.message : 'Logout failed.');
+            .catch(() => {
+              setHasFailed(true);
             })
             .finally(() => {
               setIsSubmitting(false);
@@ -41,7 +43,7 @@ export function LogoutCard() {
         }}
         variant="secondary"
       >
-        {isSubmitting ? 'Signing out…' : 'Sign out'}
+        {isSubmitting ? t('signingOut') : t('signOut')}
       </Button>
     </Card>
   );

@@ -6,6 +6,6 @@ import { RouteErrorPage } from '@/pages/route-error';
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
   component: RootLayout,
-  errorComponent: ({ error }) => <RouteErrorPage error={error} />,
-  notFoundComponent: () => <RouteErrorPage error={new Error('This page does not exist.')} />,
+  errorComponent: () => <RouteErrorPage kind="unexpected" />,
+  notFoundComponent: () => <RouteErrorPage kind="notFound" />,
 });

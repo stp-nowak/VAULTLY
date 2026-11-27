@@ -1,8 +1,6 @@
 import { HttpError } from '@/shared/api';
 
-/** What to tell the admin when a sign-in method cannot be switched; the switch shows the saved state again. */
-export function toggleErrorMessage(error: unknown): string {
-  return error instanceof HttpError && error.status === 409
-    ? 'At least one way to sign in must stay on. Turn on another method first.'
-    : "The setting couldn't be changed. Please try again.";
+/** Translation key of what to tell the admin when a method cannot be switched; the switch shows the saved state. */
+export function toggleErrorKey(error: unknown): 'errors.lastMethod' | 'errors.unknown' {
+  return error instanceof HttpError && error.status === 409 ? 'errors.lastMethod' : 'errors.unknown';
 }

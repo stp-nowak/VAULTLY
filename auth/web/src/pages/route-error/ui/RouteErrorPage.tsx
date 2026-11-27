@@ -1,20 +1,24 @@
 import { Card, CenteredScreen, Eyebrow, StatusNotice } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
+
+export type RouteErrorKind = 'notFound' | 'unexpected';
 
 interface RouteErrorPageProps {
-  /** User-facing explanation. Raw error messages are never shown: they may contain technical details. */
-  message?: string;
+  kind: RouteErrorKind;
 }
 
-/** Fallback page for unexpected route errors and unknown URLs. */
-export function RouteErrorPage({ message = 'Something unexpected happened. Please try again.' }: RouteErrorPageProps) {
+/** Fallback page for unexpected route errors and unknown URLs. Raw error messages are never shown. */
+export function RouteErrorPage({ kind }: RouteErrorPageProps) {
+  const { t } = useTranslation(['pages/route-error', 'common']);
+
   return (
     <CenteredScreen>
       <Card aria-labelledby="route-error-heading" size="hero">
-        <Eyebrow>Vaultly</Eyebrow>
+        <Eyebrow>{t('common:brand.name')}</Eyebrow>
         <h1 className="text-3xl" id="route-error-heading">
-          Something went wrong.
+          {t('common:errors.unexpected')}
         </h1>
-        <StatusNotice tone="error">{message}</StatusNotice>
+        <StatusNotice tone="error">{t(`messages.${kind}`)}</StatusNotice>
       </Card>
     </CenteredScreen>
   );

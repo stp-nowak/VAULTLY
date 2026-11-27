@@ -1,11 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
 
 import { Button, StatusNotice, TextField } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import { navigateToUrl } from '@/shared/lib';
 
 import { signInWithPassword, type PasswordCredentials } from '../api/signInWithPassword';
-import { signInErrorMessage } from '../model/signInError';
+import { signInErrorKey } from '../model/signInError';
 
 interface PasswordSignInFormProps {
   requestId: string;
@@ -13,6 +14,7 @@ interface PasswordSignInFormProps {
 
 /** Email and password sign-in; on success the browser leaves for the app that asked for the sign-in. */
 export function PasswordSignInForm({ requestId }: PasswordSignInFormProps) {
+  const { t } = useTranslation(['features/sign-in-with-password', 'domain/authorization-request', 'common']);
   const mutation = useMutation({
     mutationFn: (credentials: PasswordCredentials) => signInWithPassword(requestId, credentials),
     onSuccess: (redirectUrl) => navigateToUrl(redirectUrl),
@@ -21,7 +23,7 @@ export function PasswordSignInForm({ requestId }: PasswordSignInFormProps) {
 
   return (
     <form
-      aria-label="Sign in with email"
+      aria-label={t('formLabel')}
       className="grid gap-4"
       onSubmit={(event) => {
         event.preventDefault();
@@ -29,11 +31,17 @@ export function PasswordSignInForm({ requestId }: PasswordSignInFormProps) {
         mutation.mutate({ email: String(form.get('email') ?? ''), password: String(form.get('password') ?? '') });
       }}
     >
-      <TextField autoComplete="username" label="Email" name="email" required type="email" />
-      <TextField autoComplete="current-password" label="Password" name="password" required type="password" />
-      {mutation.isError && <StatusNotice tone="error">{signInErrorMessage(mutation.error)}</StatusNotice>}
+      <TextField autoComplete="username" label={t('common:fields.email')} name="email" required type="email" />
+      <TextField
+        autoComplete="current-password"
+        label={t('common:fields.password')}
+        name="password"
+        required
+        type="password"
+      />
+      {mutation.isError && <StatusNotice tone="error">{t(signInErrorKey(mutation.error))}</StatusNotice>}
       <Button disabled={isBusy} type="submit">
-        {isBusy ? 'Signing in…' : 'Sign in'}
+        {isBusy ? t('signingIn') : t('common:actions.signIn')}
       </Button>
     </form>
   );
