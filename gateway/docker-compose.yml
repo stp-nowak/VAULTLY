@@ -16,6 +16,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       # Tokens name the browser-facing issuer (localhost:5096); this container fetches the keys by service name.
       UserTokens__JwksUrl: http://identity-api:8080/.well-known/jwks.json
+      # Services by container name; appsettings.Development.json points at them on localhost for `dotnet run`.
+      ReverseProxy__Clusters__accounts__Destinations__main__Address: http://accounts-api:8080
     ports:
       - "127.0.0.1:5000:8080"
     volumes:

@@ -79,6 +79,14 @@ public sealed class GatewayTests
     }
 
     [Test]
+    public async Task Request_ForTheRoutePrefixItself_IsForwarded()
+    {
+        await _client.SendAsync(HttpRequests.Get("/accounts", UserTokens.Create()));
+
+        Assert.That(_factory.Destinations.Requests.Single().RequestUri, Is.EqualTo(new Uri("https://accounts.test/accounts")));
+    }
+
+    [Test]
     public async Task ForwardedRequest_CarriesAnInternalTokenForThatServiceInsteadOfTheUserToken()
     {
         var userToken = UserTokens.Create(role: UserRole.Admin);
