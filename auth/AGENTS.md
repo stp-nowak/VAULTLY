@@ -8,8 +8,9 @@ Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
 ## Independence
 - This service is **completely separate** from the gateway and the domain services: own solution
   (`src/Vaultly.Auth.slnx`), own database, own deployment. Its DDD building blocks (`AggregateRoot`, `DomainEvent`,
-  `DomainException`, `IUnitOfWork`) come from `Vaultly.Core` (`../core`), like every domain service's; the Docker
-  image gets it as the named build context `core`.
+  `DomainException`, `IUnitOfWork`) come from `Vaultly.Core` (`../core`), like every domain service's, together with
+  its CQRS markers (`Vaultly.Core.Messaging`), `WireNames` and `Vaultly.Core.Persistence` (unit of work, migrations);
+  the Docker image gets `core/src` as the named build context `core`.
 - Never add a shared file or shared database, or a project reference to/from another service other than to
   `Vaultly.Core` and `PublicTypes`/`ApiContracts` below.
   Integration with other services happens only through:
@@ -90,12 +91,16 @@ auth/
     ├── Vaultly.Auth.slnx
     ├── Vaultly.Identity.PublicTypes/       # referenced by other services: IdentityClaims, UserRole
     ├── Vaultly.Identity.ApiContracts/      # referenced by API clients: token/revoke/sessions models, GrantType
-    ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User + role, Session + SSO, OAuthState,
-    │                                       #   AuthorizationRequest for a client or the console, SignInSettings), Entities (AuthCode
-    │                                       #   bound to client/PKCE), ValueObjects, Events, Exceptions,
-    │                                       #   Constants, Services (RoleAssignment)
+    ├── Vaultly.Identity.Domain/            # Tactical DDD, one folder per aggregate (its entities, value objects,
+    │   │                                   #   events, exceptions, repository port; one type per file):
+    │   ├── Users/                          #   User + role, ExternalIdentity, EmailAddress, Password, RoleAssignment
+    │   ├── Sessions/                       #   Session + SSO, RefreshToken, AuthCode bound to client/PKCE, token hashes
+    │   ├── AuthorizationRequests/          #   AuthorizationRequest for a client or the console, ClientId, RedirectUri,
+    │   │                                   #   CodeChallenge, ConsoleClient
+    │   ├── OAuthStates/                    #   OAuthState, CodeVerifier, Nonce
+    │   ├── SignInMethods/                  #   SignInSettings, SignInMethod, ProviderId
+    │   └── InvalidValueException.cs        #   the only domain-wide type
     ├── Vaultly.Identity.Application/       # CQRS
-    │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
     │   ├── Features/<Area>/<UseCase>/      #   Handler.cs + Command.cs or Query.cs (+ its DTOs):
     │   │                                   #   Authorization: StartAuthorization, GetAuthorizationRequest, ExchangeAuthCode,
     │   │                                   #     StartConsoleSignIn; ExternalLogin: StartExternalLogin, HandleOAuthCallback;
@@ -103,12 +108,12 @@ auth/
     │   │                                   #     RefreshSession, RevokeSession, RevokeToken, EndSession; Users: GetUsers,
     │   │                                   #     GetConsoleUser, AssignUserRole, EnsureBootstrapAdmin; SignInMethods:
     │   │                                   #     GetSignInSettings, SetSignInMethodEnabled
-    │   ├── Interfaces/Repositories/        #   write ports (aggregates)
-    │   ├── Interfaces/ReadServices/        #   read ports (DTOs)
-    │   ├── Interfaces/Services/            #   other ports (clock, token hashing, JWT, OAuth providers)
+    │   │                                   #   Read ports sit with their queries: Features/Users/IUserReadService,
+    │   │                                   #   Features/Sessions/GetSessions/ISessionReadService, …;
+    │   │                                   #   Features/ExternalLogin/IExternalOAuthProvider
+    │   ├── Security/                       #   ports for token generation and hashing, password hashing, JWT
     │   ├── Models/  Options/  Common/       #   Models: results shared across areas (TokenResult, AuthCallbackResult);
-    │   │                                   #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors),
-    │   │                                   #   WireNames (snake_case spelling of enums)
+    │   │                                   #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors)
     ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
     ├── Vaultly.Identity.Api/               # Minimal API → ISender; Program.cs is only the composition root
     │   ├── Endpoints/                      #   one static class per area with Map<Area>Endpoints (OAuth, Password,
@@ -125,15 +130,18 @@ auth/
 - Dependency rule: `Domain → Vaultly.Core + PublicTypes`, `Application → Domain`, `Infrastructure → Application + Domain`,
   `Api → Application + Infrastructure` (composition root only).
 - All invariants live in aggregates/value objects; handlers only orchestrate.
+- Where code lives (Domain by aggregate, ports next to their users, no catch-all folders): `../core/AGENTS.md`.
+  `Common/` and `Models/` here predate that rule; do not add to them, move a type out when touching it.
 - **Commands** (`ICommand`/`ICommand<T>`): imperative names, load aggregates via repositories, persist via
   `IUnitOfWork`. Anything that writes state is a command.
-- **Queries** (`IQuery<T>`): question names, read via `Interfaces/ReadServices` (`AsNoTracking` projections),
+- **Queries** (`IQuery<T>`): question names, read via read services (`AsNoTracking` projections),
   return DTOs, no side effects, never depend on repositories or `IUnitOfWork`.
 - Use cases are grouped by feature: `Features/<Area>/<UseCase>/` holds `Handler.cs` and exactly one of
   `Command.cs` (write) or `Query.cs` (read), plus DTOs only that use case returns. File names do not repeat the use
   case; class names do (`RevokeSessionCommand`, `RevokeSessionHandler`), and the namespace follows the folders.
   Types several use cases of one area share sit in the area folder; types shared across areas in `Models/`.
-- `CqrsConventionTests` must stay green; extend it rather than bypass it.
+- `CqrsConventionTests` (derived from `CqrsConventions` in `Vaultly.Core.Testing`) must stay green; extend the base
+  in core rather than bypass it.
 - Endpoints live in `Vaultly.Identity.Api/Endpoints/<Area>Endpoints.cs` as `internal static` handlers mapped by `Map<Area>Endpoints`
   (registered in `IdentityEndpoints`), never inline in `Program.cs`.
 
@@ -142,7 +150,8 @@ auth/
 - Prefer primary constructors.
 - Fixed option sets (roles, statuses, error codes, grant types) are enums, never strings. Their outside spelling is
   the `snake_case` member name: JSON via the global `JsonStringEnumConverter` (`ApiJson`, integers rejected), EF
-  columns, claims and query strings via `WireNames`. Renaming a member changes the wire contract and stored data.
+  columns via `WireNameConverter`, claims and query strings via `WireNames` (both from `../core`). Renaming a member
+  changes the wire contract and stored data.
 - Comments: follow the root rule — minimal; `<summary>` only on public API types/members where it adds information;
   inline comments only for genuinely non-obvious reasons (protocol/security constraints, workarounds).
 - Test-driven development; use the `test-writer` skill (NUnit + Moq).

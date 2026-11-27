@@ -62,17 +62,18 @@ public class UserPlanProjection
 
 ```
 ServiceName/
-├── Domain/                         # Zero dependencies. Pure business logic only.
-│   ├── Aggregates/
-│   ├── Entities/
-│   ├── ValueObjects/
-│   ├── Events/                     # Domain events (raised inside aggregates)
-│   ├── Services/                   # Domain services (stateless logic spanning aggregates)
-│   └── Exceptions/                 # Domain-specific exceptions
+├── Domain/                         # Zero dependencies. Pure business logic only. Grouped by domain concept.
+│   ├── Orders/                     # One folder per aggregate, plural (a folder named like its class clashes with it)
+│   │   ├── Order.cs                #   aggregate root
+│   │   ├── OrderId.cs              #   value objects, entities, enums of this aggregate
+│   │   ├── OrderLine.cs
+│   │   ├── OrderSubmitted.cs       #   its domain events
+│   │   ├── OrderAlreadySubmittedException.cs
+│   │   └── IOrderRepository.cs     #   its repository port
+│   └── InvalidValueException.cs    # Only domain-wide basics sit in the root; no Aggregates/, ValueObjects/,
+│                                   #   Events/, Exceptions/ folders
 │
 ├── Application/                    # Orchestration layer (CQRS). Depends on Domain only.
-│   ├── Messaging/                  # CQRS markers on top of MediatR: ICommand, ICommand<T>, IQuery<T>,
-│   │                               #   ICommandHandler<,>, IQueryHandler<,>
 │   ├── Features/                   # One folder per feature area, one sub-folder per use case
 │   │   └── Orders/
 │   │       ├── SubmitOrder/        # WRITE side
@@ -83,12 +84,12 @@ ServiceName/
 │   │           ├── Handler.cs      #   GetOrderSummaryHandler
 │   │           └── OrderSummaryDto.cs
 │   ├── EventHandlers/              # Handles domain or integration events
-│   ├── Models/                     # Only DTOs / results shared by several feature areas
-│   ├── Common/                     # Internal helpers shared by handlers (no business rules)
-│   └── Interfaces/                 # ← Ports implemented by Infrastructure
-│       ├── Repositories/           #   WRITE side: load/save aggregates, e.g. IOrderRepository
-│       ├── ReadServices/           #   READ side: return DTOs, e.g. IOrderReadService
-│       └── Services/               #   e.g. IEmailService, IStorageService
+│   └── Payments/                   # Port no area owns, in a folder named after what it does (e.g. IPaymentGateway)
+│
+│   No catch-all folders (Interfaces/, ReadServices/, Services/, Common/): a port lives next to its users —
+│   the use case folder (one user), the area folder (several use cases of the area, e.g.
+│   Features/Orders/IOrderReadService.cs), the owning area (used by other areas too), or a folder named after
+│   its function (nobody owns it). Write ports are the Domain's repositories.
 │
 ├── Infrastructure/                 # Implements Application interfaces. Depends on Domain + Application.
 │   ├── Persistence/
@@ -397,7 +398,7 @@ Use a domain service when logic spans multiple aggregates and doesn't naturally 
 - Logic represents a business concept that isn't an entity ("TransferMoney", "CalculateRisk")
 
 ```csharp
-// Domain service — lives in Domain/Services/
+// Domain service — lives with the concept it serves, e.g. Domain/Transfers/FundsTransferService.cs
 public class FundsTransferService
 {
     // No repositories injected here — passed in or called from application layer
@@ -418,16 +419,14 @@ public class FundsTransferService
 
 ## Repositories
 
-Repository interfaces live in the **Application layer** (`Application/Interfaces/Repositories/`).
+A repository interface is part of the domain model: it lives in the **Domain layer**, next to its
+aggregate (`Domain/Orders/IOrderRepository.cs`), as a collection-like port for that aggregate.
 Implementations live in **Infrastructure**. Repositories work only with aggregate roots — never
-with raw entities or value objects.
-
-The Domain layer has no persistence concepts at all — it only defines aggregates. The Application
-layer defines what it *needs* from persistence (the interface / port), and Infrastructure delivers
-the concrete implementation (the adapter).
+with raw entities or value objects. The Domain knows no persistence technology: the interface speaks
+only in aggregates and their ids, and Infrastructure delivers the adapter (EF Core).
 
 ```csharp
-// Application/Interfaces/Repositories/IOrderRepository.cs
+// Domain/Orders/IOrderRepository.cs
 public interface IOrderRepository
 {
     Task<Order?> GetByIdAsync(OrderId id, CancellationToken ct = default);
@@ -436,7 +435,7 @@ public interface IOrderRepository
     Task UpdateAsync(Order order, CancellationToken ct = default);
 }
 
-// Infrastructure/Persistence/Repositories/OrderRepository.cs  — implements Application interface
+// Infrastructure/Persistence/Repositories/OrderRepository.cs  — implements the Domain interface
 public class OrderRepository : IOrderRepository
 {
     private readonly AppDbContext _dbContext;
@@ -462,10 +461,10 @@ public class OrderRepository : IOrderRepository
 
 The application layer orchestrates the domain and is split into a **write side (commands)** and a
 **read side (queries)**. MediatR is the dispatcher, but handlers implement the CQRS marker interfaces from
-`Application/Messaging/`, never raw `IRequest` / `IRequestHandler`.
+`Vaultly.Core.Messaging` (`./core`, shared by every service), never raw `IRequest` / `IRequestHandler`.
 
 ```csharp
-// Application/Messaging/
+// core/src/Vaultly.Core/Messaging/ (namespace Vaultly.Core.Messaging)
 public interface ICommand : IRequest;                                     // command without result
 public interface ICommand<out TResponse> : IRequest<TResponse>;           // command with result (ids, tokens)
 public interface IQuery<out TResponse> : IRequest<TResponse>;             // side-effect free read
@@ -488,12 +487,14 @@ public interface IQueryHandler<in TQuery, TResponse> : IRequestHandler<TQuery, T
 ### Query (read side) rules
 - Name as a question: `GetOrderSummaryQuery`, `GetSessionsQuery`. Lives in `Features/<Area>/<UseCase>/Query.cs`,
   next to the DTOs only it returns.
-- Depends on **read services** (`Interfaces/ReadServices/I*ReadService`), never on repositories or `IUnitOfWork`.
+- Depends on **read services** (`I*ReadService`, next to the queries that use them), never on repositories or
+  `IUnitOfWork`.
 - Read services return **DTOs / read models**, built with `AsNoTracking()` projections in Infrastructure.
 - Queries have no side effects: no `SaveChangesAsync`, no domain events, no aggregate method calls.
 - Repositories serve the write side only — do not add "list/search" methods to them for queries.
 
-These rules are guarded by convention tests (see `CqrsConventionTests` in the Identity service): every MediatR
+These rules are guarded by convention tests (`CqrsConventions` in `Vaultly.Core.Testing`; each service derives a
+`CqrsConventionTests` fixture from it): every MediatR
 request is an `ICommand`/`IQuery` named `<UseCase>Command`/`<UseCase>Query` in `Features/<Area>/<UseCase>/`, each
 use case folder holds `Handler.cs` and exactly one of `Command.cs`/`Query.cs`, and query handlers do not depend on
 repositories or `IUnitOfWork`. File names never repeat the use case; class names do.
@@ -726,7 +727,7 @@ Before writing domain code, answer these questions:
 | Raw primitives in domain (`string`, `decimal`, `Guid`) | No validation, no meaning | Wrap in value objects |
 | Query handler using repositories / aggregates | Read side coupled to write model, risk of side effects | Use a read service returning DTOs |
 | "Query" that writes state | Hidden side effects, breaks CQRS | Model it as a command |
-| Raw `IRequest`/`IRequestHandler` in Application | Commands and queries indistinguishable | Use `ICommand`/`IQuery` markers from `Messaging/` |
+| Raw `IRequest`/`IRequestHandler` in Application | Commands and queries indistinguishable | Use `ICommand`/`IQuery` markers from `Vaultly.Core.Messaging` |
 
 ---
 

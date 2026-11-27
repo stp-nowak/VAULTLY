@@ -193,7 +193,8 @@ Reusing an already rotated refresh token is treated as theft: the auth service r
 
 The gateway never forwards the access token: a service only ever holds a token whose audience is that service, so a
 leaked internal token is useless anywhere else and expires within minutes. Routes are configured in the gateway's
-`ReverseProxy` section; the cluster id of a route is the service's name and its tokens' audience. A route without an
+`ReverseProxy` section; the cluster id of a route is the service's name and its tokens' audience (e.g. `/accounts`
+→ cluster `accounts`, so the browser's `/api/accounts` reaches the accounts service with `aud` `accounts`). A route without an
 `AuthorizationPolicy` requires a signed-in user, `admin` requires the `admin` role, `anonymous` (for webhooks) lets
 anyone through and the service verifies the request itself. Revoking a session takes effect at the gateway only
 when the access token expires (at most 15 min); instant revocation is planned (session events → gateway).
@@ -403,9 +404,9 @@ stateDiagram-v2
 | `InternalTokens:Issuer`, `InternalTokens:LifetimeMinutes` | gateway | `vaultly-gateway`, 5 | |
 | `InternalTokens:SigningKeyPem` / `SigningKeyPemFilePath` | gateway | `.secrets/gateway-signing-key.pem` (auto-generated in Development) | Secret; never logged |
 | `InternalTokens:Issuer`, `InternalTokens:Audience`, `InternalTokens:JwksUrl` | domain service | – | The gateway's issuer, the service's cluster id, the gateway's `/.well-known/jwks.json` |
-| `Database:MigrateOnStartup` | auth | `false` (Development: `true`) | Applies EF Core migrations to the Identity DB on startup; single-instance setups only |
+| `Database:MigrateOnStartup` | auth, domain service | `false` (Development: `true`) | Applies EF Core migrations to the service's DB on startup; single-instance setups only |
 
-Local development ports: web SPA 5173 (proxies `/api` to 5180), web API 5180, gateway 5000, auth service 5096, auth UI 5174
+Local development ports: web SPA 5173 (proxies `/api` to 5180), web API 5180, gateway 5000, accounts 5101, auth service 5096, auth UI 5174
 (proxies auth API paths to 5096). The Docker Compose stack (root `README.md`) uses the same ports and topology:
 nginx containers take the place of the two Vite dev servers.
 
@@ -423,7 +424,8 @@ its API share one origin for cookies.
 | API forwarding to the gateway | `web/src/api/Vaultly.Web.Api/Features/Web/ApiProxy/` |
 | Gateway: access token validation, policies | `gateway/src/Vaultly.Gateway/UserTokens/` |
 | Gateway: internal tokens, their JWKS | `gateway/src/Vaultly.Gateway/InternalTokens/` |
-| Service side: internal token validation | `core/src/Vaultly.Core.Authentication/` |
+| Gateway routes to the services | `gateway/src/Vaultly.Gateway/appsettings.json` (`ReverseProxy`) |
+| Service side: internal token validation | `core/src/Vaultly.Core.Authentication/` (tests: `TestGateway` in `core/src/Vaultly.Core.Testing/`) |
 | Token claim names, roles | `auth/src/Vaultly.Identity.PublicTypes/` (referenced by the gateway and core) |
 | `/token`, `/revoke`, `/sessions` request/response models | `auth/src/Vaultly.Identity.ApiContracts/` (referenced by the BFF) |
 | Auth HTTP endpoints | `auth/src/Vaultly.Identity.Api/Api/OAuthEndpoints.cs`, `AdminEndpoints.cs` (admin console) |

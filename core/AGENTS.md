@@ -3,12 +3,20 @@
 ## Scope
 - `./core` holds what every domain service (Accounts, Transactions, Budgets, Goals, Alerts, Billing, Admin) and the
   identity service (`./auth`) build on, referenced with a relative `ProjectReference`:
-  - `Vaultly.Core` — tactical DDD building blocks: `AggregateRoot`, `DomainEvent`, `DomainException`, `IUnitOfWork`.
+  - `Vaultly.Core` — tactical DDD building blocks: `AggregateRoot`, `DomainEvent`, `DomainException`, `IUnitOfWork`;
+    CQRS markers in `Vaultly.Core.Messaging` (`ICommand`, `ICommand<T>`, `IQuery<T>`, `ICommandHandler<..>`,
+    `IQueryHandler<..>`, MediatR underneath); `WireNames` (the `snake_case` spelling of enums outside the code).
     Pure C# (MediatR only), so a `Domain` project may reference it.
+  - `Vaultly.Core.Persistence` — EF Core: `UnitOfWork<TDbContext>` (saves, then publishes the saved aggregates'
+    domain events), `MigrateDatabaseAsync<TDbContext>()`, `WireNameConverter<TEnum>` (enum columns as `WireNames`).
+    Only `Infrastructure` projects reference it.
   - `Vaultly.Core.Authentication` — `AddInternalTokenAuthentication`: a service accepts only the internal tokens the
     gateway (`./gateway`) issued for it (issuer = gateway, audience = the service's cluster id, keys from the
     gateway's `/.well-known/jwks.json`); every endpoint requires one unless it is `AllowAnonymous`. Claims and roles
     are read with `Vaultly.Identity.PublicTypes` (`IdentityClaims`, `UserRole`). Only `Api` projects reference it.
+  - `Vaultly.Core.Testing` — for test projects only: `CqrsConventions` (derive a `[TestFixture]` from it in each
+    service's application tests) and `TestGateway` (serves a signing key as JWKS and issues internal tokens, so API
+    tests run the real authentication).
 - No business logic here. A type belongs here only when several services need the very same thing.
 - Domain services live in their own top-level folders named after what they do (e.g. `./accounts`), never under
   `./core`. `Vaultly.Core*` references no service project except `Vaultly.Identity.PublicTypes`, which itself
@@ -25,21 +33,33 @@
 - Every service is a bounded context split into `Domain`, `Application`, `Infrastructure`, `Api` projects
   (`<service>/src/Vaultly.<Name>.<Layer>`), plus `*.Domain.Tests` and `*.Application.Tests`.
 - **Domain** (tactical DDD): aggregates, entities, value objects, domain events, domain services, domain exceptions.
-  Pure C#, no framework dependencies except `Vaultly.Core`.
+  Pure C#, no framework dependencies except `Vaultly.Core`. Grouped by domain concept, never by kind: one folder per
+  aggregate, named in the plural (`Accounts/`, `Users/`; a folder named like its class would clash with it), holding
+  the aggregate, its entities, value objects, enums, events, exceptions and its repository port
+  (`I<Aggregate>Repository`), one type per file. A type several concepts use sits with the concept that owns it;
+  only domain-wide basics (e.g. `InvalidValueException`) sit in the project root. No `Aggregates/`, `ValueObjects/`,
+  `Events/`, `Exceptions/` folders.
 - **Application** (CQRS):
-  - `Messaging/` — `ICommand`, `ICommand<T>`, `IQuery<T>`, `ICommandHandler<..>`, `IQueryHandler<..>` (MediatR underneath).
+  - Commands and queries implement the markers from `Vaultly.Core.Messaging`.
   - `Features/<Area>/<UseCase>/` — `Handler.cs` plus `Command.cs` (write side: repositories + `IUnitOfWork`) or
-    `Query.cs` (read side: `Interfaces/ReadServices`, returns DTOs), never both, plus DTOs only that use case returns.
+    `Query.cs` (read side: a read service, returns DTOs), never both, plus DTOs only that use case returns.
     File names do not repeat the use case; class names do (`RevokeSessionCommand`, `RevokeSessionHandler`).
   - `Models/` — only types used by several areas.
-  - `Interfaces/Repositories` (write ports), `Interfaces/ReadServices` (read ports), `Interfaces/Services` (other ports).
-- **Infrastructure**: EF Core repositories (tracked aggregates), read services (`AsNoTracking` projections), messaging, external clients.
+  - No catch-all folders (`Interfaces/`, `ReadServices/`, `Services/`, `Common/`): every port lives next to the code
+    that uses it — in the use case folder when one use case uses it, in the area folder when several use cases of
+    the area do, in the area that owns the concept when other areas use it too, and in a folder named after what it
+    does when no area owns it (e.g. `Security/`). Read ports are `I<Thing>ReadService`; write ports are the
+    domain's repositories.
+- **Infrastructure**: EF Core repositories (tracked aggregates), read services (`AsNoTracking` projections), messaging,
+  external clients; `UnitOfWork<TDbContext>` and `WireNameConverter` from `Vaultly.Core.Persistence`.
 - **Api**: minimal API endpoints send commands/queries through `ISender`; composition root only; authentication via
   `Vaultly.Core.Authentication`. The service is reached only through the gateway (add its route and cluster to the
   gateway's `ReverseProxy` section; the cluster id is the service's `InternalTokens:Audience`).
 - Never use raw `IRequest`/`IRequestHandler` in Application code, never let a query write state,
-  never let a query handler depend on a repository or `IUnitOfWork`. Add a `CqrsConventionTests` fixture to each
-  new service (reference implementation: `auth/src/Vaultly.Identity.Application.Tests/CqrsConventionTests.cs`).
+  never let a query handler depend on a repository or `IUnitOfWork`. Each service's application tests have a
+  `CqrsConventionTests : CqrsConventions` fixture (`Vaultly.Core.Testing`; example:
+  `accounts/src/Vaultly.Accounts.Application.Tests/CqrsConventionTests.cs`).
+- Reference service: `./accounts`.
 - Full rules and templates: `ddd` skill (`/.claude/skills/ddd`).
 
 ## C# Instructions
