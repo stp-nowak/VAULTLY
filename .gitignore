@@ -8,3 +8,4 @@ coverage/
 
 # Generated circular dependency reports (pnpm deps:circular)
 circularDependencies.json
+.vscode/
