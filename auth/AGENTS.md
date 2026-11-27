@@ -93,10 +93,11 @@ auth/
     ├── Vaultly.Identity.ApiContracts/      # referenced by API clients: token/revoke/sessions models, GrantType
     ├── Vaultly.Identity.Domain/            # Tactical DDD, one folder per aggregate (its entities, value objects,
     │   │                                   #   events, exceptions, repository port; one type per file):
-    │   ├── Users/                          #   User + role, ExternalIdentity, EmailAddress, Password, RoleAssignment
-    │   ├── Sessions/                       #   Session + SSO, RefreshToken, AuthCode bound to client/PKCE, token hashes
-    │   ├── AuthorizationRequests/          #   AuthorizationRequest for a client or the console, ClientId, RedirectUri,
-    │   │                                   #   CodeChallenge, ConsoleClient
+    │   ├── Users/                          #   User, EmailAddress, PersonName; ExternalIdentities/, Passwords/ (incl.
+    │   │                                   #   lockout), Roles/ (RoleAssignment keeps one admin)
+    │   ├── Sessions/                       #   Session + SSO, token hashes; RefreshTokens/, AuthCodes/ (bound to client/PKCE)
+    │   ├── AuthorizationRequests/          #   AuthorizationRequest for a client or the console; Clients/ (ClientId,
+    │   │                                   #   RedirectUri, ClientState, CodeChallenge, ConsoleClient)
     │   ├── OAuthStates/                    #   OAuthState, CodeVerifier, Nonce
     │   ├── SignInMethods/                  #   SignInSettings, SignInMethod, ProviderId
     │   └── InvalidValueException.cs        #   the only domain-wide type
@@ -114,7 +115,10 @@ auth/
     │   ├── Security/                       #   ports for token generation and hashing, password hashing, JWT
     │   ├── Models/  Options/  Common/       #   Models: results shared across areas (TokenResult, AuthCallbackResult);
     │   │                                   #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors)
-    ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
+    ├── Vaultly.Identity.Infrastructure/    # by the Domain's concepts: Users/, Sessions/, AuthorizationRequests/,
+    │                                       #   OAuthStates/, SignInMethods/ (repository, read service, EF configuration);
+    │                                       #   ExternalLogin/ (Google client + options), Security/ (tokens, JWT,
+    │                                       #   passwords); Persistence/ (DbContext, migrations)
     ├── Vaultly.Identity.Api/               # Minimal API → ISender; Program.cs is only the composition root
     │   ├── Endpoints/                      #   one static class per area with Map<Area>Endpoints (OAuth, Password,
     │   │                                   #   Admin, Session, Discovery); IdentityEndpoints maps them all
