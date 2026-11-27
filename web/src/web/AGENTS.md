@@ -253,6 +253,13 @@ Every text shown in the UI (JSX text, `aria-label`, `label`, `placeholder`, `tit
 - Tests run in English: `vitest.setup.ts` initialises i18n, so no provider is needed in render helpers.
 - `translationUsage.test.ts` fails on English keys nothing uses. `pnpm --filter @vaultly/web i18n:where <ns:key>` lists
   where a key (or every key under a prefix, e.g. `pages/landing:features`; no `ns:` = `common`) is used.
+- **Every change that touches texts** (adding, editing, removing a key or the code that uses it):
+  1. Before editing an existing text, run `i18n:where` on its key. If it shows screens beyond the one you are
+     changing, don't edit the shared text: add a key in the slice that needs the new wording (or ask when unsure).
+     Mention the other screens an intended shared change affects in the PR description.
+  2. Remove keys your change stops using; never leave unused keys behind (`translationUsage.test.ts` must pass).
+  3. Run the tests (`pnpm --filter @vaultly/web test`), including the tests of every screen `i18n:where` listed,
+     and update their text assertions only where the new wording is intended.
 
 ---
 
