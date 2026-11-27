@@ -4,8 +4,8 @@ using NUnit.Framework;
 
 using Vaultly.Accounts.Application.Features.NetWorth.GetNetWorth;
 using Vaultly.Accounts.Domain.Accounts;
+using Vaultly.Accounts.Infrastructure.Accounts;
 using Vaultly.Accounts.Infrastructure.Persistence;
-using Vaultly.Accounts.Infrastructure.Persistence.ReadServices;
 
 namespace Vaultly.Accounts.Application.Tests;
 

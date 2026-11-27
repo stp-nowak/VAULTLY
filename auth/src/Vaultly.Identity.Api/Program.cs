@@ -13,7 +13,7 @@ using Vaultly.Identity.Application;
 using Vaultly.Identity.Application.Features.Users.EnsureBootstrapAdmin;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Infrastructure;
-using Vaultly.Identity.Infrastructure.Options;
+using Vaultly.Identity.Infrastructure.ExternalLogin;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Security;
 

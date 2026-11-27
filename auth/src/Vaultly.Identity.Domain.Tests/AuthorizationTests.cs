@@ -2,7 +2,9 @@ using NUnit.Framework;
 
 
 using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Sessions.AuthCodes;
 using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Domain.Tests;

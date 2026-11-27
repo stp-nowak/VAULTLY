@@ -6,8 +6,11 @@ using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.Domain.Sessions;
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.ExternalIdentities;
+using Vaultly.Identity.Domain.Users.Passwords;
+using Vaultly.Identity.Domain.Users.Roles;
 using Vaultly.Identity.Infrastructure.Persistence;
-using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
+using Vaultly.Identity.Infrastructure.Users;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Tests;

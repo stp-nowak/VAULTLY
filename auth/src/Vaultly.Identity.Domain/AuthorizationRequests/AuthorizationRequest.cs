@@ -1,4 +1,5 @@
 using Vaultly.Core;
+using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 
 namespace Vaultly.Identity.Domain.AuthorizationRequests;
 

@@ -180,7 +180,7 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.AuthCode", b =>
+            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.AuthCodes.AuthCode", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
@@ -224,7 +224,7 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("AuthCodes");
                 });
 
-            modelBuilder.Entity("Vaultly.Identity.Domain.Users.ExternalIdentity", b =>
+            modelBuilder.Entity("Vaultly.Identity.Domain.Users.ExternalIdentities.ExternalIdentity", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
@@ -265,7 +265,7 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("ExternalIdentities");
                 });
 
-            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.RefreshToken", b =>
+            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.RefreshTokens.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
@@ -300,7 +300,7 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.AuthCode", b =>
+            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.AuthCodes.AuthCode", b =>
                 {
                     b.HasOne("Vaultly.Identity.Domain.Sessions.Session", null)
                         .WithMany("AuthCodes")
@@ -309,7 +309,7 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Vaultly.Identity.Domain.Users.ExternalIdentity", b =>
+            modelBuilder.Entity("Vaultly.Identity.Domain.Users.ExternalIdentities.ExternalIdentity", b =>
                 {
                     b.HasOne("Vaultly.Identity.Domain.Users.User", null)
                         .WithMany("ExternalIdentities")
@@ -318,7 +318,7 @@ namespace Vaultly.Identity.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.RefreshToken", b =>
+            modelBuilder.Entity("Vaultly.Identity.Domain.Sessions.RefreshTokens.RefreshToken", b =>
                 {
                     b.HasOne("Vaultly.Identity.Domain.Sessions.Session", null)
                         .WithMany("RefreshTokens")

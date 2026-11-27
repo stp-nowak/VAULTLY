@@ -12,6 +12,7 @@ using Vaultly.Identity.Domain.AuthorizationRequests;
 using Vaultly.Identity.Domain.Sessions;
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Passwords;
 
 namespace Vaultly.Identity.Application.Features.Passwords.RegisterWithPassword;
 

@@ -9,7 +9,7 @@ using Vaultly.Identity.Application.Features.Users.AssignUserRole;
 using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.Application.Features.Users.GetUsers;
 using Vaultly.Identity.Domain.SignInMethods;
-using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Roles;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Api.Endpoints;

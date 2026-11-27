@@ -1,6 +1,7 @@
 using NUnit.Framework;
 
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Passwords;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Domain.Tests;

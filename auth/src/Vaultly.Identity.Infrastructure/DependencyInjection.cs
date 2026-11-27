@@ -15,11 +15,14 @@ using Vaultly.Identity.Domain.OAuthStates;
 using Vaultly.Identity.Domain.Sessions;
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Domain.Users;
-using Vaultly.Identity.Infrastructure.ExternalServices;
+using Vaultly.Identity.Infrastructure.AuthorizationRequests;
+using Vaultly.Identity.Infrastructure.ExternalLogin;
+using Vaultly.Identity.Infrastructure.OAuthStates;
 using Vaultly.Identity.Infrastructure.Persistence;
-using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
-using Vaultly.Identity.Infrastructure.Persistence.Repositories;
 using Vaultly.Identity.Infrastructure.Security;
+using Vaultly.Identity.Infrastructure.Sessions;
+using Vaultly.Identity.Infrastructure.SignInMethods;
+using Vaultly.Identity.Infrastructure.Users;
 
 namespace Vaultly.Identity.Infrastructure;
 
