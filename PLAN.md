@@ -214,7 +214,6 @@
 - Register / Login / Verify / Reset pages
 - App shell — sidebar nav, topbar, responsive layout
 - Dark mode from day one (finance apps look better dark)
-- Sass for styles (do not use any css libraries like Tailwind)
 
 **Deliverable:** User can sign up, verify, log in, see empty dashboard.
 
