@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj" />
+    <Project Path="Vaultly.Accounts.Application/Vaultly.Accounts.Application.csproj" />
+    <Project Path="Vaultly.Accounts.Domain/Vaultly.Accounts.Domain.csproj" />
+    <Project Path="Vaultly.Accounts.Infrastructure/Vaultly.Accounts.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Vaultly.Accounts.Application.Tests/Vaultly.Accounts.Application.Tests.csproj" />
+    <Project Path="Vaultly.Accounts.Domain.Tests/Vaultly.Accounts.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

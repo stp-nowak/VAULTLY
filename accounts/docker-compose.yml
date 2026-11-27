@@ -1,0 +1,45 @@
+# Accounts service with everything only it needs: API and database.
+#   docker compose -f accounts/docker-compose.yml up --build
+# It accepts only tokens from the gateway (../gateway/docker-compose.yml), which needs the Identity service.
+# Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
+name: vaultly
+
+services:
+  accounts-db:
+    container_name: vaultly-accounts-db
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vaultly_accounts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - accounts-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Over TCP: the image's init-time temporary server answers on the socket only, before the real server is up.
+      test: ["CMD-SHELL", "pg_isready --host 127.0.0.1 --username postgres --dbname vaultly_accounts"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  accounts-api:
+    container_name: vaultly-accounts-api
+    build:
+      context: src
+      additional_contexts:
+        core: ../core/src
+        identity-public-types: ../auth/src/Vaultly.Identity.PublicTypes
+    environment:
+      # Development: plain-http localhost setup, migrations applied on startup.
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__AccountsDb: Host=accounts-db;Database=vaultly_accounts;Username=postgres;Password=postgres
+      InternalTokens__JwksUrl: http://gateway:8080/.well-known/jwks.json
+    ports:
+      - "127.0.0.1:5101:8080"
+    depends_on:
+      accounts-db:
+        condition: service_healthy
+
+volumes:
+  accounts-db-data:
