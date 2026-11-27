@@ -4,6 +4,8 @@ description: >
   Push the current branch and open a GitHub pull request with a before/after description and, when the UI
   changed, screenshots of the new views. Use whenever the user asks to "create a PR", "open a pull request",
   "push and make a PR", "pr-push", or finishes work that should go up for review.
+model: sonnet
+context: fork
 ---
 
 # PR Push Skill
