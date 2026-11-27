@@ -173,7 +173,7 @@
   referenced by every domain service.
 - Domain services — one top-level folder each, named after what it does (`./bank-sync`, `./transactions`,
   `./budgets`, `./goals`, `./alerts`, `./billing`, `./admin`); each is a bounded context in **tactical DDD + CQRS**
-  (`Domain` / `Application` with `Commands` + `Queries` / `Infrastructure` / `Api`), with its own solution, compose
+  (`Domain` / `Application` with `Features/<Area>/<UseCase>` commands and queries / `Infrastructure` / `Api`), with its own solution, compose
   file, CI workflow and database. Never a generic `./backend`.
 - `./auth` — Identity service, **completely separate** (own solution and DB; DDD building blocks from `./core`), same tactical DDD + CQRS
   rules. Owns `Vaultly.Identity.PublicTypes` (claims, `UserRole`, later its integration events) and

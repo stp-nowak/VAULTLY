@@ -96,16 +96,18 @@ auth/
     │                                       #   Constants, Services (RoleAssignment)
     ├── Vaultly.Identity.Application/       # CQRS
     │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
-    │   ├── Commands/<UseCase>/             #   write side: StartAuthorization, StartExternalLogin, HandleOAuthCallback,
-    │   │                                   #   ExchangeAuthCode, RefreshSession, RevokeToken, EndSession, RevokeSession,
-    │   │                                   #   StartConsoleSignIn, AssignUserRole, EnsureBootstrapAdmin, SetSignInMethodEnabled,
-    │   │                                   #   SignInWithPassword, RegisterWithPassword
-    │   ├── Queries/<UseCase>/              #   read side: GetAuthorizationRequest, GetSessions, GetConsoleUser, GetUsers,
-    │   │                                   #   GetSignInSettings
+    │   ├── Features/<Area>/<UseCase>/      #   Handler.cs + Command.cs or Query.cs (+ its DTOs):
+    │   │                                   #   Authorization: StartAuthorization, GetAuthorizationRequest, ExchangeAuthCode,
+    │   │                                   #     StartConsoleSignIn; ExternalLogin: StartExternalLogin, HandleOAuthCallback;
+    │   │                                   #   Passwords: SignInWithPassword, RegisterWithPassword; Sessions: GetSessions,
+    │   │                                   #     RefreshSession, RevokeSession, RevokeToken, EndSession; Users: GetUsers,
+    │   │                                   #     GetConsoleUser, AssignUserRole, EnsureBootstrapAdmin; SignInMethods:
+    │   │                                   #     GetSignInSettings, SetSignInMethodEnabled
     │   ├── Interfaces/Repositories/        #   write ports (aggregates)
     │   ├── Interfaces/ReadServices/        #   read ports (DTOs)
     │   ├── Interfaces/Services/            #   other ports (clock, token hashing, JWT, OAuth providers)
-    │   ├── Models/  Options/  Common/       #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors),
+    │   ├── Models/  Options/  Common/       #   Models: results shared across areas (TokenResult, AuthCallbackResult);
+    │   │                                   #   Common: ClientRegistry, OAuthProtocolException (RFC 6749 errors),
     │   │                                   #   WireNames (snake_case spelling of enums)
     ├── Vaultly.Identity.Infrastructure/    # EF Core (Repositories, ReadServices), security, Google OAuth client
     ├── Vaultly.Identity.Api/               # Minimal API → ISender; Program.cs is only the composition root
@@ -127,7 +129,10 @@ auth/
   `IUnitOfWork`. Anything that writes state is a command.
 - **Queries** (`IQuery<T>`): question names, read via `Interfaces/ReadServices` (`AsNoTracking` projections),
   return DTOs, no side effects, never depend on repositories or `IUnitOfWork`.
-- One use case = one folder with `<UseCase>Command.cs|Query.cs` and `<UseCase>Handler.cs`.
+- Use cases are grouped by feature: `Features/<Area>/<UseCase>/` holds `Handler.cs` and exactly one of
+  `Command.cs` (write) or `Query.cs` (read), plus DTOs only that use case returns. File names do not repeat the use
+  case; class names do (`RevokeSessionCommand`, `RevokeSessionHandler`), and the namespace follows the folders.
+  Types several use cases of one area share sit in the area folder; types shared across areas in `Models/`.
 - `CqrsConventionTests` must stay green; extend it rather than bypass it.
 - Endpoints live in `Vaultly.Identity.Api/Endpoints/<Area>Endpoints.cs` as `internal static` handlers mapped by `Map<Area>Endpoints`
   (registered in `IdentityEndpoints`), never inline in `Program.cs`.

@@ -427,8 +427,8 @@ its API share one origin for cookies.
 | Token claim names, roles | `auth/src/Vaultly.Identity.PublicTypes/` (referenced by the gateway and core) |
 | `/token`, `/revoke`, `/sessions` request/response models | `auth/src/Vaultly.Identity.ApiContracts/` (referenced by the BFF) |
 | Auth HTTP endpoints | `auth/src/Vaultly.Identity.Api/Api/OAuthEndpoints.cs`, `AdminEndpoints.cs` (admin console) |
-| Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Commands/*`, `Queries/*` |
+| Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Features/<Area>/<UseCase>/` |
 | Auth domain rules | `AuthorizationRequest`, `Session`, `AuthCode`, `CodeChallenge` in `auth/src/Vaultly.Identity.Domain` |
 | Login UI | `auth/web/src/pages/{login,register,sign-in-error,logged-out}`, `auth/web/src/features/{sign-in-with-provider,sign-in-with-password,register-with-password}` |
-| Password sign-in and registration | `auth/src/Vaultly.Identity.Api/Api/PasswordEndpoints.cs`, `Commands/{SignInWithPassword,RegisterWithPassword}` |
+| Password sign-in and registration | `auth/src/Vaultly.Identity.Api/Api/PasswordEndpoints.cs`, `Features/Passwords/{SignInWithPassword,RegisterWithPassword}` |
 | Admin console | `auth/web/src/pages/{admin-console,admin-users,admin-sign-in-methods}`, `auth/web/src/features/{assign-user-role,toggle-sign-in-method}` |
