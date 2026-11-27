@@ -1,7 +1,7 @@
 using Vaultly.Core;
 using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 
-namespace Vaultly.Identity.Domain.AuthorizationRequests;
+namespace Vaultly.Identity.Domain.AuthorizationRequests.Events;
 
 /// <summary>
 /// Raised when an authorization request produced an authorization code.

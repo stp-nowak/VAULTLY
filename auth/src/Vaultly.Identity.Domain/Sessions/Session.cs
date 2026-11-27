@@ -1,8 +1,13 @@
 using Vaultly.Core;
-using Vaultly.Identity.Domain.AuthorizationRequests;
 using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
+using Vaultly.Identity.Domain.AuthorizationRequests.Exceptions;
 using Vaultly.Identity.Domain.Sessions.AuthCodes;
+using Vaultly.Identity.Domain.Sessions.AuthCodes.Events;
+using Vaultly.Identity.Domain.Sessions.AuthCodes.Exceptions;
+using Vaultly.Identity.Domain.Sessions.Events;
 using Vaultly.Identity.Domain.Sessions.RefreshTokens;
+using Vaultly.Identity.Domain.Sessions.RefreshTokens.Events;
+using Vaultly.Identity.Domain.Sessions.RefreshTokens.Exceptions;
 using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Domain.Sessions;

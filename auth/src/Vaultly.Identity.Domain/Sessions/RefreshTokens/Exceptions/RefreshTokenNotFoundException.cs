@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Sessions.RefreshTokens;
+namespace Vaultly.Identity.Domain.Sessions.RefreshTokens.Exceptions;
 
 public sealed class RefreshTokenNotFoundException : DomainException
 {

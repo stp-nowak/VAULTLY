@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Sessions.AuthCodes;
+namespace Vaultly.Identity.Domain.Sessions.AuthCodes.Events;
 
 /// <summary>
 /// Raised when an auth code is issued for a session.

@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Users;
+namespace Vaultly.Identity.Domain.Users.Events;
 
 /// <summary>
 /// Raised when a new user aggregate is registered.

@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Users.Passwords;
+namespace Vaultly.Identity.Domain.Users.Passwords.Events;
 
 /// <summary>
 /// Raised when a user's password is removed, e.g. because a provider verified the email of an unverified account.

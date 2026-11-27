@@ -1,6 +1,6 @@
 using Vaultly.Core;
 
-namespace Vaultly.Identity.Domain.Users.Passwords;
+namespace Vaultly.Identity.Domain.Users.Passwords.Events;
 
 /// <summary>
 /// Raised when too many failed password sign-ins pause password sign-in for a user.

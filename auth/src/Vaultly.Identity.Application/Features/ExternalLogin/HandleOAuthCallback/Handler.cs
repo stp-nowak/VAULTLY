@@ -9,6 +9,7 @@ using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Security;
 using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Exceptions;
 using Vaultly.Identity.Domain.OAuthStates;
 using Vaultly.Identity.Domain.Sessions;
 using Vaultly.Identity.Domain.SignInMethods;

@@ -21,7 +21,7 @@ using Vaultly.Identity.Application.Features.Sessions.RefreshSession;
 using Vaultly.Identity.Application.Features.Sessions.RevokeToken;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Exceptions;
 
 namespace Vaultly.Identity.Api.Endpoints;
 

@@ -1,5 +1,7 @@
 using Vaultly.Core;
 using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
+using Vaultly.Identity.Domain.AuthorizationRequests.Events;
+using Vaultly.Identity.Domain.AuthorizationRequests.Exceptions;
 
 namespace Vaultly.Identity.Domain.AuthorizationRequests;
 
