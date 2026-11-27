@@ -21,8 +21,6 @@ public abstract class CqrsConventions
     /// <summary>Folder of the <c>Application</c> project's sources; see <see cref="SiblingProject"/>.</summary>
     protected abstract string ApplicationSourceDirectory { get; }
 
-    private string RepositoriesNamespace => $"{ApplicationAssembly.GetName().Name}.Interfaces.Repositories";
-
     /// <summary>A project next to the calling test file's project, e.g. <c>Vaultly.Accounts.Application</c>.</summary>
     protected static string SiblingProject(string projectName, [CallerFilePath] string testFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", projectName));
@@ -82,7 +80,7 @@ public abstract class CqrsConventions
                 .Select(parameter => $"{type.Name} -> {parameter.ParameterType.Name}"))
             .ToList();
 
-        Assert.That(violations, Is.Empty, "Query handlers must read through read services, not aggregates.");
+        Assert.That(violations, Is.Empty, "Query handlers read through read services, never aggregate repositories.");
     }
 
     private IEnumerable<Type> ConcreteTypes()
@@ -98,8 +96,8 @@ public abstract class CqrsConventions
 
     private static string UseCaseName(Type type) => type.Namespace!.Split('.')[^1];
 
-    private bool IsWriteSideDependency(Type type)
-        => type == typeof(IUnitOfWork) || type.Namespace == RepositoriesNamespace;
+    private static bool IsWriteSideDependency(Type type)
+        => type == typeof(IUnitOfWork) || type is { IsInterface: true, Name: var name } && name.EndsWith("Repository", StringComparison.Ordinal);
 
     private static bool ImplementsOpenGeneric(Type type, Type openGeneric)
         => type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == openGeneric);

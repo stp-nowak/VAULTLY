@@ -2,8 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-using Vaultly.Accounts.Application.Interfaces.ReadServices;
-using Vaultly.Accounts.Application.Interfaces.Repositories;
+using Vaultly.Accounts.Application.Features.Accounts;
+using Vaultly.Accounts.Application.Features.NetWorth.GetNetWorth;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Accounts.Infrastructure.Persistence;
 using Vaultly.Accounts.Infrastructure.Persistence.ReadServices;
 using Vaultly.Accounts.Infrastructure.Persistence.Repositories;
@@ -23,7 +24,9 @@ public static class DependencyInjection
 
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork<AccountsDbContext>>();
-        services.AddScoped<IAccountReadService, AccountReadService>();
+        services.AddScoped<AccountReadService>();
+        services.AddScoped<IAccountReadService>(provider => provider.GetRequiredService<AccountReadService>());
+        services.AddScoped<INetWorthReadService>(provider => provider.GetRequiredService<AccountReadService>());
 
         return services;
     }

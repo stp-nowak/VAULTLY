@@ -2,7 +2,8 @@ using System.Security.Cryptography;
 
 using Microsoft.IdentityModel.Tokens;
 
-using Vaultly.Identity.Application.Interfaces.Services;
+
+using Vaultly.Identity.Application.Security;
 
 namespace Vaultly.Identity.Infrastructure.Security;
 

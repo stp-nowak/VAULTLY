@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-
 using Moq;
 
 using NUnit.Framework;
@@ -10,20 +8,20 @@ using Vaultly.Core;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;
 using Vaultly.Identity.Application.Features.Authorization.StartConsoleSignIn;
+using Vaultly.Identity.Application.Features.ExternalLogin;
 using Vaultly.Identity.Application.Features.ExternalLogin.HandleOAuthCallback;
+using Vaultly.Identity.Application.Features.Users;
 using Vaultly.Identity.Application.Features.Users.AssignUserRole;
 using Vaultly.Identity.Application.Features.Users.EnsureBootstrapAdmin;
 using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.Application.Features.Users.GetUsers;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Constants;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.Services;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.OAuthStates;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Tests;
@@ -342,12 +340,7 @@ public sealed class AdminConsoleHandlerTests
     private static Session CreateSession(DateTimeOffset ssoExpiresAt)
         => Session.Create(UserId.New(), new AuthMethod("google"), null, null, new TokenHash("hash:sso-token"), ssoExpiresAt.AddHours(-12), ssoExpiresAt);
 
-    private static IClock Clock()
-    {
-        var clock = new Mock<IClock>();
-        clock.SetupGet(x => x.UtcNow).Returns(Now);
-        return clock.Object;
-    }
+    private static TimeProvider Clock() => new FixedTime(Now);
 
     private static ILogger Logger() => new LoggerConfiguration().CreateLogger();
 

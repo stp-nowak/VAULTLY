@@ -3,9 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 
 using Vaultly.Accounts.Application.Features.NetWorth.GetNetWorth;
-using Vaultly.Accounts.Domain.Aggregates;
-using Vaultly.Accounts.Domain.Enums;
-using Vaultly.Accounts.Domain.ValueObjects;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Accounts.Infrastructure.Persistence;
 using Vaultly.Accounts.Infrastructure.Persistence.ReadServices;
 

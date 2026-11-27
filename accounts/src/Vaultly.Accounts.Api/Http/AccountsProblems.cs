@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 
-using Vaultly.Accounts.Application.Common;
-using Vaultly.Accounts.Domain.Exceptions;
+using Vaultly.Accounts.Application.Features.Accounts;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core;
 
 namespace Vaultly.Accounts.Api.Http;

@@ -5,12 +5,10 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Features.Authorization;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.Sessions;
 
 namespace Vaultly.Identity.Application.Features.Authorization.StartConsoleSignIn;
 
@@ -19,7 +17,7 @@ public sealed class StartConsoleSignInHandler(
     ISessionRepository sessionRepository,
     IUnitOfWork unitOfWork,
     ITokenHasher tokenHasher,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger) : ICommandHandler<StartConsoleSignInCommand, AuthorizationResult>
 {
@@ -27,13 +25,13 @@ public sealed class StartConsoleSignInHandler(
     private readonly ISessionRepository _sessionRepository = sessionRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ITokenHasher _tokenHasher = tokenHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<StartConsoleSignInHandler>();
 
     public async Task<AuthorizationResult> Handle(StartConsoleSignInCommand request, CancellationToken cancellationToken)
     {
-        var now = _clock.UtcNow;
+        var now = _clock.GetUtcNow();
         var consoleUrl = _identityOptions.ResolveConsoleUrl();
 
         if (await HasActiveSsoSessionAsync(request.SsoToken, now, cancellationToken))

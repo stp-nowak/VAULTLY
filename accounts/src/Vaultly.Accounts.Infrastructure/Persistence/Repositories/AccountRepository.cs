@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
-using Vaultly.Accounts.Application.Interfaces.Repositories;
-using Vaultly.Accounts.Domain.Aggregates;
-using Vaultly.Accounts.Domain.ValueObjects;
+
+using Vaultly.Accounts.Domain.Accounts;
 
 namespace Vaultly.Accounts.Infrastructure.Persistence.Repositories;
 

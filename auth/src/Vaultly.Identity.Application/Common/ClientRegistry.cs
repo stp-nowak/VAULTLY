@@ -4,9 +4,8 @@ using System.Text;
 using Microsoft.Extensions.Options;
 
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Constants;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain;
+using Vaultly.Identity.Domain.AuthorizationRequests;
 
 namespace Vaultly.Identity.Application.Common;
 

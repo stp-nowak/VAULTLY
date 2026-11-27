@@ -4,12 +4,9 @@ using Serilog;
 
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Services;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Features.Users.EnsureBootstrapAdmin;
@@ -18,14 +15,14 @@ public sealed class EnsureBootstrapAdminHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     IPasswordHasher passwordHasher,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger) : ICommandHandler<EnsureBootstrapAdminCommand>
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IPasswordHasher _passwordHasher = passwordHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly BootstrapAdminOptions _options = identityOptions.Value.BootstrapAdmin;
     private readonly ILogger _logger = logger.ForContext<EnsureBootstrapAdminHandler>();
 
@@ -47,7 +44,7 @@ public sealed class EnsureBootstrapAdminHandler(
         if (user is null)
         {
             // Treated as verified: the operator vouches for this address.
-            user = User.Create(email, NameFrom(email), emailVerified: true, _clock.UtcNow);
+            user = User.Create(email, NameFrom(email), emailVerified: true, _clock.GetUtcNow());
             _userRepository.Add(user);
         }
 

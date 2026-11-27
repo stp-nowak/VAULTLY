@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 
+using Vaultly.Identity.Application.Features.Users;
 using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.Application.Features.Users.GetUsers;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 

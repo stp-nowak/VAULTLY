@@ -1,6 +1,5 @@
 using Vaultly.Core.Messaging;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Features.Users.GetUsers;
 

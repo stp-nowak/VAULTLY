@@ -4,9 +4,10 @@ using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Infrastructure.Security;

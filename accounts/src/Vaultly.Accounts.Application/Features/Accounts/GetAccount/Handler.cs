@@ -1,6 +1,4 @@
-using Vaultly.Accounts.Application.Common;
-using Vaultly.Accounts.Application.Interfaces.ReadServices;
-using Vaultly.Accounts.Domain.ValueObjects;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core.Messaging;
 
 namespace Vaultly.Accounts.Application.Features.Accounts.GetAccount;

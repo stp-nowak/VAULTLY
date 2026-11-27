@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 using NUnit.Framework;
 
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 

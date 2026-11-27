@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using Vaultly.Identity.Application.Features.Sessions.GetSessions;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 

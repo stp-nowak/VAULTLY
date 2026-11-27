@@ -1,5 +1,5 @@
-using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Features.ExternalLogin;
+using Vaultly.Identity.Domain.SignInMethods;
 
 namespace Vaultly.Identity.Application.Common;
 

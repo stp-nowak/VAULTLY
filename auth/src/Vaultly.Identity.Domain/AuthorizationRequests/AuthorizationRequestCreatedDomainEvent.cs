@@ -1,0 +1,11 @@
+using Vaultly.Core;
+
+namespace Vaultly.Identity.Domain.AuthorizationRequests;
+
+/// <summary>
+/// Raised when a client starts signing a user in.
+/// </summary>
+public sealed record AuthorizationRequestCreatedDomainEvent(
+    AuthorizationRequestId AuthorizationRequestId,
+    ClientId ClientId,
+    DateTimeOffset ExpiresAt) : DomainEvent;

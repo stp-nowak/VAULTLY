@@ -2,15 +2,12 @@ using Moq;
 
 using NUnit.Framework;
 
-using Vaultly.Accounts.Application.Common;
+using Vaultly.Accounts.Application.Features.Accounts;
 using Vaultly.Accounts.Application.Features.Accounts.CloseAccount;
 using Vaultly.Accounts.Application.Features.Accounts.OpenAccount;
 using Vaultly.Accounts.Application.Features.Accounts.RenameAccount;
-using Vaultly.Accounts.Application.Interfaces.Repositories;
-using Vaultly.Accounts.Domain.Aggregates;
-using Vaultly.Accounts.Domain.Enums;
-using Vaultly.Accounts.Domain.Exceptions;
-using Vaultly.Accounts.Domain.ValueObjects;
+using Vaultly.Accounts.Domain;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core;
 
 namespace Vaultly.Accounts.Application.Tests;

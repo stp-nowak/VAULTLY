@@ -2,8 +2,8 @@ using System.Globalization;
 
 using NUnit.Framework;
 
-using Vaultly.Accounts.Domain.Exceptions;
-using Vaultly.Accounts.Domain.ValueObjects;
+
+using Vaultly.Accounts.Domain.Accounts;
 
 namespace Vaultly.Accounts.Domain.Tests;
 

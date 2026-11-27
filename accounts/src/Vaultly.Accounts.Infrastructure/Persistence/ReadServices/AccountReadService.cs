@@ -2,13 +2,11 @@ using Microsoft.EntityFrameworkCore;
 
 using Vaultly.Accounts.Application.Features.Accounts;
 using Vaultly.Accounts.Application.Features.NetWorth.GetNetWorth;
-using Vaultly.Accounts.Application.Interfaces.ReadServices;
-using Vaultly.Accounts.Domain.Aggregates;
-using Vaultly.Accounts.Domain.ValueObjects;
+using Vaultly.Accounts.Domain.Accounts;
 
 namespace Vaultly.Accounts.Infrastructure.Persistence.ReadServices;
 
-public sealed class AccountReadService(AccountsDbContext dbContext) : IAccountReadService
+public sealed class AccountReadService(AccountsDbContext dbContext) : IAccountReadService, INetWorthReadService
 {
     public async Task<IReadOnlyList<AccountDto>> GetAccountsAsync(OwnerId ownerId, bool includeClosed, CancellationToken cancellationToken)
     {

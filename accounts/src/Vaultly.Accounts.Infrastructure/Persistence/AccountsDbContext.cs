@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-using Vaultly.Accounts.Domain.Aggregates;
-using Vaultly.Accounts.Domain.Enums;
-using Vaultly.Accounts.Domain.ValueObjects;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core;
 using Vaultly.Core.Persistence;
 

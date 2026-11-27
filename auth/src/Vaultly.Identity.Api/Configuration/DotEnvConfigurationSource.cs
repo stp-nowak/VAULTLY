@@ -1,7 +1,5 @@
 using System.Text;
 
-using Microsoft.Extensions.Configuration;
-
 namespace Vaultly.Identity.Api.Configuration;
 
 /// <summary>

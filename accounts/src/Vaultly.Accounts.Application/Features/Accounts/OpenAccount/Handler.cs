@@ -1,6 +1,4 @@
-using Vaultly.Accounts.Application.Interfaces.Repositories;
-using Vaultly.Accounts.Domain.Aggregates;
-using Vaultly.Accounts.Domain.ValueObjects;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 

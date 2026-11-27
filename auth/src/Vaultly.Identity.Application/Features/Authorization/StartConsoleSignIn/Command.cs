@@ -1,5 +1,4 @@
 using Vaultly.Core.Messaging;
-using Vaultly.Identity.Application.Features.Authorization;
 
 namespace Vaultly.Identity.Application.Features.Authorization.StartConsoleSignIn;
 

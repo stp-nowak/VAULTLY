@@ -1,7 +1,6 @@
 using MediatR;
 
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.DependencyInjection;
 
 using Moq;
@@ -15,7 +14,9 @@ using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Features.Passwords.RegisterWithPassword;
 using Vaultly.Identity.Application.Features.Passwords.SignInWithPassword;
 using Vaultly.Identity.Application.Models;
-using Vaultly.Identity.Domain.Exceptions;
+using Vaultly.Identity.Domain;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Tests;
 

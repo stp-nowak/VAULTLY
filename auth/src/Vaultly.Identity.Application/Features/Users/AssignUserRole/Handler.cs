@@ -2,10 +2,7 @@ using Serilog;
 
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Domain.Services;
-using Vaultly.Identity.Domain.ValueObjects;
-using Vaultly.Identity.PublicTypes;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Features.Users.AssignUserRole;
 

@@ -1,4 +1,4 @@
-using Vaultly.Accounts.Domain.Enums;
+using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core.Messaging;
 
 namespace Vaultly.Accounts.Application.Features.Accounts.OpenAccount;

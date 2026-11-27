@@ -5,13 +5,11 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Features.Authorization;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.Sessions;
 
 namespace Vaultly.Identity.Application.Features.Authorization.StartAuthorization;
 
@@ -26,7 +24,7 @@ public sealed class StartAuthorizationHandler(
     IUnitOfWork unitOfWork,
     ITokenGenerator tokenGenerator,
     ITokenHasher tokenHasher,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger) : ICommandHandler<StartAuthorizationCommand, AuthorizationResult>
 {
@@ -36,7 +34,7 @@ public sealed class StartAuthorizationHandler(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
     private readonly ITokenHasher _tokenHasher = tokenHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<StartAuthorizationHandler>();
 
@@ -71,7 +69,7 @@ public sealed class StartAuthorizationHandler(
         }
 
         var state = new ClientState(request.State);
-        var now = _clock.UtcNow;
+        var now = _clock.GetUtcNow();
 
         // 3. Silent sign-in when the browser still has an active SSO session.
         if (!string.IsNullOrEmpty(request.SsoToken))

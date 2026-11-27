@@ -1,0 +1,11 @@
+using Vaultly.Core;
+
+namespace Vaultly.Identity.Domain.Users;
+
+/// <summary>
+/// Raised when a user profile is updated from an external identity.
+/// </summary>
+public sealed record UserProfileUpdatedDomainEvent(
+    UserId UserId,
+    PersonName Name,
+    bool EmailVerified) : DomainEvent;

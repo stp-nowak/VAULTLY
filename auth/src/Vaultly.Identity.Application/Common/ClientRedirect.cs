@@ -1,5 +1,5 @@
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain;
+using Vaultly.Identity.Domain.AuthorizationRequests;
 
 namespace Vaultly.Identity.Application.Common;
 

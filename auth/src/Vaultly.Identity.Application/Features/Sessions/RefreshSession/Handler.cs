@@ -5,11 +5,11 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Features.Sessions.RefreshSession;
 
@@ -24,7 +24,7 @@ public sealed class RefreshSessionHandler(
     IJwtTokenService jwtTokenService,
     ITokenGenerator tokenGenerator,
     ITokenHasher tokenHasher,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger)
     : ICommandHandler<RefreshSessionCommand, TokenResult>
@@ -36,7 +36,7 @@ public sealed class RefreshSessionHandler(
     private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
     private readonly ITokenHasher _tokenHasher = tokenHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<RefreshSessionHandler>();
 
@@ -50,7 +50,7 @@ public sealed class RefreshSessionHandler(
             throw OAuthProtocolException.InvalidRequest("refresh_token is required.");
         }
 
-        var now = _clock.UtcNow;
+        var now = _clock.GetUtcNow();
         var tokenHash = new TokenHash(_tokenHasher.HashToken(request.RefreshToken));
         var session = await _sessionRepository.GetByRefreshTokenHashAsync(tokenHash, cancellationToken);
         if (session is null)

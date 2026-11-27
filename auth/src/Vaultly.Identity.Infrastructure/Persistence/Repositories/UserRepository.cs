@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Infrastructure.Persistence.Repositories;
