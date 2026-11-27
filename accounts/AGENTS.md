@@ -50,7 +50,7 @@ accounts/src/
 ├── Vaultly.Accounts.slnx
 ├── Vaultly.Accounts.Domain/
 │   ├── Accounts/                       # Account aggregate, AccountId, OwnerId, AccountName, AccountType, Currency, Money,
-│   │                                   #   AccountOpened/AccountClosed, AccountClosedException, IAccountRepository
+│   │                                   #   AccountClosedException, IAccountRepository; Events/ (AccountOpened, AccountClosed)
 │   └── InvalidValueException.cs
 ├── Vaultly.Accounts.Application/       # CQRS on Vaultly.Core.Messaging
 │   └── Features/
