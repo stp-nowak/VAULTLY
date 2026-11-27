@@ -74,7 +74,7 @@ public sealed class Session : AggregateRoot
             SsoExpiresAt = ssoExpiresAt
         };
 
-        session.RaiseDomainEvent(new SessionStartedDomainEvent(session.Id, session.UserId, session.AuthMethod));
+        session.RaiseDomainEvent(new SessionStarted(session.Id, session.UserId, session.AuthMethod));
         return session;
     }
 
@@ -103,7 +103,7 @@ public sealed class Session : AggregateRoot
 
         IsRevoked = true;
         RevokedAt = now;
-        RaiseDomainEvent(new SessionRevokedDomainEvent(Id, UserId));
+        RaiseDomainEvent(new SessionRevoked(Id, UserId));
     }
 
     /// <summary>
@@ -136,7 +136,7 @@ public sealed class Session : AggregateRoot
 
         var authCode = AuthCode.Issue(Id, codeHash, expiresAt, clientId, redirectUri, codeChallenge);
         _authCodes.Add(authCode);
-        RaiseDomainEvent(new SessionAuthCodeIssuedDomainEvent(Id, authCode.Id, authCode.ExpiresAt));
+        RaiseDomainEvent(new AuthCodeIssued(Id, authCode.Id, authCode.ExpiresAt));
         return authCode;
     }
 
@@ -187,7 +187,7 @@ public sealed class Session : AggregateRoot
         }
 
         MarkUsed(now);
-        RaiseDomainEvent(new SessionAuthCodeConsumedDomainEvent(Id, authCode.Id, now));
+        RaiseDomainEvent(new AuthCodeConsumed(Id, authCode.Id, now));
         return authCode;
     }
 
@@ -200,7 +200,7 @@ public sealed class Session : AggregateRoot
 
         var token = RefreshToken.Issue(Id, tokenHash, now, expiresAt);
         _refreshTokens.Add(token);
-        RaiseDomainEvent(new SessionRefreshTokenIssuedDomainEvent(Id, token.Id, token.ExpiresAt));
+        RaiseDomainEvent(new RefreshTokenIssued(Id, token.Id, token.ExpiresAt));
         return token;
     }
 
@@ -231,7 +231,7 @@ public sealed class Session : AggregateRoot
         existing.Revoke(now, rotated.Id);
         _refreshTokens.Add(rotated);
         MarkUsed(now);
-        RaiseDomainEvent(new SessionRefreshTokenRotatedDomainEvent(Id, existing.Id, rotated.Id, rotated.ExpiresAt));
+        RaiseDomainEvent(new RefreshTokenRotated(Id, existing.Id, rotated.Id, rotated.ExpiresAt));
         return rotated;
     }
 

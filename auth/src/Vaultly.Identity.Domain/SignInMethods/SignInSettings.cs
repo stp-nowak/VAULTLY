@@ -30,7 +30,7 @@ public sealed class SignInSettings : AggregateRoot
     {
         if (DisabledMethodValues.Remove(method.Value))
         {
-            RaiseDomainEvent(new SignInMethodEnabledDomainEvent(method));
+            RaiseDomainEvent(new SignInMethodEnabled(method));
         }
     }
 
@@ -52,6 +52,6 @@ public sealed class SignInSettings : AggregateRoot
         }
 
         DisabledMethodValues = [.. DisabledMethodValues, method.Value];
-        RaiseDomainEvent(new SignInMethodDisabledDomainEvent(method));
+        RaiseDomainEvent(new SignInMethodDisabled(method));
     }
 }

@@ -25,7 +25,7 @@ public sealed class SessionTests
             now,
             now.AddHours(12));
 
-        Assert.That(session.DomainEvents.OfType<SessionStartedDomainEvent>().Single().SessionId, Is.EqualTo(session.Id));
+        Assert.That(session.DomainEvents.OfType<SessionStarted>().Single().SessionId, Is.EqualTo(session.Id));
     }
 
     [Test]
@@ -65,7 +65,7 @@ public sealed class SessionTests
 
         session.RevokeWithTokens(now.AddMinutes(5));
 
-        var domainEvent = session.DomainEvents.OfType<SessionRevokedDomainEvent>().Single();
+        var domainEvent = session.DomainEvents.OfType<SessionRevoked>().Single();
         Assert.That(domainEvent.SessionId, Is.EqualTo(session.Id));
     }
 
@@ -88,7 +88,7 @@ public sealed class SessionTests
 
         var rotated = session.RotateRefreshToken(existing.TokenHash, new TokenHash("new-token"), now.AddMinutes(1), now.AddDays(8));
 
-        var domainEvent = session.DomainEvents.OfType<SessionRefreshTokenRotatedDomainEvent>().Single();
+        var domainEvent = session.DomainEvents.OfType<RefreshTokenRotated>().Single();
         Assert.Multiple(() =>
         {
             Assert.That(domainEvent.SessionId, Is.EqualTo(session.Id));

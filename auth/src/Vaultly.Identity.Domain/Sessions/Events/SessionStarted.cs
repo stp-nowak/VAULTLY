@@ -6,7 +6,7 @@ namespace Vaultly.Identity.Domain.Sessions.Events;
 /// <summary>
 /// Raised when a new session starts for a user.
 /// </summary>
-public sealed record SessionStartedDomainEvent(
+public sealed record SessionStarted(
     SessionId SessionId,
     UserId UserId,
     AuthMethod AuthMethod) : DomainEvent;

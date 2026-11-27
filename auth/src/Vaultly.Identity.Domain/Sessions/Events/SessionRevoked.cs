@@ -6,6 +6,6 @@ namespace Vaultly.Identity.Domain.Sessions.Events;
 /// <summary>
 /// Raised when a session is revoked.
 /// </summary>
-public sealed record SessionRevokedDomainEvent(
+public sealed record SessionRevoked(
     SessionId SessionId,
     UserId UserId) : DomainEvent;

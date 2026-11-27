@@ -85,7 +85,7 @@ public sealed class AuthorizationRequest : AggregateRoot
             ExpiresAt = expiresAt,
         };
 
-        request.RaiseDomainEvent(new AuthorizationRequestCreatedDomainEvent(request.Id, clientId, expiresAt));
+        request.RaiseDomainEvent(new AuthorizationRequestCreated(request.Id, clientId, expiresAt));
         return request;
     }
 
@@ -115,6 +115,6 @@ public sealed class AuthorizationRequest : AggregateRoot
     {
         EnsurePending(now);
         CompletedAt = now;
-        RaiseDomainEvent(new AuthorizationRequestCompletedDomainEvent(Id, ClientId, now));
+        RaiseDomainEvent(new AuthorizationRequestCompleted(Id, ClientId, now));
     }
 }

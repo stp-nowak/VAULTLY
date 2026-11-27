@@ -18,7 +18,7 @@ public sealed class UserTests
 
         var user = User.Create(new EmailAddress("user@example.com"), new PersonName("Test User"), true, now);
 
-        Assert.That(user.DomainEvents.OfType<UserRegisteredDomainEvent>().Single().UserId, Is.EqualTo(user.Id));
+        Assert.That(user.DomainEvents.OfType<UserRegistered>().Single().UserId, Is.EqualTo(user.Id));
     }
 
     [Test]
@@ -49,7 +49,7 @@ public sealed class UserTests
         var providerUserId = new ProviderUserId("subject-1");
         user.LinkExternalIdentity(providerId, providerUserId, new EmailAddress("user@example.com"), new PersonName("Test User"), now);
 
-        var domainEvent = user.DomainEvents.OfType<ExternalIdentityLinkedDomainEvent>().Single();
+        var domainEvent = user.DomainEvents.OfType<ExternalIdentityLinked>().Single();
         Assert.Multiple(() =>
         {
             Assert.That(domainEvent.UserId, Is.EqualTo(user.Id));
@@ -67,7 +67,7 @@ public sealed class UserTests
 
         user.UpdateProfile(new PersonName("Updated User"), true);
 
-        var domainEvent = user.DomainEvents.OfType<UserProfileUpdatedDomainEvent>().Single();
+        var domainEvent = user.DomainEvents.OfType<UserProfileUpdated>().Single();
         Assert.Multiple(() =>
         {
             Assert.That(domainEvent.UserId, Is.EqualTo(user.Id));

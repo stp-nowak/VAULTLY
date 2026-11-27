@@ -38,7 +38,7 @@ public sealed class OAuthState : AggregateRoot
             AuthorizationRequestId = authorizationRequestId
         };
 
-        oauthState.RaiseDomainEvent(new OAuthStateCreatedDomainEvent(oauthState.Id, oauthState.State, oauthState.ExpiresAt));
+        oauthState.RaiseDomainEvent(new OAuthStateCreated(oauthState.Id, oauthState.State, oauthState.ExpiresAt));
         return oauthState;
     }
 

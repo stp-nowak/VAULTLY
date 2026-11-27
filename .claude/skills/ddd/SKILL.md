@@ -327,7 +327,10 @@ and dispatched after the aggregate is saved. Other services (or handlers in the 
 to them without the aggregate knowing who listens.
 
 ### Rules
-- Past tense naming: `OrderSubmitted`, `BudgetExceeded`, `UserRegistered`
+- Past tense naming without a suffix: `OrderSubmitted`, `BudgetExceeded`, `UserRegistered` — never
+  `…DomainEvent` / `…Event`; the base type and the `Events/` folder already say it is a domain event. An event of a
+  part of the aggregate is named after that part (`RefreshTokenRotated`, not `SessionRefreshTokenRotated`).
+  Integration events (message bus) are told apart by their namespace, not by a suffix.
 - Immutable records — only data, no logic
 - Raised inside the aggregate, dispatched by infrastructure after save
 - In-process events use MediatR; cross-service events use RabbitMQ / message bus

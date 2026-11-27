@@ -3,9 +3,9 @@ using Vaultly.Core;
 namespace Vaultly.Identity.Domain.Sessions.AuthCodes.Events;
 
 /// <summary>
-/// Raised when an auth code is issued for a session.
+/// Raised when an auth code is consumed successfully.
 /// </summary>
-public sealed record SessionAuthCodeIssuedDomainEvent(
+public sealed record AuthCodeConsumed(
     SessionId SessionId,
     AuthCodeId AuthCodeId,
-    DateTimeOffset ExpiresAt) : DomainEvent;
+    DateTimeOffset UsedAt) : DomainEvent;

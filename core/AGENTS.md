@@ -42,7 +42,8 @@
   entity with its id, value objects, exceptions and events (`Sessions/RefreshTokens/`, `Users/Passwords/`) — while
   the root, its id and repository stay at the top. A separate aggregate is never nested. Inside any concept folder,
   two or more domain events go to `Events/` and two or more domain exceptions to `Exceptions/` (a single one stays
-  beside the type that raises it).
+  beside the type that raises it). Events are named in the past tense without a suffix (`AccountOpened`,
+  `RefreshTokenRotated`, never `…DomainEvent`).
 - **Application** (CQRS):
   - Commands and queries implement the markers from `Vaultly.Core.Messaging`.
   - `Features/<Area>/<UseCase>/` — `Handler.cs` plus `Command.cs` (write side: repositories + `IUnitOfWork`) or
