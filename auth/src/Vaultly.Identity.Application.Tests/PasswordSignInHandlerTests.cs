@@ -6,6 +6,7 @@ using NUnit.Framework;
 
 using Serilog;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
 using Vaultly.Identity.Application.Commands.RegisterWithPassword;
 using Vaultly.Identity.Application.Commands.SignInWithPassword;
@@ -19,7 +20,6 @@ using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.Infrastructure.Security;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Tests;
 

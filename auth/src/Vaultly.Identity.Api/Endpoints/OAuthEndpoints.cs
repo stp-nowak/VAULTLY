@@ -6,6 +6,7 @@ using MediatR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 
+using Vaultly.Core;
 using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.ApiContracts;
@@ -21,7 +22,6 @@ using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Api.Endpoints;
 

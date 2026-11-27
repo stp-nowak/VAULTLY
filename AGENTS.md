@@ -13,7 +13,7 @@ Mono repo:
 - `./gateway` `Vaultly.Gateway` (C#, YARP) — single entry to the domain services: validates Identity access tokens,
   routes by path, gives each service its own short-lived internal token
 - `./core` `Vaultly.Core` (DDD building blocks) and `Vaultly.Core.Authentication` (internal token validation) —
-  projects every domain service builds on
+  projects every domain service and the identity service build on
 - Domain services (Accounts, Transactions, Budgets, …): one top-level folder per service, named after what it does
   (e.g. `./accounts`), never a generic `backend` — tactical DDD + CQRS (C#), rules in `./core/AGENTS.md`
 - `./infra` Docker Compose for infrastructure shared by several services (RabbitMQ)

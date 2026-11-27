@@ -1,9 +1,9 @@
+using Vaultly.Core;
 using Vaultly.Identity.Domain.Entities;
-using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Events;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Domain.Aggregates;
 

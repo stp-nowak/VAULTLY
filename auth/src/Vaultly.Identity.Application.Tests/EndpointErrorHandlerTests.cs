@@ -10,8 +10,8 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 
+using Vaultly.Core;
 using Vaultly.Identity.Api.Http;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Tests;
 

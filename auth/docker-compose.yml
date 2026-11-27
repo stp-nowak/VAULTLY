@@ -26,6 +26,8 @@ services:
     container_name: vaultly-identity-api
     build:
       context: src
+      additional_contexts:
+        core: ../core/src/Vaultly.Core
     environment:
       # Development: plain-http localhost setup (auto-generated JWT signing key, migrations applied on startup).
       ASPNETCORE_ENVIRONMENT: Development

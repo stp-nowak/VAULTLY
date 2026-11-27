@@ -6,6 +6,7 @@ using NUnit.Framework;
 
 using Serilog;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Commands.EndSession;
 using Vaultly.Identity.Application.Commands.ExchangeAuthCode;
 using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
@@ -22,7 +23,6 @@ using Vaultly.Identity.Application.Queries.GetAuthorizationRequest;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Tests;
 

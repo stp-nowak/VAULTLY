@@ -1,10 +1,10 @@
 using Serilog;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 

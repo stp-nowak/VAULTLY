@@ -1,6 +1,6 @@
 using MediatR;
 
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Core;
 
 namespace Vaultly.Identity.Infrastructure.Persistence;
 

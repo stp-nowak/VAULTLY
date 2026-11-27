@@ -1,4 +1,4 @@
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Core;
 
 namespace Vaultly.Identity.Api.Http;
 

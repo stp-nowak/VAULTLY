@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Vaultly.Identity.Domain\Vaultly.Identity.Domain.csproj" />
-    <ProjectReference Include="../Vaultly.Identity.SharedKernel/Vaultly.Identity.SharedKernel.csproj" />
+    <ProjectReference Include="../../../core/src/Vaultly.Core/Vaultly.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

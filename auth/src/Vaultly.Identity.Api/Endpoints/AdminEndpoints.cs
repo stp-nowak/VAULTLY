@@ -9,9 +9,9 @@ using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Queries.GetConsoleUser;
 using Vaultly.Identity.Application.Queries.GetSignInSettings;
 using Vaultly.Identity.Application.Queries.GetUsers;
-using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Api.Endpoints;
 
