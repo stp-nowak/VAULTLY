@@ -40,7 +40,9 @@
   only domain-wide basics (e.g. `InvalidValueException`) sit in the project root. No `Aggregates/`, `ValueObjects/`,
   `Events/`, `Exceptions/` folders. When an aggregate folder grows, its parts get sub-folders by sub-concept — an
   entity with its id, value objects, exceptions and events (`Sessions/RefreshTokens/`, `Users/Passwords/`) — while
-  the root, its id, repository and own events stay at the top. A separate aggregate is never nested.
+  the root, its id and repository stay at the top. A separate aggregate is never nested. Inside any concept folder,
+  two or more domain events go to `Events/` and two or more domain exceptions to `Exceptions/` (a single one stays
+  beside the type that raises it).
 - **Application** (CQRS):
   - Commands and queries implement the markers from `Vaultly.Core.Messaging`.
   - `Features/<Area>/<UseCase>/` — `Handler.cs` plus `Command.cs` (write side: repositories + `IUnitOfWork`) or

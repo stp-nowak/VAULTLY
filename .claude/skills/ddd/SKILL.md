@@ -66,8 +66,10 @@ ServiceName/
 │   ├── Orders/                     # One folder per aggregate, plural (a folder named like its class clashes with it)
 │   │   ├── Order.cs                #   aggregate root
 │   │   ├── OrderId.cs              #   value objects, enums of this aggregate
-│   │   ├── OrderSubmitted.cs       #   its domain events
-│   │   ├── OrderAlreadySubmittedException.cs
+│   │   ├── Events/                 #   its domain events, once there are two or more
+│   │   │   ├── OrderSubmitted.cs
+│   │   │   └── OrderCancelled.cs
+│   │   ├── OrderAlreadySubmittedException.cs  # a single exception stays here; two or more go to Exceptions/
 │   │   ├── IOrderRepository.cs     #   its repository port
 │   │   └── Lines/                  #   a part of the aggregate with its own types gets a sub-folder
 │   │       ├── OrderLine.cs        #     (entity, its id, value objects, exceptions, events);
