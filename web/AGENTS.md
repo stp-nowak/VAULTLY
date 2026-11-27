@@ -18,7 +18,7 @@ Full flow with diagrams: `../docs/architecture/authentication.md`.
   (PKCE), exchanges the code with its client secret, stores the tokens **in Redis**
   per session (key = SHA-256 of the session id, payload encrypted with Data Protection) and refreshes them.
 - The SPA calls **only same-origin `/api/*`** with `X-CSRF: 1` (`fetchJson` in `src/web/src/shared/api` does it).
-  `/api/auth/*` is handled by the Auth feature, every other `/api/*` is forwarded to the backend gateway with
+  `/api/auth/*` is handled by the Auth feature, every other `/api/*` is forwarded to the API gateway (`./gateway`) with
   `Authorization: Bearer <token from Redis>`; cookies are stripped before forwarding.
 - The SPA has **no sign-in screen** and never starts sign-in by itself. It only checks for a session
   (`GET /api/auth/user`): with one, `/` opens `/app`; without one, `/` shows the public landing page and `/app`

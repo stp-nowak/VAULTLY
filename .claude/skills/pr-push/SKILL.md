@@ -38,7 +38,9 @@ Detect touched projects with `git diff --name-only <base>...HEAD` and run their 
 | `auth/web/**` (or `packages/ui/**`) | from repo root: `pnpm --filter @vaultly/auth-web lint`, `… test`, `… build` |
 | `web/src/api/**` | `dotnet build Vaultly.Web.Api.slnx`, `dotnet test Vaultly.Web.Api.slnx` |
 | `auth/**` | from `auth/src`: `dotnet build Vaultly.Auth.slnx`, `dotnet test Vaultly.Auth.slnx` |
-| `backend/**` | from `backend/src`: `dotnet build`, `dotnet test` |
+| `gateway/**` | from `gateway/src`: `dotnet build Vaultly.Gateway.slnx`, `dotnet test Vaultly.Gateway.slnx` |
+| `core/**` | from `core/src`: `dotnet build Vaultly.Core.slnx`, `dotnet test Vaultly.Core.slnx` |
+| a domain service (`<service>/**`) | from `<service>/src`: `dotnet build`, `dotnet test` |
 
 If anything fails, fix it (or stop and report). Record the results — they go into the PR description.
 `pnpm` may not be on PATH on Windows; use `npx --yes pnpm@10 <command>`.
@@ -98,7 +100,11 @@ Closes #<issue>   <!-- or "Part of #<issue>" -->
 - ...
 ### `auth`
 - ...
-### `backend`
+### `gateway`
+- ...
+### `core`
+- ...
+### `<domain service>`
 - ...
 ### CI / tooling / docs
 - ...

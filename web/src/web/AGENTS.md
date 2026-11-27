@@ -16,7 +16,7 @@
 
 The frontend follows [Feature-Sliced Design](https://feature-sliced.design). The only deviation from
 standard FSD: the `entities` layer is called **`domain`**, so the frontend speaks the same language as the
-DDD backend (`./backend`) and the auth service (`./auth`). A `domain` slice maps to a backend
+DDD domain services and the auth service (`./auth`). A `domain` slice maps to a service's
 **bounded context** (e.g. `identity`, `transaction`, `budget`) and holds the frontend model of its aggregates.
 
 ```
@@ -77,14 +77,14 @@ Layers, highest to lowest: `app → pages → widgets → features → domain �
 | Types, state, API client and queries of a business concept | `domain/[context]` |
 | Generic UI, HTTP, config, test helpers | `shared/[segment]` |
 
-### Domain ↔ backend mapping
+### Domain ↔ service mapping
 
-- One `domain/[context]` slice per backend bounded context (service). Keep names aligned:
+- One `domain/[context]` slice per bounded context (service). Keep names aligned:
   `domain/identity` ↔ `auth/` (Identity service), `domain/transaction` ↔ Transaction service, etc.
-- Use the backend's ubiquitous language in type and function names (`Session`, `Budget`, `Goal`).
-- Commands of the backend (write side) are triggered from `features`; queries (read side) are exposed as
+- Use the service's ubiquitous language in type and function names (`Session`, `Budget`, `Goal`).
+- Commands of a service (write side) are triggered from `features`; queries (read side) are exposed as
   TanStack Query options/hooks from `domain/[context]/api`.
-- Never model a backend aggregate twice — if two features need it, it belongs in `domain`.
+- Never model a service's aggregate twice — if two features need it, it belongs in `domain`.
 
 ### No circular dependencies
 
