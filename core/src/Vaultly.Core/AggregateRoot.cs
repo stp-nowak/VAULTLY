@@ -1,4 +1,4 @@
-namespace Vaultly.SharedKernel;
+namespace Vaultly.Core;
 
 public abstract class AggregateRoot
 {

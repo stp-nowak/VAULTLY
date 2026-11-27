@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Vaultly.Core/Vaultly.Core.csproj" />
+    <Project Path="Vaultly.Core.Authentication/Vaultly.Core.Authentication.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Vaultly.Core.Authentication.Tests/Vaultly.Core.Authentication.Tests.csproj" />
+  </Folder>
+</Solution>
