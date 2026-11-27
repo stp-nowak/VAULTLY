@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 
 using NUnit.Framework;
 
+using Vaultly.Core;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Entities;
-using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.Infrastructure.Persistence;
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Tests;
 

@@ -1,8 +1,8 @@
 # Vaultly Core
 
 ## Scope
-- `./core` holds what every domain service (Accounts, Transactions, Budgets, Goals, Alerts, Billing, Admin) builds on,
-  referenced by the domain services with a relative `ProjectReference`:
+- `./core` holds what every domain service (Accounts, Transactions, Budgets, Goals, Alerts, Billing, Admin) and the
+  identity service (`./auth`) build on, referenced with a relative `ProjectReference`:
   - `Vaultly.Core` — tactical DDD building blocks: `AggregateRoot`, `DomainEvent`, `DomainException`, `IUnitOfWork`.
     Pure C# (MediatR only), so a `Domain` project may reference it.
   - `Vaultly.Core.Authentication` — `AddInternalTokenAuthentication`: a service accepts only the internal tokens the
@@ -12,7 +12,7 @@
 - No business logic here. A type belongs here only when several services need the very same thing.
 - Domain services live in their own top-level folders named after what they do (e.g. `./accounts`), never under
   `./core`. `Vaultly.Core*` references no service project except `Vaultly.Identity.PublicTypes`, which itself
-  references nothing, so any service (Identity included) may use core without a cycle.
+  references nothing, so any service (Identity included, it uses `Vaultly.Core`) may use core without a cycle.
 - Identity is a separate service (`./auth`); services never reference its projects, only
   `Vaultly.Identity.PublicTypes` (and `Vaultly.Identity.ApiContracts` when they call its API).
 

@@ -1,7 +1,7 @@
+using Vaultly.Core;
 using Vaultly.Identity.Domain.Events;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Domain.Aggregates;
 

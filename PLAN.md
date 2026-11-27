@@ -150,7 +150,7 @@
 │ ./auth               │   │ ./gateway  API Gateway (YARP in C#)         │── Redis (planned): revoked
 │ Identity Service     │◀──│ validates access token (JWKS), routes,      │   sessions, user plans
 │ (standalone, own     │   │ issues an internal token per service        │
-│  solution & kernel)  │   └───┬──────┬──────┬──────┬──────┬──────┬──────┘
+│  solution, ./core)   │   └───┬──────┬──────┬──────┬──────┬──────┬──────┘
 │ JWKS / OIDC discovery│       │      │      │      │      │      │   Bearer internal token
 │ Vaultly.Identity.    │     Bank  Trans- Budgets Goals Alerts Billing  (aud = that service)
 │ PublicTypes          │     Sync  actions
@@ -175,7 +175,7 @@
   `./budgets`, `./goals`, `./alerts`, `./billing`, `./admin`); each is a bounded context in **tactical DDD + CQRS**
   (`Domain` / `Application` with `Commands` + `Queries` / `Infrastructure` / `Api`), with its own solution, compose
   file, CI workflow and database. Never a generic `./backend`.
-- `./auth` — Identity service, **completely separate** (own solution, shared kernel, DB), same tactical DDD + CQRS
+- `./auth` — Identity service, **completely separate** (own solution and DB; DDD building blocks from `./core`), same tactical DDD + CQRS
   rules. Owns `Vaultly.Identity.PublicTypes` (claims, `UserRole`, later its integration events) and
   `Vaultly.Identity.ApiContracts` (its HTTP API models).
 - Code shared between services lives in one project owned by one service (`PublicTypes`, `ApiContracts`) and is

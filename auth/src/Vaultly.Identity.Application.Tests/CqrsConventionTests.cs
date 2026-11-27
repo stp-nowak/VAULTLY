@@ -4,8 +4,8 @@ using MediatR;
 
 using NUnit.Framework;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Messaging;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Tests;
 

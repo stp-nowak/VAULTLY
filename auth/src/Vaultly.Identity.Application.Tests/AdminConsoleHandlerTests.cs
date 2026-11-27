@@ -6,6 +6,7 @@ using NUnit.Framework;
 
 using Serilog;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Commands.AssignUserRole;
 using Vaultly.Identity.Application.Commands.EnsureBootstrapAdmin;
 using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
@@ -21,11 +22,10 @@ using Vaultly.Identity.Application.Queries.GetConsoleUser;
 using Vaultly.Identity.Application.Queries.GetUsers;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Constants;
-using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Tests;
 

@@ -1,6 +1,6 @@
-using Vaultly.Identity.PublicTypes;
+using Vaultly.Core;
 using Vaultly.Identity.Domain.ValueObjects;
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Domain.Events;
 

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
@@ -10,7 +11,6 @@ using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 using Vaultly.Identity.Infrastructure.Persistence.Repositories;
 using Vaultly.Identity.Infrastructure.Security;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Infrastructure;
 

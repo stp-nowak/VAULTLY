@@ -6,8 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Infrastructure.Security;
 

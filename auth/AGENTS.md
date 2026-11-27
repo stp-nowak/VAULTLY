@@ -6,10 +6,12 @@ sign-ins skip the login page, and clients exchange codes for tokens server-to-se
 Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
 
 ## Independence
-- This service is **completely separate** from the gateway, `./core` and the domain services: own solution
-  (`src/Vaultly.Auth.slnx`), own shared kernel (`Vaultly.Identity.SharedKernel`), own database, own deployment.
+- This service is **completely separate** from the gateway and the domain services: own solution
+  (`src/Vaultly.Auth.slnx`), own database, own deployment. Its DDD building blocks (`AggregateRoot`, `DomainEvent`,
+  `DomainException`, `IUnitOfWork`) come from `Vaultly.Core` (`../core`), like every domain service's; the Docker
+  image gets it as the named build context `core`.
 - Never add a shared file or shared database, or a project reference to/from another service other than to
-  `PublicTypes`/`ApiContracts` below.
+  `Vaultly.Core` and `PublicTypes`/`ApiContracts` below.
   Integration with other services happens only through:
   - JWTs validated by consumers via `/.well-known/jwks.json` (today only the gateway; services get its tokens),
   - the `Vaultly.Identity.PublicTypes` project: token claim names (`IdentityClaims`) and `UserRole`, referenced by
@@ -88,7 +90,6 @@ auth/
     ├── Vaultly.Auth.slnx
     ├── Vaultly.Identity.PublicTypes/       # referenced by other services: IdentityClaims, UserRole
     ├── Vaultly.Identity.ApiContracts/      # referenced by API clients: token/revoke/sessions models, GrantType
-    ├── Vaultly.Identity.SharedKernel/      # AggregateRoot, DomainEvent, DomainException, IUnitOfWork
     ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User + role, Session + SSO, OAuthState,
     │                                       #   AuthorizationRequest for a client or the console, SignInSettings), Entities (AuthCode
     │                                       #   bound to client/PKCE), ValueObjects, Events, Exceptions,
@@ -119,7 +120,7 @@ auth/
 
 ## Architecture rules: tactical DDD + CQRS
 - Read and follow the `ddd` skill (`/.claude/skills/ddd/SKILL.md` at the repository root) for every new or refactored C# file.
-- Dependency rule: `Domain → SharedKernel + PublicTypes`, `Application → Domain`, `Infrastructure → Application + Domain`,
+- Dependency rule: `Domain → Vaultly.Core + PublicTypes`, `Application → Domain`, `Infrastructure → Application + Domain`,
   `Api → Application + Infrastructure` (composition root only).
 - All invariants live in aggregates/value objects; handlers only orchestrate.
 - **Commands** (`ICommand`/`ICommand<T>`): imperative names, load aggregates via repositories, persist via

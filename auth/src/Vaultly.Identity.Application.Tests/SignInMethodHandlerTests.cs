@@ -6,6 +6,7 @@ using NUnit.Framework;
 
 using Serilog;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Commands.StartExternalLogin;
 using Vaultly.Identity.Application.Common;
@@ -21,7 +22,6 @@ using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 using Vaultly.Identity.Infrastructure.Persistence.Repositories;
-using Vaultly.Identity.SharedKernel;
 
 namespace Vaultly.Identity.Application.Tests;
 

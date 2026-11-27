@@ -9,6 +9,7 @@ on:
       - 'auth/**'
       - '!auth/web/**'
       - '!auth/docs/**'
+      - 'core/src/Vaultly.Core/**'
       - '.github/workflows/auth.yml'
   push:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - 'auth/**'
       - '!auth/web/**'
       - '!auth/docs/**'
+      - 'core/src/Vaultly.Core/**'
       - '.github/workflows/auth.yml'
   workflow_dispatch:
 
@@ -51,4 +53,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build auth/src
+      - run: docker build --build-context core=core/src/Vaultly.Core auth/src

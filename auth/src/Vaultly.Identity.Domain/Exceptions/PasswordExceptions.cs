@@ -1,4 +1,4 @@
-using Vaultly.Identity.SharedKernel;
+using Vaultly.Core;
 
 using Vaultly.Identity.Domain.ValueObjects;
 
