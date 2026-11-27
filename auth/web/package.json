@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "deps:circular": "tsx src/app/circularDependencies/circularDependenciesReport.ts",
-    "i18n:where": "tsx --tsconfig tsconfig.app.json src/app/providers/i18n/whereTranslation.ts"
+    "i18n:where": "tsx --tsconfig tsconfig.app.json src/app/translationChecks/whereTranslation.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
