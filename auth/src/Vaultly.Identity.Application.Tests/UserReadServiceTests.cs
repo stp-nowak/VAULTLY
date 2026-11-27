@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using NUnit.Framework;
 
+using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -100,7 +101,7 @@ public sealed class UserReadServiceTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(active, Is.EqualTo(new Application.Models.ConsoleUserDto(user.Id.Value, "grace@example.com", "Grace Hopper", UserRole.User)));
+            Assert.That(active, Is.EqualTo(new ConsoleUserDto(user.Id.Value, "grace@example.com", "Grace Hopper", UserRole.User)));
             Assert.That(await sut.GetBySsoTokenHashAsync("expired", Now, CancellationToken.None), Is.Null);
             Assert.That(await sut.GetBySsoTokenHashAsync("revoked", Now, CancellationToken.None), Is.Null);
             Assert.That(await sut.GetBySsoTokenHashAsync("unknown", Now, CancellationToken.None), Is.Null);

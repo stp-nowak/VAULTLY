@@ -9,7 +9,7 @@ using Vaultly.Identity.Api.Configuration;
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application;
-using Vaultly.Identity.Application.Commands.EnsureBootstrapAdmin;
+using Vaultly.Identity.Application.Features.Users.EnsureBootstrapAdmin;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Infrastructure;
 using Vaultly.Identity.Infrastructure.Options;

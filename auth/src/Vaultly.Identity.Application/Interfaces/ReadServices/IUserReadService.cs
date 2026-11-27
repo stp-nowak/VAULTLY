@@ -1,4 +1,6 @@
-using Vaultly.Identity.Application.Models;
+
+using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
+using Vaultly.Identity.Application.Features.Users.GetUsers;
 
 namespace Vaultly.Identity.Application.Interfaces.ReadServices;
 

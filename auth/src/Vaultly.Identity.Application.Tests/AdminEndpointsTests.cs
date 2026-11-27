@@ -10,10 +10,9 @@ using NUnit.Framework;
 
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;
-using Vaultly.Identity.Application.Commands.AssignUserRole;
-using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
-using Vaultly.Identity.Application.Models;
-using Vaultly.Identity.Application.Queries.GetConsoleUser;
+using Vaultly.Identity.Application.Features.SignInMethods.SetSignInMethodEnabled;
+using Vaultly.Identity.Application.Features.Users.AssignUserRole;
+using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.PublicTypes;
 
