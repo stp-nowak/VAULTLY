@@ -28,8 +28,10 @@
   Pure C#, no framework dependencies except `Vaultly.Core`.
 - **Application** (CQRS):
   - `Messaging/` — `ICommand`, `ICommand<T>`, `IQuery<T>`, `ICommandHandler<..>`, `IQueryHandler<..>` (MediatR underneath).
-  - `Commands/<UseCase>/` — `<UseCase>Command.cs` + `<UseCase>Handler.cs`; write side, uses repositories + `IUnitOfWork`.
-  - `Queries/<UseCase>/` — `<UseCase>Query.cs` + `<UseCase>Handler.cs`; read side, uses `Interfaces/ReadServices`, returns DTOs.
+  - `Features/<Area>/<UseCase>/` — `Handler.cs` plus `Command.cs` (write side: repositories + `IUnitOfWork`) or
+    `Query.cs` (read side: `Interfaces/ReadServices`, returns DTOs), never both, plus DTOs only that use case returns.
+    File names do not repeat the use case; class names do (`RevokeSessionCommand`, `RevokeSessionHandler`).
+  - `Models/` — only types used by several areas.
   - `Interfaces/Repositories` (write ports), `Interfaces/ReadServices` (read ports), `Interfaces/Services` (other ports).
 - **Infrastructure**: EF Core repositories (tracked aggregates), read services (`AsNoTracking` projections), messaging, external clients.
 - **Api**: minimal API endpoints send commands/queries through `ISender`; composition root only; authentication via

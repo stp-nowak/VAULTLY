@@ -73,16 +73,17 @@ ServiceName/
 ├── Application/                    # Orchestration layer (CQRS). Depends on Domain only.
 │   ├── Messaging/                  # CQRS markers on top of MediatR: ICommand, ICommand<T>, IQuery<T>,
 │   │                               #   ICommandHandler<,>, IQueryHandler<,>
-│   ├── Commands/                   # WRITE side — one folder per use case
-│   │   └── SubmitOrder/
-│   │       ├── SubmitOrderCommand.cs
-│   │       └── SubmitOrderHandler.cs
-│   ├── Queries/                    # READ side — one folder per use case
-│   │   └── GetOrderSummary/
-│   │       ├── GetOrderSummaryQuery.cs
-│   │       └── GetOrderSummaryHandler.cs
+│   ├── Features/                   # One folder per feature area, one sub-folder per use case
+│   │   └── Orders/
+│   │       ├── SubmitOrder/        # WRITE side
+│   │       │   ├── Command.cs      #   SubmitOrderCommand
+│   │       │   └── Handler.cs      #   SubmitOrderHandler
+│   │       └── GetOrderSummary/    # READ side
+│   │           ├── Query.cs        #   GetOrderSummaryQuery
+│   │           ├── Handler.cs      #   GetOrderSummaryHandler
+│   │           └── OrderSummaryDto.cs
 │   ├── EventHandlers/              # Handles domain or integration events
-│   ├── Models/                     # DTOs / read models / command results
+│   ├── Models/                     # Only DTOs / results shared by several feature areas
 │   ├── Common/                     # Internal helpers shared by handlers (no business rules)
 │   └── Interfaces/                 # ← Ports implemented by Infrastructure
 │       ├── Repositories/           #   WRITE side: load/save aggregates, e.g. IOrderRepository
@@ -476,7 +477,7 @@ public interface IQueryHandler<in TQuery, TResponse> : IRequestHandler<TQuery, T
 ```
 
 ### Command (write side) rules
-- Name in the imperative: `SubmitOrderCommand`, `RevokeSessionCommand`. Lives in `Commands/<UseCase>/`.
+- Name in the imperative: `SubmitOrderCommand`, `RevokeSessionCommand`. Lives in `Features/<Area>/<UseCase>/Command.cs`.
 - Flow: load aggregate(s) via **repository** → call domain methods → `IUnitOfWork.SaveChangesAsync`.
 - All business rules are enforced inside aggregates; the handler only orchestrates.
 - Modify **one aggregate per transaction** where possible; react to others via domain events.
@@ -485,23 +486,25 @@ public interface IQueryHandler<in TQuery, TResponse> : IRequestHandler<TQuery, T
   that persists an `OAuthState` is `StartExternalLoginCommand`, not a query).
 
 ### Query (read side) rules
-- Name as a question: `GetOrderSummaryQuery`, `GetSessionsQuery`. Lives in `Queries/<UseCase>/`.
+- Name as a question: `GetOrderSummaryQuery`, `GetSessionsQuery`. Lives in `Features/<Area>/<UseCase>/Query.cs`,
+  next to the DTOs only it returns.
 - Depends on **read services** (`Interfaces/ReadServices/I*ReadService`), never on repositories or `IUnitOfWork`.
 - Read services return **DTOs / read models**, built with `AsNoTracking()` projections in Infrastructure.
 - Queries have no side effects: no `SaveChangesAsync`, no domain events, no aggregate method calls.
 - Repositories serve the write side only — do not add "list/search" methods to them for queries.
 
 These rules are guarded by convention tests (see `CqrsConventionTests` in the Identity service): every MediatR
-request is an `ICommand`/`IQuery`, commands live in `Commands/`, queries in `Queries/`, and query handlers do
-not depend on repositories or `IUnitOfWork`.
+request is an `ICommand`/`IQuery` named `<UseCase>Command`/`<UseCase>Query` in `Features/<Area>/<UseCase>/`, each
+use case folder holds `Handler.cs` and exactly one of `Command.cs`/`Query.cs`, and query handlers do not depend on
+repositories or `IUnitOfWork`. File names never repeat the use case; class names do.
 
 ### Command example
 
 ```csharp
-// Application/Commands/SubmitOrder/SubmitOrderCommand.cs
+// Application/Features/Orders/SubmitOrder/Command.cs
 public sealed record SubmitOrderCommand(Guid OrderId, Guid UserId) : ICommand<SubmitOrderResult>;
 
-// Application/Commands/SubmitOrder/SubmitOrderHandler.cs
+// Application/Features/Orders/SubmitOrder/Handler.cs
 public sealed class SubmitOrderHandler(IOrderRepository orders, IUnitOfWork unitOfWork)
     : ICommandHandler<SubmitOrderCommand, SubmitOrderResult>
 {
