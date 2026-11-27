@@ -4,9 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Vaultly.Core;
 using Vaultly.Core.Persistence;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
+using Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;
+using Vaultly.Identity.Application.Features.ExternalLogin;
+using Vaultly.Identity.Application.Features.Sessions.GetSessions;
+using Vaultly.Identity.Application.Features.SignInMethods;
+using Vaultly.Identity.Application.Features.Users;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.OAuthStates;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.Infrastructure.ExternalServices;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
@@ -45,7 +53,7 @@ public static class DependencyInjection
 
         services.AddScoped<IExternalOAuthProvider, GoogleOAuthClient>();
 
-        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<ITokenHasher, Sha256TokenHasher>();
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();

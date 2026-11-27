@@ -3,9 +3,8 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.Sessions;
 
 namespace Vaultly.Identity.Application.Features.Sessions.RevokeToken;
 
@@ -17,14 +16,14 @@ public sealed class RevokeTokenHandler(
     ISessionRepository sessionRepository,
     IUnitOfWork unitOfWork,
     ITokenHasher tokenHasher,
-    IClock clock,
+    TimeProvider clock,
     ILogger logger) : ICommandHandler<RevokeTokenCommand>
 {
     private readonly IClientRegistry _clientRegistry = clientRegistry;
     private readonly ISessionRepository _sessionRepository = sessionRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ITokenHasher _tokenHasher = tokenHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly ILogger _logger = logger.ForContext<RevokeTokenHandler>();
 
     public async Task Handle(RevokeTokenCommand request, CancellationToken cancellationToken)
@@ -46,7 +45,7 @@ public sealed class RevokeTokenHandler(
             return;
         }
 
-        session.RevokeWithTokens(_clock.UtcNow);
+        session.RevokeWithTokens(_clock.GetUtcNow());
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.Information(

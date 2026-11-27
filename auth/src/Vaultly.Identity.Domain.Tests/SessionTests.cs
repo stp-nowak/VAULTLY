@@ -1,9 +1,8 @@
 using NUnit.Framework;
 
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Events;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Domain.Tests;
 

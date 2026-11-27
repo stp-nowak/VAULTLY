@@ -1,4 +1,4 @@
-using Vaultly.Accounts.Domain.Enums;
+using Vaultly.Accounts.Domain.Accounts;
 
 namespace Vaultly.Accounts.Api.Contracts;
 

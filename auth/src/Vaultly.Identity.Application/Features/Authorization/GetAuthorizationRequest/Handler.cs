@@ -1,9 +1,9 @@
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Domain.Constants;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Features.ExternalLogin;
+using Vaultly.Identity.Application.Features.SignInMethods;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.SignInMethods;
 
 namespace Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;
 
@@ -15,7 +15,7 @@ public sealed class GetAuthorizationRequestHandler(
     IClientRegistry clientRegistry,
     IEnumerable<IExternalOAuthProvider> providers,
     ISignInSettingsReadService signInSettingsReadService,
-    IClock clock) : IQueryHandler<GetAuthorizationRequestQuery, AuthorizationRequestDto?>
+    TimeProvider clock) : IQueryHandler<GetAuthorizationRequestQuery, AuthorizationRequestDto?>
 {
     public const string ConsoleDisplayName = "Vaultly Admin";
 
@@ -23,7 +23,7 @@ public sealed class GetAuthorizationRequestHandler(
     private readonly IClientRegistry _clientRegistry = clientRegistry;
     private readonly IReadOnlyList<IExternalOAuthProvider> _providers = providers.ToList();
     private readonly ISignInSettingsReadService _signInSettingsReadService = signInSettingsReadService;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
 
     public async Task<AuthorizationRequestDto?> Handle(GetAuthorizationRequestQuery request, CancellationToken cancellationToken)
     {
@@ -35,7 +35,7 @@ public sealed class GetAuthorizationRequestHandler(
 
         var status = model.CompletedAt.HasValue
             ? AuthorizationRequestStatus.Completed
-            : model.ExpiresAt <= _clock.UtcNow ? AuthorizationRequestStatus.Expired : AuthorizationRequestStatus.Pending;
+            : model.ExpiresAt <= _clock.GetUtcNow() ? AuthorizationRequestStatus.Expired : AuthorizationRequestStatus.Pending;
 
         var clientName = ResolveClientName(model.ClientId);
         if (status != AuthorizationRequestStatus.Pending)

@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Domain.Aggregates;
+
+using Vaultly.Identity.Application.Features.SignInMethods;
+using Vaultly.Identity.Domain.SignInMethods;
 
 namespace Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 

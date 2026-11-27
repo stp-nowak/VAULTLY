@@ -1,4 +1,4 @@
-using Vaultly.Identity.Application.Interfaces.Services;
+using Vaultly.Identity.Application.Security;
 
 namespace Vaultly.Identity.Infrastructure.Security;
 

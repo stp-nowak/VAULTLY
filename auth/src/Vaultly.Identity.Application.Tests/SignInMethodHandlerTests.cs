@@ -9,16 +9,16 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;
+using Vaultly.Identity.Application.Features.ExternalLogin;
 using Vaultly.Identity.Application.Features.ExternalLogin.StartExternalLogin;
+using Vaultly.Identity.Application.Features.SignInMethods;
 using Vaultly.Identity.Application.Features.SignInMethods.GetSignInSettings;
 using Vaultly.Identity.Application.Features.SignInMethods.SetSignInMethodEnabled;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.OAuthStates;
+using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 using Vaultly.Identity.Infrastructure.Persistence.Repositories;
@@ -223,10 +223,5 @@ public sealed class SignInMethodHandlerTests
         return provider.Object;
     }
 
-    private static IClock Clock()
-    {
-        var clock = new Mock<IClock>();
-        clock.SetupGet(x => x.UtcNow).Returns(Now);
-        return clock.Object;
-    }
+    private static TimeProvider Clock() => new FixedTime(Now);
 }

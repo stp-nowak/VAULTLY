@@ -5,11 +5,11 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Features.Authorization.ExchangeAuthCode;
 
@@ -24,7 +24,7 @@ public sealed class ExchangeAuthCodeHandler(
     IJwtTokenService jwtTokenService,
     ITokenGenerator tokenGenerator,
     ITokenHasher tokenHasher,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger)
     : ICommandHandler<ExchangeAuthCodeCommand, TokenResult>
@@ -36,7 +36,7 @@ public sealed class ExchangeAuthCodeHandler(
     private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
     private readonly ITokenHasher _tokenHasher = tokenHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<ExchangeAuthCodeHandler>();
 
@@ -51,7 +51,7 @@ public sealed class ExchangeAuthCodeHandler(
             throw OAuthProtocolException.InvalidRequest("code, redirect_uri and code_verifier are required.");
         }
 
-        var now = _clock.UtcNow;
+        var now = _clock.GetUtcNow();
         var codeHash = new CodeHash(_tokenHasher.HashToken(request.Code));
         var session = await _sessionRepository.GetByAuthCodeHashAsync(codeHash, cancellationToken)
             ?? throw OAuthProtocolException.InvalidGrant("Authorization code is invalid.");

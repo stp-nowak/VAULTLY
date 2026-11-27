@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 
 using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Services;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.Infrastructure.Persistence;
 using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
 using Vaultly.Identity.PublicTypes;

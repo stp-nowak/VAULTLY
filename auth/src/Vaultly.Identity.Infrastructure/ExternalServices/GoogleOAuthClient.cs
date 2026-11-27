@@ -4,9 +4,8 @@ using Google.Apis.Auth;
 
 using Microsoft.Extensions.Options;
 
-using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Domain.Constants;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Features.ExternalLogin;
+using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Infrastructure.Options;
 
 namespace Vaultly.Identity.Infrastructure.ExternalServices;

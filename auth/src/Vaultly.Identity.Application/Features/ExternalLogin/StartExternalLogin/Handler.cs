@@ -5,12 +5,11 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.OAuthStates;
+using Vaultly.Identity.Domain.SignInMethods;
 
 namespace Vaultly.Identity.Application.Features.ExternalLogin.StartExternalLogin;
 
@@ -24,7 +23,7 @@ public sealed class StartExternalLoginHandler(
     IEnumerable<IExternalOAuthProvider> providers,
     ISignInSettingsRepository signInSettingsRepository,
     ITokenGenerator tokenGenerator,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger) : ICommandHandler<StartExternalLoginCommand, string>
 {
@@ -34,7 +33,7 @@ public sealed class StartExternalLoginHandler(
     private readonly IReadOnlyDictionary<ProviderId, IExternalOAuthProvider> _providers = providers.ToDictionary(x => x.Id);
     private readonly ISignInSettingsRepository _signInSettingsRepository = signInSettingsRepository;
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<StartExternalLoginHandler>();
 
@@ -43,7 +42,7 @@ public sealed class StartExternalLoginHandler(
         var provider = OAuthFlowUtilities.GetProvider(_providers, new ProviderId(request.ProviderId));
         await SignInMethodGuard.EnsureUsableAsync(provider, _signInSettingsRepository, cancellationToken);
 
-        var now = _clock.UtcNow;
+        var now = _clock.GetUtcNow();
 
         // The login UI may be reopened from history: only a pending request can start a provider login.
         var authorizationRequest = await _authorizationRequestRepository.GetByIdAsync(

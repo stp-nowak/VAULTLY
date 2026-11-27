@@ -11,17 +11,19 @@ using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Features.Authorization.ExchangeAuthCode;
 using Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;
 using Vaultly.Identity.Application.Features.Authorization.StartAuthorization;
+using Vaultly.Identity.Application.Features.ExternalLogin;
 using Vaultly.Identity.Application.Features.ExternalLogin.HandleOAuthCallback;
 using Vaultly.Identity.Application.Features.ExternalLogin.StartExternalLogin;
 using Vaultly.Identity.Application.Features.Sessions.EndSession;
 using Vaultly.Identity.Application.Features.Sessions.RefreshSession;
-using Vaultly.Identity.Application.Interfaces.ReadServices;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
+using Vaultly.Identity.Application.Features.SignInMethods;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.OAuthStates;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Tests;
 
@@ -390,12 +392,7 @@ public sealed class IdentityUseCaseHandlerTests
     private static Session CreateSession()
         => Session.Create(UserId.New(), new AuthMethod("google"), null, null, new TokenHash("hash:sso-token"), Now.AddHours(-1), Now.AddHours(11));
 
-    private static IClock Clock()
-    {
-        var clock = new Mock<IClock>();
-        clock.SetupGet(x => x.UtcNow).Returns(Now);
-        return clock.Object;
-    }
+    private static TimeProvider Clock() => new FixedTime(Now);
 
     private static ILogger Logger() => new LoggerConfiguration().CreateLogger();
 

@@ -5,13 +5,14 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Exceptions;
-using Vaultly.Identity.Domain.ValueObjects;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain;
+using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Features.Passwords.SignInWithPassword;
 
@@ -24,7 +25,7 @@ public sealed class SignInWithPasswordHandler(
     IPasswordHasher passwordHasher,
     ITokenGenerator tokenGenerator,
     ITokenHasher tokenHasher,
-    IClock clock,
+    TimeProvider clock,
     IOptions<IdentityOptions> identityOptions,
     ILogger logger) : ICommandHandler<SignInWithPasswordCommand, AuthCallbackResult>
 {
@@ -36,7 +37,7 @@ public sealed class SignInWithPasswordHandler(
     private readonly IPasswordHasher _passwordHasher = passwordHasher;
     private readonly ITokenGenerator _tokenGenerator = tokenGenerator;
     private readonly ITokenHasher _tokenHasher = tokenHasher;
-    private readonly IClock _clock = clock;
+    private readonly TimeProvider _clock = clock;
     private readonly IdentityOptions _identityOptions = identityOptions.Value;
     private readonly ILogger _logger = logger.ForContext<SignInWithPasswordHandler>();
 
@@ -44,7 +45,7 @@ public sealed class SignInWithPasswordHandler(
     {
         await SignInMethodGuard.EnsurePasswordUsableAsync(_signInSettingsRepository, cancellationToken);
 
-        var now = _clock.UtcNow;
+        var now = _clock.GetUtcNow();
         var authorizationRequest = await _authorizationRequestRepository.GetByIdAsync(
             AuthorizationRequestId.From(request.AuthorizationRequestId),
             cancellationToken) ?? throw new AuthorizationRequestNotFoundException();

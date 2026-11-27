@@ -3,8 +3,7 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
-using Vaultly.Identity.Application.Interfaces.Repositories;
-using Vaultly.Identity.Domain.Aggregates;
+using Vaultly.Identity.Domain.SignInMethods;
 
 namespace Vaultly.Identity.Application.Features.SignInMethods.SetSignInMethodEnabled;
 

@@ -1,8 +1,8 @@
-using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Entities;
+using Vaultly.Identity.Application.Security;
+using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Application.Common;
 
