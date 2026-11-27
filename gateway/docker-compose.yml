@@ -1,0 +1,25 @@
+# API gateway: the single entry to the domain services.
+#   docker compose -f gateway/docker-compose.yml up --build
+# Validating tokens needs the Identity service (../auth/docker-compose.yml).
+# Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
+name: vaultly
+
+services:
+  gateway:
+    container_name: vaultly-gateway
+    build:
+      context: src
+      additional_contexts:
+        identity-public-types: ../auth/src/Vaultly.Identity.PublicTypes
+    environment:
+      # Development: plain-http localhost setup (auto-generated internal token signing key).
+      ASPNETCORE_ENVIRONMENT: Development
+      # Tokens name the browser-facing issuer (localhost:5096); this container fetches the keys by service name.
+      UserTokens__JwksUrl: http://identity-api:8080/.well-known/jwks.json
+    ports:
+      - "127.0.0.1:5000:8080"
+    volumes:
+      - gateway-keys:/app/.secrets
+
+volumes:
+  gateway-keys:
