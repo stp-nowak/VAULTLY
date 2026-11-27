@@ -5,7 +5,8 @@ using NUnit.Framework;
 using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;
-using Vaultly.Identity.Application.Models;
+using Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;
+using Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Tests;

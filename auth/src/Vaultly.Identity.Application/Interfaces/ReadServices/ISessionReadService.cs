@@ -1,4 +1,5 @@
-using Vaultly.Identity.Application.Models;
+
+using Vaultly.Identity.Application.Features.Sessions.GetSessions;
 
 namespace Vaultly.Identity.Application.Interfaces.ReadServices;
 

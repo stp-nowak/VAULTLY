@@ -11,9 +11,9 @@ using NUnit.Framework;
 using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;
-using Vaultly.Identity.Application.Commands.RegisterWithPassword;
-using Vaultly.Identity.Application.Commands.SignInWithPassword;
 using Vaultly.Identity.Application.Common;
+using Vaultly.Identity.Application.Features.Passwords.RegisterWithPassword;
+using Vaultly.Identity.Application.Features.Passwords.SignInWithPassword;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Domain.Exceptions;
 

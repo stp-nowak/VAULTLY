@@ -2,8 +2,8 @@ using MediatR;
 
 using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.ApiContracts;
-using Vaultly.Identity.Application.Commands.RevokeSession;
-using Vaultly.Identity.Application.Queries.GetSessions;
+using Vaultly.Identity.Application.Features.Sessions.GetSessions;
+using Vaultly.Identity.Application.Features.Sessions.RevokeSession;
 
 namespace Vaultly.Identity.Api.Endpoints;
 

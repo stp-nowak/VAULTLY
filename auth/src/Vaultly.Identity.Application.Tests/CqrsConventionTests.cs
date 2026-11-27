@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using MediatR;
 
@@ -30,14 +31,33 @@ public sealed class CqrsConventionTests
     }
 
     [Test]
-    public void Commands_LiveInCommandsNamespace_AndQueries_LiveInQueriesNamespace()
+    public void CommandsAndQueries_LiveInAFeatureUseCase_AndAreNamedAfterIt()
     {
         var misplaced = ConcreteTypes()
-            .Where(type => (IsCommand(type) && !InNamespace(type, "Commands")) || (IsQuery(type) && !InNamespace(type, "Queries")))
+            .Where(type => IsCommand(type) || IsQuery(type))
+            .Where(type => !InFeatureUseCase(type) || type.Name != UseCaseName(type) + (IsCommand(type) ? "Command" : "Query"))
             .Select(type => type.FullName)
             .ToList();
 
-        Assert.That(misplaced, Is.Empty);
+        Assert.That(misplaced, Is.Empty, "Use Features/<Area>/<UseCase>/ with a <UseCase>Command or <UseCase>Query.");
+    }
+
+    [Test]
+    public void UseCaseFolders_HoldAHandlerAndEitherACommandOrAQuery()
+    {
+        var featuresDirectory = Path.Combine(ApplicationSourceDirectory(), "Features");
+        var violations = Directory.GetDirectories(featuresDirectory)
+            .SelectMany(Directory.GetDirectories)
+            .Where(useCase =>
+            {
+                var hasCommand = File.Exists(Path.Combine(useCase, "Command.cs"));
+                var hasQuery = File.Exists(Path.Combine(useCase, "Query.cs"));
+                return hasCommand == hasQuery || !File.Exists(Path.Combine(useCase, "Handler.cs"));
+            })
+            .Select(useCase => Path.GetRelativePath(featuresDirectory, useCase))
+            .ToList();
+
+        Assert.That(violations, Is.Empty, "Each use case folder holds Handler.cs and exactly one of Command.cs and Query.cs.");
     }
 
     [Test]
@@ -62,8 +82,13 @@ public sealed class CqrsConventionTests
 
     private static bool IsQuery(Type type) => ImplementsOpenGeneric(type, typeof(IQuery<>));
 
-    private static bool InNamespace(Type type, string segment)
-        => type.Namespace?.Contains($".{segment}.", StringComparison.Ordinal) == true;
+    private static bool InFeatureUseCase(Type type)
+        => type.Namespace?.Split('.') is [.., "Features", _, _];
+
+    private static string UseCaseName(Type type) => type.Namespace!.Split('.')[^1];
+
+    private static string ApplicationSourceDirectory([CallerFilePath] string testFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", "Vaultly.Identity.Application"));
 
     private static bool IsWriteSideDependency(Type type)
         => type == typeof(IUnitOfWork)
