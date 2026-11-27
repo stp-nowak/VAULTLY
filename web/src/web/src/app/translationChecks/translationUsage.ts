@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { namespaces } from './resources';
+import { namespaces } from '../providers/i18n/resources';
 
-export const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+export const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const translationFile = /[\\/]i18n[\\/][a-z]{2}\.ts$/;
 const pluralSuffix = /_(zero|one|two|few|many|other)$/;
