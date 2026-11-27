@@ -7,3 +7,4 @@ export type { AuthContextValue, AuthState, AuthStatus } from './model/authContex
 export { AuthProvider } from './model/AuthProvider';
 export type { AuthSession, AuthUser, CurrentUser } from './model/types';
 export { SessionSummary } from './ui/SessionSummary';
+export { translations as identityTranslations } from './i18n';

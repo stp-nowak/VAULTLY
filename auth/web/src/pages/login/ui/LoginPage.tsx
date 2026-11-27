@@ -1,6 +1,7 @@
 import { getRouteApi } from '@tanstack/react-router';
 
 import { Card, CenteredScreen, Eyebrow } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import { SignInRequest } from './SignInRequest';
 
@@ -12,11 +13,12 @@ const loginRoute = getRouteApi('/login');
  */
 export function LoginPage() {
   const { request } = loginRoute.useSearch();
+  const { t } = useTranslation();
 
   return (
     <CenteredScreen>
       <Card aria-labelledby="sign-in-heading" size="hero">
-        <Eyebrow>Vaultly</Eyebrow>
+        <Eyebrow>{t('brand.name')}</Eyebrow>
         <SignInRequest requestId={request} />
       </Card>
     </CenteredScreen>

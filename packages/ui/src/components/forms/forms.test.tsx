@@ -37,7 +37,7 @@ describe('Select', () => {
 describe('SearchField', () => {
   it('searches for the trimmed term from the icon button inside the box, without a form', () => {
     const onSearch = vi.fn();
-    const { container } = render(<SearchField className="w-80" defaultValue="old" label="Search users" onSearch={onSearch} />);
+    const { container } = render(<SearchField className="w-80" defaultValue="old" label="Search users" onSearch={onSearch} submitLabel="Search" />);
 
     const box = screen.getByRole('searchbox', { name: 'Search users' });
     const button = screen.getByRole('button', { name: 'Search' });
@@ -56,7 +56,7 @@ describe('SearchField', () => {
     const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
     render(
       <form onSubmit={onSubmit}>
-        <SearchField defaultValue="grace" label="Search users" onSearch={onSearch} />
+        <SearchField defaultValue="grace" label="Search users" onSearch={onSearch} submitLabel="Search" />
       </form>,
     );
 

@@ -1,16 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { StatusNotice, type StatusTone } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import { authorizationRequestQueryOptions, resolveSignInState, type SignInNotice } from '@/domain/authorization-request';
 
 import { SignInOptions } from './SignInOptions';
 
-const notices: Record<SignInNotice, { text: string; tone: StatusTone }> = {
-  invalid: { text: 'This sign-in link is no longer valid. Go back to the app and try again.', tone: 'error' },
-  loadFailed: { text: "We couldn't load the sign-in page. Please try again.", tone: 'error' },
-  loading: { text: 'Loading…', tone: 'info' },
-  unavailable: { text: 'Signing in is not available right now. Please try again later.', tone: 'error' },
+type NoticeKey =
+  | 'common:states.loading'
+  | 'domain/authorization-request:invalidLink'
+  | 'notices.loadFailed'
+  | 'notices.unavailable';
+
+const notices: Record<SignInNotice, { key: NoticeKey; tone: StatusTone }> = {
+  invalid: { key: 'domain/authorization-request:invalidLink', tone: 'error' },
+  loadFailed: { key: 'notices.loadFailed', tone: 'error' },
+  loading: { key: 'common:states.loading', tone: 'info' },
+  unavailable: { key: 'notices.unavailable', tone: 'error' },
 };
 
 interface SignInRequestProps {
@@ -19,6 +26,7 @@ interface SignInRequestProps {
 
 /** Content of the sign-in card for one authorization request: the ways to sign in, or a notice why they are missing. */
 export function SignInRequest({ requestId }: SignInRequestProps) {
+  const { t } = useTranslation(['pages/login', 'domain/authorization-request', 'common']);
   const query = useQuery({ ...authorizationRequestQueryOptions(requestId ?? ''), enabled: requestId !== undefined });
   const state = resolveSignInState(requestId !== undefined, query);
 
@@ -26,11 +34,11 @@ export function SignInRequest({ requestId }: SignInRequestProps) {
     state.kind === 'ready'
       ? {
           body: <SignInOptions request={state.request} />,
-          heading: `Sign in to ${state.request.clientName}`,
+          heading: t('heading', { client: state.request.clientName }),
         }
       : {
-          body: <StatusNotice tone={notices[state.kind].tone}>{notices[state.kind].text}</StatusNotice>,
-          heading: 'Sign in',
+          body: <StatusNotice tone={notices[state.kind].tone}>{t(notices[state.kind].key)}</StatusNotice>,
+          heading: t('common:actions.signIn'),
         };
 
   return (

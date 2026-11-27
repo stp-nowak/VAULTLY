@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 
 import { SearchField, StatusNotice, type StatusTone } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import { usersQueryOptions } from '@/domain/user';
 
@@ -10,17 +11,18 @@ import { UsersTable } from './UsersTable';
 
 const usersRoute = getRouteApi('/admin/users');
 
-const notices: Record<UsersNotice, { text: string; tone: StatusTone }> = {
-  empty: { text: 'Nobody has signed in yet.', tone: 'info' },
-  loadFailed: { text: "We couldn't load the users. Please try again.", tone: 'error' },
-  loading: { text: 'Loading users…', tone: 'info' },
-  noMatches: { text: 'No user matches this search.', tone: 'info' },
+const noticeTones: Record<UsersNotice, StatusTone> = {
+  empty: 'info',
+  loadFailed: 'error',
+  loading: 'info',
+  noMatches: 'info',
 };
 
 const pageLink = 'rounded-full border border-line-strong px-4 py-2 text-sm aria-disabled:pointer-events-none aria-disabled:opacity-40';
 
 /** Admin console: everyone who has an account, with their role, sign-in methods and join date. */
 export function AdminUsersPage() {
+  const { t } = useTranslation(['pages/admin-users', 'common']);
   const { page = 1, search } = usersRoute.useSearch();
   const navigate = usersRoute.useNavigate();
   const query = useQuery(usersQueryOptions({ page, search }));
@@ -29,27 +31,26 @@ export function AdminUsersPage() {
   return (
     <div className="grid gap-8">
       <header className="flex flex-wrap items-end justify-between gap-6">
-        <h1 className="text-4xl">Users</h1>
+        <h1 className="text-4xl">{t('heading')}</h1>
         <SearchField
           className="w-full sm:w-80"
           defaultValue={search}
           key={search}
-          label="Search"
+          label={t('common:actions.search')}
           onSearch={(term) => void navigate({ search: { search: term || undefined } })}
-          placeholder="Email or name"
+          placeholder={t('searchPlaceholder')}
+          submitLabel={t('common:actions.search')}
         />
       </header>
 
       {view.kind === 'table' && (
-        <section aria-label="User list" className="grid gap-5">
+        <section aria-label={t('listLabel')} className="grid gap-5">
           <UsersTable users={view.page.items} />
-          <nav aria-label="Pages" className="flex items-center justify-between gap-4 text-sm text-muted">
-            <span>
-              {view.page.total} {view.page.total === 1 ? 'user' : 'users'} · page {view.page.page} of {view.pageCount}
-            </span>
+          <nav aria-label={t('pagesLabel')} className="flex items-center justify-between gap-4 text-sm text-muted">
+            <span>{t('summary', { count: view.page.total, page: String(view.page.page), pageCount: String(view.pageCount) })}</span>
             <span className="flex gap-2">
               <Link aria-disabled={view.page.page <= 1} className={pageLink} search={{ page: view.page.page - 1, search }} to="/admin/users">
-                Previous
+                {t('common:actions.previous')}
               </Link>
               <Link
                 aria-disabled={view.page.page >= view.pageCount}
@@ -57,13 +58,13 @@ export function AdminUsersPage() {
                 search={{ page: view.page.page + 1, search }}
                 to="/admin/users"
               >
-                Next
+                {t('common:actions.next')}
               </Link>
             </span>
           </nav>
         </section>
       )}
-      {view.kind !== 'table' && <StatusNotice tone={notices[view.kind].tone}>{notices[view.kind].text}</StatusNotice>}
+      {view.kind !== 'table' && <StatusNotice tone={noticeTones[view.kind]}>{t(`notices.${view.kind}`)}</StatusNotice>}
     </div>
   );
 }

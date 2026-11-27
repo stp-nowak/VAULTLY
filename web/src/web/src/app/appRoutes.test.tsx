@@ -13,7 +13,7 @@ vi.mock('@/shared/lib', async (importOriginal) => ({
   navigateToUrl: vi.fn(),
 }));
 
-const landingHeading = { level: 1, name: 'Know where every złoty goes.' };
+const landingHeading = { level: 1, name: 'Know where every coin goes.' };
 
 function signIn() {
   server.use(

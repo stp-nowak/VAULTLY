@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Switch } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import { signInSettingsQueryKeys, type SignInMethod } from '@/domain/sign-in-settings';
 
 import { setSignInMethodEnabled } from '../api/setSignInMethodEnabled';
-import { toggleErrorMessage } from '../model/toggleError';
+import { toggleErrorKey } from '../model/toggleError';
 
 interface SignInMethodSwitchProps {
   method: SignInMethod;
@@ -13,6 +14,7 @@ interface SignInMethodSwitchProps {
 
 /** Switches a sign-in method on or off right away. Methods this deployment is not set up for cannot be switched. */
 export function SignInMethodSwitch({ method }: SignInMethodSwitchProps) {
+  const { t } = useTranslation('features/toggle-sign-in-method');
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (enabled: boolean) => setSignInMethodEnabled(method.id, enabled),
@@ -29,7 +31,7 @@ export function SignInMethodSwitch({ method }: SignInMethodSwitchProps) {
       />
       {mutation.isError && (
         <p className="max-w-64 text-right text-sm text-danger" role="alert">
-          {toggleErrorMessage(mutation.error)}
+          {t(toggleErrorKey(mutation.error))}
         </p>
       )}
     </div>

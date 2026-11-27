@@ -226,6 +226,36 @@ export const Route = createFileRoute('/users/$userId')({
 
 ---
 
+## i18n (i18next + react-i18next)
+
+Every text shown in the UI (JSX text, `aria-label`, `label`, `placeholder`, `title`, notices, error messages,
+`document.title`) comes from translations; ESLint `i18next/no-literal-string` fails on literals in JSX.
+
+- **Slice texts**: `<layer>/<slice>/i18n/<lang>.ts` (one file per language, `en.ts` defines the keys) and
+  `i18n/index.ts` with `translations: Translations<typeof en> = { en, … }`; the slice's `index.ts` re-exports it as
+  `<slice>Translations`. Namespace = slice path (`'features/login'`, `'pages/landing'`), used as
+  `useTranslation('features/login')`.
+- **Generic texts** (actions such as Next/Search, field labels, loading states, generic errors, the brand) live once
+  in `shared/i18n/en.ts` (namespace `common`, `t('common:actions.next')`), never copied into slices. A text repeated
+  within one business context belongs to the lowest slice that owns it (e.g. a `domain` slice); a repeated action is
+  one `features` slice (component + its texts), not a `common` entry.
+- **Main file**: `app/providers/i18n/resources.ts` imports every slice's `translations` through its public API,
+  maps them to namespaces and splits them per language; `i18n.ts` initialises i18next (synchronously, bundled resources, language from
+  localStorage then the browser, `en` fallback) and keeps `<html lang>` and `document.title` in sync;
+  `i18next.d.ts` types `t()` keys for every slice.
+- Code outside components returns **translation keys**, not texts (`signInErrorKey(error)` → `t(key)`); lists of
+  items keep ids and translate in render (``t(`items.${id}.title`)``).
+- Interpolation `t('heading', { client })`, plurals with `count` (`summary_one` / `summary_other`), markup inside a
+  sentence with `<Trans components={{ action: <Link … /> }} />` (never `link`, `br` or another void HTML tag name). Dates and numbers use `Intl` with `useIntlLocale()`.
+- `features/switch-language` (`LanguageSelect`) is rendered in `RootLayout` once `supportedLanguages`
+  (`shared/i18n/languages.ts`) has more than one entry. A new language: add it to `supportedLanguages` / `intlLocales`; the compiler then
+  lists every `translations` (and `common`) still missing it — add `<lang>.ts` there.
+- Tests run in English: `vitest.setup.ts` initialises i18n, so no provider is needed in render helpers.
+- `translationUsage.test.ts` fails on English keys nothing uses. `pnpm --filter @vaultly/web i18n:where <ns:key>` lists
+  where a key (or every key under a prefix, e.g. `pages/landing:features`; no `ns:` = `common`) is used.
+
+---
+
 ## Code Quality
 
 - ESLint + `eslint-plugin-react-hooks` + `eslint-plugin-react-compiler` (React 19)

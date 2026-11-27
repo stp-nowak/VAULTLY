@@ -1,26 +1,24 @@
 import { Card, CenteredScreen, Eyebrow, StatusNotice } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
+import { toSignInError } from '../model/signInError';
 import { LoginButton } from './LoginButton';
-
-/** Error codes the web API puts on `/login?error=` when the OAuth callback fails. */
-const errorMessages: Record<string, string> = {
-  invalid_state: 'The sign-in attempt expired or was not started from this browser.',
-  login_failed: 'Something went wrong while signing you in.',
-};
 
 interface LoginPanelProps {
   error?: string;
   returnUrl?: string;
 }
 
-export function LoginPanel({ error = 'login_failed', returnUrl }: LoginPanelProps) {
+export function LoginPanel({ error, returnUrl }: LoginPanelProps) {
+  const { t } = useTranslation(['features/login', 'common']);
+
   return (
     <CenteredScreen>
       <Card size="hero">
-        <Eyebrow>Vaultly</Eyebrow>
-        <h1 className="text-3xl">Sign-in didn&apos;t complete.</h1>
-        <StatusNotice tone="error">{errorMessages[error] ?? errorMessages.login_failed}</StatusNotice>
-        <LoginButton returnUrl={returnUrl}>Try again</LoginButton>
+        <Eyebrow>{t('common:brand.name')}</Eyebrow>
+        <h1 className="text-3xl">{t('failedHeading')}</h1>
+        <StatusNotice tone="error">{t(`errors.${toSignInError(error)}`)}</StatusNotice>
+        <LoginButton returnUrl={returnUrl}>{t('common:actions.tryAgain')}</LoginButton>
       </Card>
     </CenteredScreen>
   );

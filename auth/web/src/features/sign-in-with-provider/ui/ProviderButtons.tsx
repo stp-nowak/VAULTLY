@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Button } from '@vaultly/ui';
+import { useTranslation } from 'react-i18next';
 
 import type { IdentityProvider } from '@/domain/authorization-request';
 import { navigateToUrl } from '@/shared/lib';
@@ -14,6 +15,7 @@ interface ProviderButtonsProps {
  * start URL); the buttons stay disabled meanwhile so the flow cannot be started twice.
  */
 export function ProviderButtons({ providers }: ProviderButtonsProps) {
+  const { t } = useTranslation('features/sign-in-with-provider');
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
 
   return (
@@ -27,7 +29,7 @@ export function ProviderButtons({ providers }: ProviderButtonsProps) {
             navigateToUrl(provider.startUrl);
           }}
         >
-          Continue with {provider.name}
+          {t('continueWith', { provider: provider.name })}
         </Button>
       ))}
     </div>

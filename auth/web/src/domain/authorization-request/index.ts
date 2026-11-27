@@ -8,3 +8,4 @@ export type { SignInFailure } from './lib/signInFailure';
 export { resolveSignInState } from './model/signInState';
 export type { SignInNotice, SignInState } from './model/signInState';
 export type { AuthorizationRequest, AuthorizationRequestStatus, IdentityProvider } from './model/types';
+export { translations as authorizationRequestTranslations } from './i18n';
