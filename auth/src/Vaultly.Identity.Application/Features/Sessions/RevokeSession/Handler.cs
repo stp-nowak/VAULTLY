@@ -1,9 +1,9 @@
 using Serilog;
 
 using Vaultly.Core;
+using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Domain.ValueObjects;
 
 namespace Vaultly.Identity.Application.Features.Sessions.RevokeSession;

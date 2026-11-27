@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using Serilog;
 
+using Vaultly.Core.Persistence;
 using Vaultly.Identity.Api.Configuration;
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;
@@ -80,7 +81,7 @@ var app = builder.Build();
 
 if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 {
-    await app.Services.MigrateIdentityDatabaseAsync();
+    await app.Services.MigrateDatabaseAsync<IdentityDbContext>();
 }
 
 if (!string.IsNullOrWhiteSpace(identityOptions.BootstrapAdmin.Email))

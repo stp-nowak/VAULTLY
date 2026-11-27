@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Vaultly.Identity.Application.Common;
+namespace Vaultly.Core;
 
 /// <summary>
 /// How enums are spelled outside the code — JSON, database columns, token claims, query strings: <c>snake_case</c> of

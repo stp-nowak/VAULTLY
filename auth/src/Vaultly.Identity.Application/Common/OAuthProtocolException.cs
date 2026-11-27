@@ -1,3 +1,5 @@
+using Vaultly.Core;
+
 namespace Vaultly.Identity.Application.Common;
 
 /// <summary>RFC 6749 error codes; spelled on the wire by <see cref="WireNames"/> (<c>invalid_grant</c>).</summary>

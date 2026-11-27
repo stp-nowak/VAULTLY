@@ -1,4 +1,4 @@
-using Vaultly.Identity.Application.Messaging;
+using Vaultly.Core.Messaging;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Features.Users.AssignUserRole;

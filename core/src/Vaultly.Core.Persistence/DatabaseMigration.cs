@@ -1,17 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Vaultly.Identity.Infrastructure.Persistence;
+namespace Vaultly.Core.Persistence;
 
-public static class IdentityDatabaseMigration
+public static class DatabaseMigration
 {
     /// <summary>
     /// Applies pending EF Core migrations. Meant for single-instance setups (local, Docker Compose); with several
     /// instances run the migrations as a separate deployment step instead.
     /// </summary>
-    public static async Task MigrateIdentityDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
+    public static async Task MigrateDatabaseAsync<TDbContext>(this IServiceProvider services, CancellationToken cancellationToken = default)
+        where TDbContext : DbContext
     {
         await using var scope = services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.MigrateAsync(cancellationToken);
+        await scope.ServiceProvider.GetRequiredService<TDbContext>().Database.MigrateAsync(cancellationToken);
     }
 }

@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace Vaultly.Identity.Application.Messaging;
+namespace Vaultly.Core.Messaging;
 
 /// <summary>
 /// Handles a query and returns a read model.

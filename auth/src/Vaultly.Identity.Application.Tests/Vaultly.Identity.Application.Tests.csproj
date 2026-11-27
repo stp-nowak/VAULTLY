@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Vaultly.Identity.Api\Vaultly.Identity.Api.csproj" />
     <ProjectReference Include="..\Vaultly.Identity.Application\Vaultly.Identity.Application.csproj" />
     <ProjectReference Include="..\Vaultly.Identity.Infrastructure\Vaultly.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="../../../core/src/Vaultly.Core.Testing/Vaultly.Core.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
