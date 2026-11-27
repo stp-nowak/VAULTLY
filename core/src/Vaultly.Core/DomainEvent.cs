@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace Vaultly.SharedKernel;
+namespace Vaultly.Core;
 
 public abstract record DomainEvent : INotification
 {
