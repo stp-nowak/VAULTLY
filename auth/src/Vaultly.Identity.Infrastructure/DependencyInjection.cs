@@ -39,7 +39,7 @@ public static class DependencyInjection
         services.AddHttpClient();
 
         services.AddDbContext<IdentityDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("IdentityDb")));
+            options.UsePostgres(configuration.GetConnectionString("IdentityDb")));
 
         services.AddScoped<IOAuthStateRepository, OAuthStateRepository>();
         services.AddScoped<IUserRepository, UserRepository>();

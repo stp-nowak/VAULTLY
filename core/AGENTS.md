@@ -8,7 +8,9 @@
     `IQueryHandler<..>`, MediatR underneath); `WireNames` (the `snake_case` spelling of enums outside the code).
     Pure C# (MediatR only), so a `Domain` project may reference it.
   - `Vaultly.Core.Persistence` — EF Core: `UnitOfWork<TDbContext>` (saves, then publishes the saved aggregates'
-    domain events), `MigrateDatabaseAsync<TDbContext>()`, `WireNameConverter<TEnum>` (enum columns as `WireNames`).
+    domain events), `MigrateDatabaseAsync<TDbContext>()`, `WireNameConverter<TEnum>` (enum columns as `WireNames`),
+    `UsePostgres(connectionString)` (every service registers its DbContext with it, never `UseNpgsql` directly: it
+    switches off Npgsql's GSS encryption attempt, which needs a Kerberos library the runtime images lack).
     Only `Infrastructure` projects reference it.
   - `Vaultly.Core.Authentication` — `AddInternalTokenAuthentication`: a service accepts only the internal tokens the
     gateway (`./gateway`) issued for it (issuer = gateway, audience = the service's cluster id, keys from the
