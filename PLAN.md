@@ -158,7 +158,7 @@
            │                  PG     PG     PG     PG   Redis   PG
           PG                                             +PG   +Stripe
            └──────────────── RabbitMQ (integration events) ─────────┘
-           every domain service builds on ./core (Vaultly.Core, Vaultly.Core.Authentication)
+           every domain service builds on ./core (Vaultly.Core, .Persistence, .Authentication)
 ```
 
 **Repository layout**
@@ -171,7 +171,7 @@
   whose audience is the called service. Planned: instant session revocation and plan-based feature gates/rate limits.
 - `./core` — `Vaultly.Core` (DDD building blocks) and `Vaultly.Core.Authentication` (internal token validation),
   referenced by every domain service.
-- Domain services — one top-level folder each, named after what it does (`./bank-sync`, `./transactions`,
+- Domain services — one top-level folder each, named after what it does (`./accounts`, `./bank-sync`, `./transactions`,
   `./budgets`, `./goals`, `./alerts`, `./billing`, `./admin`); each is a bounded context in **tactical DDD + CQRS**
   (`Domain` / `Application` with `Features/<Area>/<UseCase>` commands and queries / `Infrastructure` / `Api`), with its own solution, compose
   file, CI workflow and database. Never a generic `./backend`.
@@ -185,7 +185,8 @@
 |---|---|---|
 | **Identity** (`./auth`) | Auth, users, sessions, 2FA | Postgres |
 | **Gateway** (`./gateway`) | Single entry, token validation, internal tokens, routing; later revocation, plan gates, rate limits | Redis (planned) |
-| **Bank Sync** (`./bank-sync`) | Plaid/TrueLayer connection, webhooks, account balances | Postgres |
+| **Accounts** (`./accounts`) | The user's financial accounts (manual first), balances, net worth per currency; balances change through Transactions' events | Postgres |
+| **Bank Sync** (`./bank-sync`) | Plaid/TrueLayer connection, webhooks; feeds linked accounts and their balances to Accounts | Postgres |
 | **Transactions** (`./transactions`) | Transaction store, categorization, search, enrichment | Postgres |
 | **Budgets** (`./budgets`) | Budget rules, consumption tracking, rollover | Postgres |
 | **Goals** (`./goals`) | Savings goals, contributions, progress | Postgres |
@@ -208,7 +209,7 @@
 - Docker Compose — all service containers, Postgres instances, RabbitMQ, Redis
 - YARP API Gateway (`./gateway`): access token validation, routing config, internal tokens per service ✅
 - One solution per service (`auth/src/Vaultly.Auth.slnx`, `gateway/src/Vaultly.Gateway.slnx`, `core/src/Vaultly.Core.slnx`, one per domain service)
-- Shared projects: `Vaultly.Identity.PublicTypes` ✅, `Vaultly.Identity.ApiContracts` ✅, `Vaultly.Core` + `Vaultly.Core.Authentication` ✅, later RabbitMQ base, middleware
+- Shared projects: `Vaultly.Identity.PublicTypes` ✅, `Vaultly.Identity.ApiContracts` ✅, `Vaultly.Core` (+ CQRS messaging) + `Vaultly.Core.Persistence` + `Vaultly.Core.Authentication` + `Vaultly.Core.Testing` ✅, later RabbitMQ base, middleware
 - CI pipeline (GitHub Actions — build + test on PR)
 
 **Identity Service**
@@ -235,6 +236,11 @@
 ### 🟠 Phase 2 — Bank Connection & Transactions (Weeks 4–7)
 *Goal: Real (sandbox) bank connected, transactions flowing in*
 
+**Accounts Service** (`./accounts`)
+- Manual accounts: open with type, currency and opening balance, rename, close, list ✅
+- Net worth per currency ✅
+- Balance changes through manual transactions (Transactions events over RabbitMQ), balance history
+
 **Bank Sync Service**
 - Plaid sandbox setup (or TrueLayer for EU)
 - Connect bank account flow (OAuth handshake)
@@ -242,10 +248,10 @@
 - Fetch accounts + balances on connect
 - Initial transaction backfill (last 90 days)
 - Webhook receiver — real-time transaction updates
-- Manual account creation (cash accounts)
 - Disconnect account flow
 
 **Transaction Service**
+- Manual transactions on manual accounts; Accounts updates the balance from their events
 - Transaction ingestion from Bank Sync (via RabbitMQ)
 - Auto-categorization engine (rule-based first, then improvable)
 - Merchant name enrichment

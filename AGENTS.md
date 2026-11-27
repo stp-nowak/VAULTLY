@@ -12,8 +12,10 @@ Mono repo:
     API models, used by the web API), the only projects other services may reference
 - `./gateway` `Vaultly.Gateway` (C#, YARP) — single entry to the domain services: validates Identity access tokens,
   routes by path, gives each service its own short-lived internal token
-- `./core` `Vaultly.Core` (DDD building blocks) and `Vaultly.Core.Authentication` (internal token validation) —
-  projects every domain service and the identity service build on
+- `./core` — projects every domain service and the identity service build on: `Vaultly.Core` (DDD building blocks,
+  CQRS messaging, `WireNames`), `Vaultly.Core.Persistence` (EF Core unit of work, migrations), `Vaultly.Core.Authentication`
+  (internal token validation), `Vaultly.Core.Testing` (CQRS convention tests, test gateway)
+- `./accounts` `Vaultly.Accounts` — the user's financial accounts, balances and net worth (first domain service)
 - Domain services (Accounts, Transactions, Budgets, …): one top-level folder per service, named after what it does
   (e.g. `./accounts`), never a generic `backend` — tactical DDD + CQRS (C#), rules in `./core/AGENTS.md`
 - `./infra` Docker Compose for infrastructure shared by several services (RabbitMQ)
@@ -48,12 +50,12 @@ Mono repo:
 - When doing any changes in web app read `./web/AGENTS.md` and then `./web/src/web/AGENTS.md` (SPA) or `./web/src/api/AGENTS.md` (web API)
 - When doing any changes in the shared UI package read `./packages/ui/AGENTS.md`
 - When doing any changes in the gateway read `./gateway/AGENTS.md`
-- When doing any changes in core or a domain service read `./core/AGENTS.md`
+- When doing any changes in core or a domain service read `./core/AGENTS.md` (accounts: also `./accounts/AGENTS.md`)
 - When doing any changes in auth service read `./auth/AGENTS.md` (login UI: `./auth/web/AGENTS.md`)
 - When preparing a commit, read `./.claude/skills/proper-commit/SKILL.md`
 - Docker (usage in `./README.md`):
-  - one `Dockerfile` per deployable, next to its code (`auth/src`, `auth/web`, `gateway/src`, `web/src/api`, `web/src/web`) — never one image for an API and its SPA
-  - one `docker-compose.yml` per service (`auth/`, `gateway/`, `web/`, later one per domain service) with only what that service alone needs (its apps, its database/cache)
+  - one `Dockerfile` per deployable, next to its code (`auth/src`, `auth/web`, `gateway/src`, `accounts/src`, `web/src/api`, `web/src/web`) — never one image for an API and its SPA
+  - one `docker-compose.yml` per service (`auth/`, `gateway/`, `accounts/`, `web/`, one per domain service) with only what that service alone needs (its apps, its database/cache)
   - anything used by several services goes to `infra/docker-compose.yml`; the root `docker-compose.yml` only `include`s the others
   - every compose file keeps `name: vaultly` (one shared network) and gives each service a `container_name: vaultly-<service>`
-- CI: one workflow per project in `.github/workflows/` (ui, web-spa, web-api, auth, auth-web, gateway, core), each triggered only by changes in its paths; they run in parallel. A workflow whose project has a `Dockerfile` also builds that image (`image` job, no push)
+- CI: one workflow per project in `.github/workflows/` (ui, web-spa, web-api, auth, auth-web, gateway, core, accounts), each triggered only by changes in its paths; they run in parallel. A workflow whose project has a `Dockerfile` also builds that image (`image` job, no push)

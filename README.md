@@ -7,8 +7,10 @@ Personal Finance &amp; Budget Intelligence Platform
 - `web/` - web app: `src/web` React SPA (Feature-Sliced Design with a `domain` layer) + `src/api` C# web API (backend-for-frontend, session cookie, tokens in Redis)
 - `auth/` - standalone identity/auth service (OAuth 2.0/OIDC, SSO), tactical DDD + CQRS, with its own login UI in `auth/web`; owns `Vaultly.Identity.PublicTypes` and `Vaultly.Identity.ApiContracts`, the projects other services reference
 - `gateway/` - API gateway (YARP): single entry to the domain services, validates Identity tokens, issues internal tokens per service
-- `core/` - `Vaultly.Core` and `Vaultly.Core.Authentication`, referenced by the domain services
-- domain services (tactical DDD + CQRS) will each get their own top-level folder named after what they do
+- `core/` - `Vaultly.Core`, `Vaultly.Core.Persistence`, `Vaultly.Core.Authentication` and `Vaultly.Core.Testing`,
+  referenced by the domain services and the identity service
+- `accounts/` - accounts service: the user's financial accounts, balances and net worth
+- every domain service (tactical DDD + CQRS) has its own top-level folder named after what it does
 
 ## Run with Docker
 
@@ -28,7 +30,8 @@ Each service has its own compose file with only what that service alone needs, s
 |---|---|---|
 | `docker compose -f auth/docker-compose.yml up --build` | Identity API, login UI, Identity Postgres | 5096, 5174, 5432 |
 | `docker compose -f web/docker-compose.yml up --build` | web SPA, web API, its Redis | 5173, 5180, 6379 |
-| `docker compose -f gateway/docker-compose.yml up --build` | API gateway (no domain service routed yet) | 5000 |
+| `docker compose -f gateway/docker-compose.yml up --build` | API gateway | 5000 |
+| `docker compose -f accounts/docker-compose.yml up --build` | Accounts API, Accounts Postgres | 5101, 5433 |
 | `docker compose -f infra/docker-compose.yml up` | shared infrastructure: RabbitMQ (`vaultly` / `vaultly`) | 5672, 15672 (management UI) |
 
 - All files belong to one Compose project (`vaultly`), so whatever combination runs shares a network. Starting one
@@ -38,8 +41,8 @@ Each service has its own compose file with only what that service alone needs, s
   databases, Redis and RabbitMQ from Docker.
 - The app containers call each other by container name, so an app run from the IDE is invisible to them: its
   callers have to run locally too (stop their containers first). Identity API from the IDE → also run the login UI
-  and the web API and gateway locally; gateway from the IDE → also run the web API locally; web API from the IDE → also
-  run the SPA locally.
+  and the web API and gateway locally; a domain service from the IDE → also run the gateway locally; gateway from the IDE → also run
+  the web API locally; web API from the IDE → also run the SPA locally.
 - The SPA containers are nginx: they serve the built app and proxy the API paths to the API container, the same
   job the Vite dev server does in development.
 - `docker compose down` stops everything; add `--volumes` to also drop the databases, Redis data and the
