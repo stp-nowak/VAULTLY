@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Entities;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
 

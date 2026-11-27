@@ -1,5 +1,5 @@
 using Vaultly.Identity.Domain.Entities;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Events;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.ValueObjects;

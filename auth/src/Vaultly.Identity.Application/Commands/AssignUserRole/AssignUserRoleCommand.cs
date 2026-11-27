@@ -1,5 +1,5 @@
 using Vaultly.Identity.Application.Messaging;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Commands.AssignUserRole;
 

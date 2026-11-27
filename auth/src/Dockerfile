@@ -8,6 +8,8 @@ COPY Vaultly.Identity.Application/Vaultly.Identity.Application.csproj Vaultly.Id
 COPY Vaultly.Identity.Domain/Vaultly.Identity.Domain.csproj Vaultly.Identity.Domain/
 COPY Vaultly.Identity.Infrastructure/Vaultly.Identity.Infrastructure.csproj Vaultly.Identity.Infrastructure/
 COPY Vaultly.Identity.SharedKernel/Vaultly.Identity.SharedKernel.csproj Vaultly.Identity.SharedKernel/
+COPY Vaultly.Identity.PublicTypes/Vaultly.Identity.PublicTypes.csproj Vaultly.Identity.PublicTypes/
+COPY Vaultly.Identity.ApiContracts/Vaultly.Identity.ApiContracts.csproj Vaultly.Identity.ApiContracts/
 RUN dotnet restore Vaultly.Identity.Api/Vaultly.Identity.Api.csproj
 COPY . .
 RUN dotnet publish Vaultly.Identity.Api/Vaultly.Identity.Api.csproj --configuration Release --no-restore --output /app/publish

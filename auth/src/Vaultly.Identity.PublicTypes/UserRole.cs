@@ -1,4 +1,4 @@
-namespace Vaultly.Identity.Domain.Enums;
+namespace Vaultly.Identity.PublicTypes;
 
 /// <summary>
 /// What a user may do in the Identity service: every user signs in to client apps; an admin also manages users

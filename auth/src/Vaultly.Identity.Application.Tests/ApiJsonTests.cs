@@ -6,7 +6,7 @@ using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Models;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Tests;
 

@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="Vaultly.Identity.Api/Vaultly.Identity.Api.csproj" />
+    <Project Path="Vaultly.Identity.ApiContracts/Vaultly.Identity.ApiContracts.csproj" />
     <Project Path="Vaultly.Identity.Application/Vaultly.Identity.Application.csproj" />
+    <Project Path="Vaultly.Identity.PublicTypes/Vaultly.Identity.PublicTypes.csproj" />
     <Project Path="Vaultly.Identity.Domain/Vaultly.Identity.Domain.csproj" />
     <Project Path="Vaultly.Identity.Infrastructure/Vaultly.Identity.Infrastructure.csproj" />
     <Project Path="Vaultly.Identity.SharedKernel/Vaultly.Identity.SharedKernel.csproj" />

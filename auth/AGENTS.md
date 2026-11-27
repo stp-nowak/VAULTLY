@@ -6,12 +6,21 @@ sign-ins skip the login page, and clients exchange codes for tokens server-to-se
 Client-facing flow: `./docs/auth-flow.md`. Login UI guidance: `./web/AGENTS.md`.
 
 ## Independence
-- This service is **completely separate** from `./backend`: own solution (`src/Vaultly.Auth.slnx`), own
-  shared kernel (`Vaultly.Identity.SharedKernel`), own database, own deployment.
-- Never add a project reference, shared file or shared database to/from `./backend`.
+- This service is **completely separate** from the gateway, `./core` and the domain services: own solution
+  (`src/Vaultly.Auth.slnx`), own shared kernel (`Vaultly.Identity.SharedKernel`), own database, own deployment.
+- Never add a shared file or shared database, or a project reference to/from another service other than to
+  `PublicTypes`/`ApiContracts` below.
   Integration with other services happens only through:
-  - JWTs validated by consumers via `/.well-known/openid-configuration` and `/.well-known/jwks.json`,
-  - integration events on the message bus (contracts are duplicated as DTOs by consumers, not shared assemblies).
+  - JWTs validated by consumers via `/.well-known/jwks.json` (today only the gateway; services get its tokens),
+  - the `Vaultly.Identity.PublicTypes` project: token claim names (`IdentityClaims`) and `UserRole`, referenced by
+    the gateway and `./core`. The domain uses the same `UserRole`, so there is one enum. A change here (e.g. a new
+    role) changes every consumer: build and test them in the same change,
+  - the `Vaultly.Identity.ApiContracts` project: request/response models of `/token`, `/revoke` and `/sessions`
+    (`TokenRequestFields`, `GrantType`, `TokenResponse`, `SessionsResponse`, …) for API clients such as the web API.
+    The endpoints serialize these very types, so a change here is a change of the API. `PublicTypes` holds shared
+    types, not HTTP payloads,
+  - both reference no other project, so other services can depend on them without ever creating a cycle,
+  - integration events on the message bus (planned).
 
 - The API never serves the login UI (no static files, no `index.html` fallback). `./web` is hosted by its own web
   server (nginx image), which proxies the API paths so UI and API share one origin; the API only knows the UI's
@@ -77,10 +86,12 @@ auth/
 ├── web/                                    # Login UI (React SPA, @vaultly/auth-web) — hosted by its own web server, never by the API
 └── src/
     ├── Vaultly.Auth.slnx
+    ├── Vaultly.Identity.PublicTypes/       # referenced by other services: IdentityClaims, UserRole
+    ├── Vaultly.Identity.ApiContracts/      # referenced by API clients: token/revoke/sessions models, GrantType
     ├── Vaultly.Identity.SharedKernel/      # AggregateRoot, DomainEvent, DomainException, IUnitOfWork
     ├── Vaultly.Identity.Domain/            # Tactical DDD: Aggregates (User + role, Session + SSO, OAuthState,
     │                                       #   AuthorizationRequest for a client or the console, SignInSettings), Entities (AuthCode
-    │                                       #   bound to client/PKCE), ValueObjects, Enums (UserRole), Events, Exceptions,
+    │                                       #   bound to client/PKCE), ValueObjects, Events, Exceptions,
     │                                       #   Constants, Services (RoleAssignment)
     ├── Vaultly.Identity.Application/       # CQRS
     │   ├── Messaging/                      #   ICommand, IQuery, ICommandHandler, IQueryHandler
@@ -99,7 +110,7 @@ auth/
     ├── Vaultly.Identity.Api/               # Minimal API → ISender; Program.cs is only the composition root
     │   ├── Endpoints/                      #   one static class per area with Map<Area>Endpoints (OAuth, Password,
     │   │                                   #   Admin, Session, Discovery); IdentityEndpoints maps them all
-    │   ├── Contracts/                      #   wire-only types: ApiError, GrantType, SignInErrorCode
+    │   ├── Contracts/                      #   wire-only types of the login UI API: ApiError, SignInErrorCode
     │   ├── Http/                           #   HTTP plumbing: ApiJson, CsrfHeaderFilter, SsoCookie, claims, EndpointErrorHandler
     │   └── Configuration/                  #   .env loading, JWT signing key
     ├── Vaultly.Identity.Domain.Tests/
@@ -107,8 +118,8 @@ auth/
 ```
 
 ## Architecture rules: tactical DDD + CQRS
-- Read and follow the `ddd` skill (`src/.claude/skills/ddd/SKILL.md`) for every new or refactored C# file.
-- Dependency rule: `Domain → SharedKernel`, `Application → Domain`, `Infrastructure → Application + Domain`,
+- Read and follow the `ddd` skill (`/.claude/skills/ddd/SKILL.md` at the repository root) for every new or refactored C# file.
+- Dependency rule: `Domain → SharedKernel + PublicTypes`, `Application → Domain`, `Infrastructure → Application + Domain`,
   `Api → Application + Infrastructure` (composition root only).
 - All invariants live in aggregates/value objects; handlers only orchestrate.
 - **Commands** (`ICommand`/`ICommand<T>`): imperative names, load aggregates via repositories, persist via
