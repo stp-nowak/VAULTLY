@@ -23,12 +23,15 @@ services:
     container_name: vaultly-web-api
     build:
       context: src/api
+      additional_contexts:
+        identity-api-contracts: ../auth/src/Vaultly.Identity.ApiContracts
     environment:
       # Development: plain-http localhost setup (session cookies without the __Host- prefix).
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Redis: web-redis:6379
       # Browsers reach Identity on localhost:5096 (Auth:IdentityBaseUrl); this container reaches it by service name.
       Auth__IdentityInternalBaseUrl: http://identity-api:8080
+      Web__GatewayBaseUrl: http://gateway:8080
     ports:
       - "127.0.0.1:5180:8080"
     depends_on:

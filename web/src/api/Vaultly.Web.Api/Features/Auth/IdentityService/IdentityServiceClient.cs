@@ -2,9 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using Microsoft.Extensions.Options;
+
+using Vaultly.Identity.ApiContracts;
 
 namespace Vaultly.Web.Api.Features.Auth.IdentityService;
 
@@ -25,10 +26,10 @@ public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOp
     {
         using var response = await PostFormAsync("token", new Dictionary<string, string>
         {
-            ["grant_type"] = "authorization_code",
-            ["code"] = code,
-            ["code_verifier"] = codeVerifier,
-            ["redirect_uri"] = redirectUri,
+            [TokenRequestFields.GrantType] = WireName.Of(GrantType.AuthorizationCode),
+            [TokenRequestFields.Code] = code,
+            [TokenRequestFields.CodeVerifier] = codeVerifier,
+            [TokenRequestFields.RedirectUri] = redirectUri,
         }, cancellationToken);
 
         EnsureSuccess(response, "exchange authorization code");
@@ -40,8 +41,8 @@ public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOp
     {
         using var response = await PostFormAsync("token", new Dictionary<string, string>
         {
-            ["grant_type"] = "refresh_token",
-            ["refresh_token"] = refreshToken,
+            [TokenRequestFields.GrantType] = WireName.Of(GrantType.RefreshToken),
+            [TokenRequestFields.RefreshToken] = refreshToken,
         }, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -58,15 +59,15 @@ public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOp
     {
         using var response = await PostFormAsync("revoke", new Dictionary<string, string>
         {
-            ["token"] = refreshToken,
-            ["token_type_hint"] = "refresh_token",
+            [TokenRequestFields.Token] = refreshToken,
+            [TokenRequestFields.TokenTypeHint] = WireName.Of(TokenTypeHint.RefreshToken),
         }, cancellationToken);
 
         EnsureSuccess(response, "revoke token");
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<IdentitySession>> GetSessionsAsync(string accessToken, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<SessionResponse>> GetSessionsAsync(string accessToken, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "sessions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -96,8 +97,8 @@ public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOp
 
     private Task<HttpResponseMessage> PostFormAsync(string path, Dictionary<string, string> form, CancellationToken cancellationToken)
     {
-        form["client_id"] = _options.ClientId;
-        form["client_secret"] = _options.ClientSecret;
+        form[TokenRequestFields.ClientId] = _options.ClientId;
+        form[TokenRequestFields.ClientSecret] = _options.ClientSecret;
         return _httpClient.PostAsync(path, new FormUrlEncodedContent(form), cancellationToken);
     }
 
@@ -113,7 +114,7 @@ public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOp
             body.RefreshToken,
             now.AddSeconds(body.RefreshExpiresIn),
             body.SessionId,
-            body.User);
+            new AuthenticatedUser(body.User.Id, body.User.Email, body.User.Name));
     }
 
     private static void EnsureSuccess(HttpResponseMessage response, string operation)
@@ -126,14 +127,4 @@ public sealed class IdentityServiceClient(HttpClient httpClient, IOptions<AuthOp
                 $"Identity service failed to {operation} (HTTP {(int)response.StatusCode}).");
         }
     }
-
-    private sealed record TokenResponse(
-        [property: JsonPropertyName("access_token")] string AccessToken,
-        [property: JsonPropertyName("expires_in")] int ExpiresIn,
-        [property: JsonPropertyName("refresh_token")] string RefreshToken,
-        [property: JsonPropertyName("refresh_expires_in")] int RefreshExpiresIn,
-        [property: JsonPropertyName("session_id")] Guid SessionId,
-        [property: JsonPropertyName("user")] AuthenticatedUser User);
-
-    private sealed record SessionsResponse(IReadOnlyList<IdentitySession> Sessions);
 }

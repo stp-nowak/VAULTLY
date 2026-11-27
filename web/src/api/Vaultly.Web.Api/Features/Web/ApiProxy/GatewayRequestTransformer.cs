@@ -9,10 +9,10 @@ using Yarp.ReverseProxy.Forwarder;
 namespace Vaultly.Web.Api.Features.Web.ApiProxy;
 
 /// <summary>
-/// Turns a browser request into a backend request: strips the <c>/api</c> prefix, drops browser-only credentials
+/// Turns a browser request into a gateway request: strips the <c>/api</c> prefix, drops browser-only credentials
 /// (cookies, CSRF header) and authenticates with the session's access token.
 /// </summary>
-public sealed class BackendApiTransformer(string accessToken) : HttpTransformer
+public sealed class GatewayRequestTransformer(string accessToken) : HttpTransformer
 {
     /// <summary>Path prefix handled by the proxy.</summary>
     public static readonly PathString ApiPrefix = new("/api");
@@ -31,7 +31,7 @@ public sealed class BackendApiTransformer(string accessToken) : HttpTransformer
         var path = httpContext.Request.Path.StartsWithSegments(ApiPrefix, out var remaining) ? remaining : httpContext.Request.Path;
         proxyRequest.RequestUri = RequestUtilities.MakeDestinationAddress(destinationPrefix, path, httpContext.Request.QueryString);
 
-        // The session cookie is a credential for this API only; the backend must never see it.
+        // The session cookie is a credential for this API only; the gateway must never see it.
         proxyRequest.Headers.Remove(HeaderNames.Cookie);
         proxyRequest.Headers.Remove(CsrfHeaderMiddleware.HeaderName);
         proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);

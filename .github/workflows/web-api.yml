@@ -6,11 +6,13 @@ on:
   pull_request:
     paths:
       - 'web/src/api/**'
+      - 'auth/src/Vaultly.Identity.ApiContracts/**'
       - '.github/workflows/web-api.yml'
   push:
     branches: [main]
     paths:
       - 'web/src/api/**'
+      - 'auth/src/Vaultly.Identity.ApiContracts/**'
       - '.github/workflows/web-api.yml'
   workflow_dispatch:
 
@@ -46,4 +48,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build web/src/api
+      - run: docker build --build-context identity-api-contracts=auth/src/Vaultly.Identity.ApiContracts web/src/api

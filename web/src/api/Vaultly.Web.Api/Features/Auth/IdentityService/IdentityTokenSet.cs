@@ -17,18 +17,6 @@ public sealed record IdentityTokenSet(
     AuthenticatedUser User);
 
 /// <summary>
-/// Session listed by the Identity service <c>GET /sessions</c> endpoint.
-/// </summary>
-public sealed record IdentitySession(
-    Guid Id,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset LastUsedAt,
-    string? UserAgent,
-    string? IpAddress,
-    bool IsRevoked,
-    bool IsCurrent);
-
-/// <summary>
 /// Raised when the Identity service answers with an unexpected status code.
 /// </summary>
 public sealed class IdentityServiceException(int statusCode, string message) : Exception(message)

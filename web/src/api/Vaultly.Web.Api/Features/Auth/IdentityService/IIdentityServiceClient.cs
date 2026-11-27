@@ -1,3 +1,5 @@
+using Vaultly.Identity.ApiContracts;
+
 namespace Vaultly.Web.Api.Features.Auth.IdentityService;
 
 /// <summary>
@@ -14,7 +16,7 @@ public interface IIdentityServiceClient
     /// <summary>Revokes the refresh token, which ends the Identity session.</summary>
     Task RevokeAsync(string refreshToken, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<IdentitySession>> GetSessionsAsync(string accessToken, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionResponse>> GetSessionsAsync(string accessToken, CancellationToken cancellationToken);
 
     /// <summary>Returns <c>false</c> when the session does not exist.</summary>
     Task<bool> RevokeSessionAsync(string accessToken, Guid sessionId, CancellationToken cancellationToken);
