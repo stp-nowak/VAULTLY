@@ -191,12 +191,12 @@ public sealed class AuthEndpointsTests
         var (_, sessionCookie) = await LoginAndCallbackAsync("/app");
 
         var response = await SendAsync(HttpMethod.Get, "/api/budgets/42?month=2026-11", sessionCookie);
-        var forwarded = _factory.Backend.Requests.Single();
+        var forwarded = _factory.Gateway.Requests.Single();
 
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(forwarded.RequestUri!.ToString(), Is.EqualTo("https://backend.test/budgets/42?month=2026-11"));
+            Assert.That(forwarded.RequestUri!.ToString(), Is.EqualTo("https://gateway.test/budgets/42?month=2026-11"));
             Assert.That(forwarded.Headers.Authorization?.ToString(), Is.EqualTo("Bearer access-1"));
             Assert.That(forwarded.Headers.Contains("Cookie"), Is.False);
         });
@@ -210,7 +210,7 @@ public sealed class AuthEndpointsTests
         Assert.Multiple(() =>
         {
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-            Assert.That(_factory.Backend.Requests, Is.Empty);
+            Assert.That(_factory.Gateway.Requests, Is.Empty);
         });
     }
 

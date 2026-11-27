@@ -1,7 +1,7 @@
 # Vaultly.Web.Api
 
 Server-side part of the web app (backend-for-frontend pattern): owns the browser session and talks to the Identity
-service and the backend on the user's behalf. See `../../AGENTS.md` for the security model.
+service and the API gateway (`./gateway`) on the user's behalf. See `../../AGENTS.md` for the security model.
 
 ## Commands
 - from `web/src/api`: `dotnet build Vaultly.Web.Api.slnx` — build
@@ -21,12 +21,12 @@ Vaultly.Web.Api/
     │   ├── AuthFeature.cs       #   DI + endpoint registration of the feature
     │   ├── AuthEndpoints.cs     #   /api/auth/{login,callback,user,sessions,logout}
     │   ├── AuthOptions.cs       #   section "Auth"
-    │   ├── IdentityService/     #   HTTP client of ./auth (/token, /revoke with client secret, /sessions)
+    │   ├── IdentityService/     #   HTTP client of ./auth (/token, /revoke with client secret, /sessions); payloads from Vaultly.Identity.ApiContracts
     │   └── Sessions/            #   WebSession, IWebSessionStore (Redis), cookies, UserSessionService, refresh lock
     └── Web/                     # Everything else the SPA needs
         ├── WebFeature.cs        #   DI + endpoint registration
         ├── WebOptions.cs        #   section "Web"
-        └── ApiProxy/            #   /api/{**path} → backend gateway via YARP, bearer from the session
+        └── ApiProxy/            #   /api/{**path} → API gateway (./gateway) via YARP, bearer from the session
 ```
 
 ## Rules
@@ -36,10 +36,14 @@ Vaultly.Web.Api/
 - Only `Common/` may be shared by several features, and it must not contain feature logic.
 - This API never serves the SPA (no static files, no `index.html` fallback): the SPA is hosted by its own web
   server (`../web/Dockerfile`, nginx), which proxies `/api` here so both share one origin.
-- No DDD layering here — this is an application edge, not a bounded context. Domain rules live in `./backend`/`./auth`.
+- No DDD layering here — this is an application edge, not a bounded context. Domain rules live in the domain services and `./auth`.
 - Tokens never leave the server: never return them in responses, never put them in cookies, never log them.
   Session ids are bearer credentials too — never log them (log `AuthSessionId`/`UserId` instead).
 - Every `/api` endpoint requires `X-CSRF: 1`; opt out only for top-level GET navigations (`AllowWithoutCsrfHeader`).
+- Requests to and responses from the Identity API use `Vaultly.Identity.ApiContracts` (project reference to
+  `../../../auth`; the Docker image gets it as the named build context `identity-api-contracts`); never redeclare its
+  payloads or spell its form fields here. Map them to this API's own models (`IdentityTokenSet`, `AuthenticatedUser`)
+  where they are stored or returned to the SPA.
 - New config goes into the owning feature's options class with data-annotation validation (`ValidateOnStart`).
 - C#: latest language version, `net10.0`, nullable enabled, primary constructors, minimal comments (root rule),
   Serilog for logging, NUnit + Moq tests (integration tests via `WebApiFactory`, Redis replaced by memory cache).

@@ -6,7 +6,7 @@ using Vaultly.Web.Api.Features.Auth;
 using Vaultly.Web.Api.Features.Web;
 
 // Backend-for-frontend of the Vaultly web app: the browser holds only an HttpOnly session cookie, this API keeps
-// the Identity tokens in Redis and calls the backend on the user's behalf.
+// the Identity tokens in Redis and calls the gateway on the user's behalf.
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()

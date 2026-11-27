@@ -27,15 +27,15 @@ internal sealed class WebApiFactory : WebApplicationFactory<Program>
     /// <summary>Mock of the Identity service client used by every request.</summary>
     public Mock<IIdentityServiceClient> Identity { get; } = new(MockBehavior.Strict);
 
-    /// <summary>Captures requests forwarded to the backend.</summary>
-    public RecordingHandler Backend { get; } = new(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true}") });
+    /// <summary>Captures requests forwarded to the gateway.</summary>
+    public RecordingHandler Gateway { get; } = new(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true}") });
 
     /// <inheritdoc />
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(PlatformServiceCollectionExtensions.TestingEnvironment);
         builder.UseSetting("ConnectionStrings:Redis", string.Empty);
-        builder.UseSetting("Web:BackendApiBaseUrl", "https://backend.test");
+        builder.UseSetting("Web:GatewayBaseUrl", "https://gateway.test");
         builder.UseSetting("Auth:ClientSecret", "test-secret");
 
         builder.ConfigureTestServices(services =>
@@ -46,8 +46,8 @@ internal sealed class WebApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<IDataProtectionProvider>(new EphemeralDataProtectionProvider());
             services.RemoveAll<IIdentityServiceClient>();
             services.AddSingleton(Identity.Object);
-            services.RemoveAll<BackendHttpClient>();
-            services.AddSingleton(new BackendHttpClient(new HttpMessageInvoker(Backend)));
+            services.RemoveAll<GatewayHttpClient>();
+            services.AddSingleton(new GatewayHttpClient(new HttpMessageInvoker(Gateway)));
         });
     }
 

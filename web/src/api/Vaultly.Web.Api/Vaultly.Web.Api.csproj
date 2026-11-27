@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Request/response models of the Identity API, owned by ./auth. -->
+    <ProjectReference Include="../../../../auth/src/Vaultly.Identity.ApiContracts/Vaultly.Identity.ApiContracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Vaultly.Web.Api.Tests" />
   </ItemGroup>
 </Project>
