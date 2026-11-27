@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace Vaultly.Identity.Application.Messaging;
+namespace Vaultly.Core.Messaging;
 
 /// <summary>
 /// Marks a request that changes state (write side of CQRS) and returns no value.

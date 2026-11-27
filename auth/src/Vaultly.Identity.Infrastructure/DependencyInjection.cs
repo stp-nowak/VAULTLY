@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Vaultly.Core;
+using Vaultly.Core.Persistence;
 using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
@@ -34,7 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IAuthorizationRequestRepository, AuthorizationRequestRepository>();
         services.AddScoped<ISignInSettingsRepository, SignInSettingsRepository>();
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUnitOfWork, UnitOfWork<IdentityDbContext>>();
 
         // Read side (CQRS): query handlers depend on read services, never on repositories.
         services.AddScoped<ISessionReadService, SessionReadService>();

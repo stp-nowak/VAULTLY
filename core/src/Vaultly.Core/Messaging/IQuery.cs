@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace Vaultly.Identity.Application.Messaging;
+namespace Vaultly.Core.Messaging;
 
 /// <summary>
 /// Marks a side-effect free request (read side of CQRS). Queries never load aggregates

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using Vaultly.Identity.Application.Common;
+using Vaultly.Core;
 
 namespace Vaultly.Identity.Api.Http;
 

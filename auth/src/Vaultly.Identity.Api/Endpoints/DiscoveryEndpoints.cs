@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 
+using Vaultly.Core;
 using Vaultly.Identity.ApiContracts;
-using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Options;
 

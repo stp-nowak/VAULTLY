@@ -8,7 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Vaultly.Identity.Domain\Vaultly.Identity.Domain.csproj" />
     <ProjectReference Include="..\Vaultly.Identity.Application\Vaultly.Identity.Application.csproj" />
-    <ProjectReference Include="../../../core/src/Vaultly.Core/Vaultly.Core.csproj" />
+    <ProjectReference Include="../../../core/src/Vaultly.Core.Persistence/Vaultly.Core.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

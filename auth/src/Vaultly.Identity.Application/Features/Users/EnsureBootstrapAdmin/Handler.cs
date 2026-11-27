@@ -3,9 +3,9 @@ using Microsoft.Extensions.Options;
 using Serilog;
 
 using Vaultly.Core;
+using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Interfaces.Repositories;
 using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Services;

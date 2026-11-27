@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Vaultly.Core;
-using Vaultly.Identity.Application.Common;
+using Vaultly.Core.Persistence;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Entities;
 using Vaultly.Identity.Domain.ValueObjects;
@@ -47,7 +47,7 @@ public sealed class IdentityDbContext : DbContext
                 .HasMaxLength(PersonName.MaxLength)
                 .IsRequired();
             entity.Property(x => x.Role)
-                .HasConversion(role => WireNames.Of(role), value => WireNames.Parse<UserRole>(value))
+                .HasConversion(new WireNameConverter<UserRole>())
                 .HasMaxLength(RoleMaxLength)
                 .IsRequired();
             entity.Ignore(x => x.IsAdmin);

@@ -1,7 +1,7 @@
+using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Domain.Constants;
 using Vaultly.Identity.Domain.ValueObjects;
 

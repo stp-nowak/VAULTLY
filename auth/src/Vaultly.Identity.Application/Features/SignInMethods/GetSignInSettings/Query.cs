@@ -1,4 +1,4 @@
-using Vaultly.Identity.Application.Messaging;
+using Vaultly.Core.Messaging;
 
 namespace Vaultly.Identity.Application.Features.SignInMethods.GetSignInSettings;
 

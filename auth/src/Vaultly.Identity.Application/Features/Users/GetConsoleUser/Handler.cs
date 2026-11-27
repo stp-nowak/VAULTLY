@@ -1,6 +1,6 @@
+using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Interfaces.ReadServices;
 using Vaultly.Identity.Application.Interfaces.Services;
-using Vaultly.Identity.Application.Messaging;
 
 namespace Vaultly.Identity.Application.Features.Users.GetConsoleUser;
 

@@ -1,4 +1,4 @@
-using Vaultly.Identity.Application.Messaging;
+using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Models;
 
 namespace Vaultly.Identity.Application.Features.Passwords.SignInWithPassword;

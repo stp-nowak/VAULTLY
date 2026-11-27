@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace Vaultly.Identity.Application.Messaging;
+namespace Vaultly.Core.Messaging;
 
 /// <summary>
 /// Handles a command without a result. Wrapping MediatR keeps handlers explicit about
