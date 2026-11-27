@@ -38,7 +38,9 @@
   the aggregate, its entities, value objects, enums, events, exceptions and its repository port
   (`I<Aggregate>Repository`), one type per file. A type several concepts use sits with the concept that owns it;
   only domain-wide basics (e.g. `InvalidValueException`) sit in the project root. No `Aggregates/`, `ValueObjects/`,
-  `Events/`, `Exceptions/` folders.
+  `Events/`, `Exceptions/` folders. When an aggregate folder grows, its parts get sub-folders by sub-concept — an
+  entity with its id, value objects, exceptions and events (`Sessions/RefreshTokens/`, `Users/Passwords/`) — while
+  the root, its id, repository and own events stay at the top. A separate aggregate is never nested.
 - **Application** (CQRS):
   - Commands and queries implement the markers from `Vaultly.Core.Messaging`.
   - `Features/<Area>/<UseCase>/` — `Handler.cs` plus `Command.cs` (write side: repositories + `IUnitOfWork`) or
@@ -50,8 +52,12 @@
     the area do, in the area that owns the concept when other areas use it too, and in a folder named after what it
     does when no area owns it (e.g. `Security/`). Read ports are `I<Thing>ReadService`; write ports are the
     domain's repositories.
-- **Infrastructure**: EF Core repositories (tracked aggregates), read services (`AsNoTracking` projections), messaging,
-  external clients; `UnitOfWork<TDbContext>` and `WireNameConverter` from `Vaultly.Core.Persistence`.
+- **Infrastructure**: grouped by the same domain concepts as the Domain — `Accounts/` holds `AccountRepository`,
+  `AccountReadService` (`AsNoTracking` projections) and `AccountConfiguration` (its EF mapping,
+  `IEntityTypeConfiguration<Account>`); an external client sits with the concept it serves (`ExternalLogin/`).
+  `Persistence/` holds only what spans concepts: the DbContext (`ApplyConfigurationsFromAssembly`), its design-time
+  factory and the migrations. Never `Repositories/`, `ReadServices/`, `ExternalServices/`, `Options/` folders.
+  `UnitOfWork<TDbContext>` and `WireNameConverter` come from `Vaultly.Core.Persistence`.
 - **Api**: minimal API endpoints send commands/queries through `ISender`; composition root only; authentication via
   `Vaultly.Core.Authentication`. The service is reached only through the gateway (add its route and cluster to the
   gateway's `ReverseProxy` section; the cluster id is the service's `InternalTokens:Audience`).

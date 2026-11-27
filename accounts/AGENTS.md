@@ -57,7 +57,9 @@ accounts/src/
 │       ├── Accounts/                   # AccountDto, IAccountReadService, AccountNotFoundException (shared by the area);
 │       │                               #   OpenAccount, RenameAccount, CloseAccount, GetAccounts, GetAccount
 │       └── NetWorth/GetNetWorth/       # Query, Handler, CurrencyNetWorthDto, INetWorthReadService
-├── Vaultly.Accounts.Infrastructure/    # EF Core (Npgsql): AccountsDbContext, repository, read service, migrations
+├── Vaultly.Accounts.Infrastructure/    # EF Core (Npgsql)
+│   ├── Accounts/                       # AccountRepository, AccountReadService, AccountConfiguration
+│   └── Persistence/                    # AccountsDbContext, design-time factory, migrations
 ├── Vaultly.Accounts.Api/               # Minimal API → ISender; Endpoints/, Http/ (JSON, problems, health), Contracts/
 ├── Vaultly.Accounts.Domain.Tests/
 └── Vaultly.Accounts.Application.Tests/ # handlers, read service, migrations, CqrsConventionTests, API via TestGateway

@@ -65,11 +65,13 @@ ServiceName/
 ├── Domain/                         # Zero dependencies. Pure business logic only. Grouped by domain concept.
 │   ├── Orders/                     # One folder per aggregate, plural (a folder named like its class clashes with it)
 │   │   ├── Order.cs                #   aggregate root
-│   │   ├── OrderId.cs              #   value objects, entities, enums of this aggregate
-│   │   ├── OrderLine.cs
+│   │   ├── OrderId.cs              #   value objects, enums of this aggregate
 │   │   ├── OrderSubmitted.cs       #   its domain events
 │   │   ├── OrderAlreadySubmittedException.cs
-│   │   └── IOrderRepository.cs     #   its repository port
+│   │   ├── IOrderRepository.cs     #   its repository port
+│   │   └── Lines/                  #   a part of the aggregate with its own types gets a sub-folder
+│   │       ├── OrderLine.cs        #     (entity, its id, value objects, exceptions, events);
+│   │       └── OrderLineId.cs      #     a separate aggregate is never nested
 │   └── InvalidValueException.cs    # Only domain-wide basics sit in the root; no Aggregates/, ValueObjects/,
 │                                   #   Events/, Exceptions/ folders
 │
@@ -91,14 +93,15 @@ ServiceName/
 │   Features/Orders/IOrderReadService.cs), the owning area (used by other areas too), or a folder named after
 │   its function (nobody owns it). Write ports are the Domain's repositories.
 │
-├── Infrastructure/                 # Implements Application interfaces. Depends on Domain + Application.
-│   ├── Persistence/
-│   │   ├── DbContext.cs
-│   │   ├── Repositories/           # Implements IRepository interfaces from Application (tracked aggregates)
-│   │   ├── ReadServices/           # Implements read services (AsNoTracking projections to DTOs)
-│   │   └── Migrations/
-│   ├── Messaging/                  # RabbitMQ, Kafka publishers/consumers
-│   └── ExternalServices/           # Third-party API clients
+├── Infrastructure/                 # Implements the ports. Grouped by the Domain's concepts, like the Domain.
+│   ├── Orders/
+│   │   ├── OrderRepository.cs      #   tracked aggregates
+│   │   ├── OrderReadService.cs     #   AsNoTracking projections to DTOs
+│   │   └── OrderConfiguration.cs   #   EF mapping: IEntityTypeConfiguration<Order>
+│   ├── Payments/                   # a third-party client sits with the concept it serves
+│   └── Persistence/                # only what spans concepts: DbContext (ApplyConfigurationsFromAssembly),
+│                                   #   design-time factory, Migrations/ — no Repositories/, ReadServices/,
+│                                   #   ExternalServices/ folders
 │
 └── API/                            # Entry point. Wires everything together via DI.
     ├── Controllers/
@@ -109,7 +112,7 @@ ServiceName/
 ```
 Domain     → nothing
 Application → Domain
-Infrastructure → Domain + Application   (implements Application interfaces)
+Infrastructure → Domain + Application   (implements the Domain's repositories and the Application's ports)
 API        → Application + Infrastructure   (API must reference Infrastructure to register implementations in DI)
 ```
 
@@ -120,13 +123,12 @@ API        → Application + Infrastructure   (API must reference Infrastructure
 > are bound to implementations. Referencing Infrastructure from API does **not** mean controllers
 > use it directly; they only talk to Application (via MediatR commands/queries).
 
-> **Why do repository interfaces live in Application, not Domain?**
-> The Domain layer should contain nothing but pure business concepts: aggregates, value objects,
-> domain events, domain services, and domain exceptions. It must not know that persistence even
-> exists. It is the **Application layer** (use cases) that needs to load and save aggregates, so
-> it is the Application layer that defines the repository contracts (ports). Infrastructure then
-> provides the implementations (adapters). This follows the Ports & Adapters / Hexagonal Architecture
-> principle and is the approach used in Clean Architecture templates for .NET.
+> **Why do repository interfaces live in Domain, next to their aggregate?**
+> A repository is the domain's collection of an aggregate: it speaks only in aggregates and their
+> ids and knows no persistence technology. Keeping it beside the aggregate keeps everything about
+> that concept in one folder. Infrastructure provides the implementation (adapter), so the
+> dependency still points inward. Ports that serve only use cases (read services, gateways to other
+> systems) belong to the Application layer, next to the code that uses them.
 
 ---
 
