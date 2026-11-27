@@ -1,4 +1,4 @@
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Models;
 

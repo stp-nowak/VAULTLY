@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json.Serialization;
 
 using MediatR;
 
@@ -9,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Http;
+using Vaultly.Identity.ApiContracts;
 using Vaultly.Identity.Application.Commands.EndSession;
 using Vaultly.Identity.Application.Commands.ExchangeAuthCode;
 using Vaultly.Identity.Application.Commands.HandleOAuthCallback;
@@ -153,7 +153,7 @@ public static class OAuthEndpoints
 
         try
         {
-            if (!WireNames.TryParse<GrantType>(form["grant_type"].ToString(), out var grantType))
+            if (!WireNames.TryParse<GrantType>(form[TokenRequestFields.GrantType].ToString(), out var grantType))
             {
                 throw OAuthProtocolException.UnsupportedGrantType();
             }
@@ -161,15 +161,20 @@ public static class OAuthEndpoints
             TokenResult result = grantType switch
             {
                 GrantType.AuthorizationCode => await sender.Send(
-                    new ExchangeAuthCodeCommand(form["code"], clientId, clientSecret, form["redirect_uri"], form["code_verifier"]),
+                    new ExchangeAuthCodeCommand(
+                        form[TokenRequestFields.Code],
+                        clientId,
+                        clientSecret,
+                        form[TokenRequestFields.RedirectUri],
+                        form[TokenRequestFields.CodeVerifier]),
                     context.RequestAborted),
                 GrantType.RefreshToken => await sender.Send(
-                    new RefreshSessionCommand(form["refresh_token"], clientId, clientSecret),
+                    new RefreshSessionCommand(form[TokenRequestFields.RefreshToken], clientId, clientSecret),
                     context.RequestAborted),
                 _ => throw OAuthProtocolException.UnsupportedGrantType(),
             };
 
-            return Results.Ok(TokenResponse.From(result));
+            return Results.Ok(ToResponse(result));
         }
         catch (OAuthProtocolException ex)
         {
@@ -189,7 +194,7 @@ public static class OAuthEndpoints
 
         try
         {
-            await sender.Send(new RevokeTokenCommand(form["token"], clientId, clientSecret), context.RequestAborted);
+            await sender.Send(new RevokeTokenCommand(form[TokenRequestFields.Token], clientId, clientSecret), context.RequestAborted);
             return Results.Ok();
         }
         catch (OAuthProtocolException ex)
@@ -238,7 +243,7 @@ public static class OAuthEndpoints
             }
         }
 
-        return (form["client_id"].ToString(), form["client_secret"].ToString());
+        return (form[TokenRequestFields.ClientId].ToString(), form[TokenRequestFields.ClientSecret].ToString());
     }
 
     private static IResult OAuthErrorResponse(OAuthProtocolException ex)
@@ -260,16 +265,13 @@ public static class OAuthEndpoints
 
     private static ILogger Logger(ILoggerFactory loggerFactory) => loggerFactory.CreateLogger(typeof(OAuthEndpoints));
 
-    internal sealed record TokenResponse(
-        [property: JsonPropertyName("access_token")] string AccessToken,
-        [property: JsonPropertyName("token_type")] string TokenType,
-        [property: JsonPropertyName("expires_in")] int ExpiresIn,
-        [property: JsonPropertyName("refresh_token")] string RefreshToken,
-        [property: JsonPropertyName("refresh_expires_in")] int RefreshExpiresIn,
-        [property: JsonPropertyName("session_id")] Guid SessionId,
-        [property: JsonPropertyName("user")] AuthenticatedUserDto User)
-    {
-        public static TokenResponse From(TokenResult result)
-            => new(result.AccessToken, "Bearer", result.ExpiresInSeconds, result.RefreshToken, result.RefreshExpiresInSeconds, result.SessionId, result.User);
-    }
+    private static TokenResponse ToResponse(TokenResult result)
+        => new(
+            result.AccessToken,
+            TokenResponse.BearerTokenType,
+            result.ExpiresInSeconds,
+            result.RefreshToken,
+            result.RefreshExpiresInSeconds,
+            result.SessionId,
+            new UserResponse(result.User.Id, result.User.Email, result.User.Name));
 }

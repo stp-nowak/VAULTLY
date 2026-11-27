@@ -14,7 +14,7 @@ using Vaultly.Identity.Application.Commands.AssignUserRole;
 using Vaultly.Identity.Application.Commands.SetSignInMethodEnabled;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Application.Queries.GetConsoleUser;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Exceptions;
 
 namespace Vaultly.Identity.Application.Tests;

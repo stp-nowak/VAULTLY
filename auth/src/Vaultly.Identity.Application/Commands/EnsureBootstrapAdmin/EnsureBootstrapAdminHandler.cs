@@ -7,7 +7,7 @@ using Vaultly.Identity.Application.Interfaces.Services;
 using Vaultly.Identity.Application.Messaging;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Domain.Aggregates;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;

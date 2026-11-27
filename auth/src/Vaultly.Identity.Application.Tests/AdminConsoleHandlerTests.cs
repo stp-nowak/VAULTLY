@@ -21,7 +21,7 @@ using Vaultly.Identity.Application.Queries.GetConsoleUser;
 using Vaultly.Identity.Application.Queries.GetUsers;
 using Vaultly.Identity.Domain.Aggregates;
 using Vaultly.Identity.Domain.Constants;
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.Exceptions;
 using Vaultly.Identity.Domain.Services;
 using Vaultly.Identity.Domain.ValueObjects;

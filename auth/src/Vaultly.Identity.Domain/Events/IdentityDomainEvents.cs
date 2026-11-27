@@ -1,4 +1,4 @@
-using Vaultly.Identity.Domain.Enums;
+using Vaultly.Identity.PublicTypes;
 using Vaultly.Identity.Domain.ValueObjects;
 using Vaultly.Identity.SharedKernel;
 

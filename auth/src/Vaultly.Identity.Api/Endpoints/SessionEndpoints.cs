@@ -1,6 +1,7 @@
 using MediatR;
 
 using Vaultly.Identity.Api.Http;
+using Vaultly.Identity.ApiContracts;
 using Vaultly.Identity.Application.Commands.RevokeSession;
 using Vaultly.Identity.Application.Queries.GetSessions;
 
@@ -32,7 +33,14 @@ public static class SessionEndpoints
             }
 
             var sessions = await sender.Send(new GetSessionsQuery(userId.Value, currentSessionId.Value), httpContext.RequestAborted);
-            return Results.Ok(new { sessions });
+            return Results.Ok(new SessionsResponse([.. sessions.Select(session => new SessionResponse(
+                session.Id,
+                session.CreatedAt,
+                session.LastUsedAt,
+                session.UserAgent,
+                session.IpAddress,
+                session.IsRevoked,
+                session.IsCurrent))]));
         });
 
     internal static Task<IResult> RevokeSessionAsync(Guid id, HttpContext httpContext, ISender sender, EndpointErrorHandler errors)
