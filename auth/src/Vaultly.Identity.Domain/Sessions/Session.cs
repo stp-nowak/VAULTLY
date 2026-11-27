@@ -1,5 +1,8 @@
 using Vaultly.Core;
 using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
+using Vaultly.Identity.Domain.Sessions.AuthCodes;
+using Vaultly.Identity.Domain.Sessions.RefreshTokens;
 using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Domain.Sessions;

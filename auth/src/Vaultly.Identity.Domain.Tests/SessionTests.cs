@@ -2,6 +2,7 @@ using NUnit.Framework;
 
 
 using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Sessions.RefreshTokens;
 using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Domain.Tests;

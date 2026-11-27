@@ -1,3 +1,4 @@
+using Vaultly.Identity.Domain.Sessions.AuthCodes;
 using Vaultly.Identity.Domain.Users;
 
 namespace Vaultly.Identity.Domain.Sessions;

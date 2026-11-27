@@ -7,6 +7,8 @@ using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Security;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Passwords;
+using Vaultly.Identity.Domain.Users.Roles;
 using Vaultly.Identity.PublicTypes;
 
 namespace Vaultly.Identity.Application.Features.Users.EnsureBootstrapAdmin;

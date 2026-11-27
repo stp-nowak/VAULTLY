@@ -2,7 +2,7 @@ using Vaultly.Core.Messaging;
 using Vaultly.Identity.Application.Common;
 using Vaultly.Identity.Application.Features.ExternalLogin;
 using Vaultly.Identity.Application.Features.SignInMethods;
-using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 using Vaultly.Identity.Domain.SignInMethods;
 
 namespace Vaultly.Identity.Application.Features.Authorization.GetAuthorizationRequest;

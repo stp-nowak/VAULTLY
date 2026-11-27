@@ -5,7 +5,7 @@ using NUnit.Framework;
 using Vaultly.Identity.Domain.Sessions;
 using Vaultly.Identity.Domain.Users;
 using Vaultly.Identity.Infrastructure.Persistence;
-using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
+using Vaultly.Identity.Infrastructure.Sessions;
 
 namespace Vaultly.Identity.Application.Tests;
 

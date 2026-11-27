@@ -1,4 +1,4 @@
-using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Passwords;
 
 namespace Vaultly.Identity.Application.Security;
 

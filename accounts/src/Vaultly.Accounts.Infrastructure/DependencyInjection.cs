@@ -5,9 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Vaultly.Accounts.Application.Features.Accounts;
 using Vaultly.Accounts.Application.Features.NetWorth.GetNetWorth;
 using Vaultly.Accounts.Domain.Accounts;
+using Vaultly.Accounts.Infrastructure.Accounts;
 using Vaultly.Accounts.Infrastructure.Persistence;
-using Vaultly.Accounts.Infrastructure.Persistence.ReadServices;
-using Vaultly.Accounts.Infrastructure.Persistence.Repositories;
 using Vaultly.Core;
 using Vaultly.Core.Persistence;
 

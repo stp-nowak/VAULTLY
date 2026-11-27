@@ -1,4 +1,5 @@
 using Vaultly.Identity.Domain.SignInMethods;
+using Vaultly.Identity.Domain.Users.ExternalIdentities;
 
 namespace Vaultly.Identity.Domain.Users;
 

@@ -3,6 +3,7 @@ using Serilog;
 using Vaultly.Core;
 using Vaultly.Core.Messaging;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Roles;
 
 namespace Vaultly.Identity.Application.Features.Users.AssignUserRole;
 

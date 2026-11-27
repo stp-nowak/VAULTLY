@@ -10,7 +10,7 @@ using Vaultly.Identity.Application.Features.Passwords.SignInWithPassword;
 using Vaultly.Identity.Application.Models;
 using Vaultly.Identity.Domain;
 using Vaultly.Identity.Domain.AuthorizationRequests;
-using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Passwords;
 
 namespace Vaultly.Identity.Api.Endpoints;
 

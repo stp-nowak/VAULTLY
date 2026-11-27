@@ -20,10 +20,13 @@ using Vaultly.Identity.Application.Features.SignInMethods;
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Application.Security;
 using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 using Vaultly.Identity.Domain.OAuthStates;
 using Vaultly.Identity.Domain.Sessions;
+using Vaultly.Identity.Domain.Sessions.AuthCodes;
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.ExternalIdentities;
 
 namespace Vaultly.Identity.Application.Tests;
 

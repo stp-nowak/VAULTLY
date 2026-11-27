@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 using Vaultly.Identity.Application.Options;
 using Vaultly.Identity.Domain;
-using Vaultly.Identity.Domain.AuthorizationRequests;
+using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 
 namespace Vaultly.Identity.Application.Common;
 

@@ -13,6 +13,7 @@ using Vaultly.Identity.Domain.OAuthStates;
 using Vaultly.Identity.Domain.Sessions;
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.ExternalIdentities;
 
 namespace Vaultly.Identity.Application.Features.ExternalLogin.HandleOAuthCallback;
 

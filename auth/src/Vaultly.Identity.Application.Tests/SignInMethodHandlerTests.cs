@@ -20,8 +20,7 @@ using Vaultly.Identity.Domain.AuthorizationRequests;
 using Vaultly.Identity.Domain.OAuthStates;
 using Vaultly.Identity.Domain.SignInMethods;
 using Vaultly.Identity.Infrastructure.Persistence;
-using Vaultly.Identity.Infrastructure.Persistence.ReadServices;
-using Vaultly.Identity.Infrastructure.Persistence.Repositories;
+using Vaultly.Identity.Infrastructure.SignInMethods;
 
 namespace Vaultly.Identity.Application.Tests;
 

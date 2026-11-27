@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 
-
 using Vaultly.Identity.Application.Security;
-using Vaultly.Identity.Domain.Users;
+using Vaultly.Identity.Domain.Users.Passwords;
 
 namespace Vaultly.Identity.Infrastructure.Security;
 
