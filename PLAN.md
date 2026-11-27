@@ -144,41 +144,54 @@
             ┌──────────────▼───────────────┐
             │ ./web/src/api  Web API (BFF) │── Redis: tokens per session (encrypted)
             └──────┬────────────────┬──────┘
-                   │ OAuth code /   │ Bearer JWT
+                   │ OAuth code /   │ Bearer access token (Identity JWT)
                    │ refresh        │
 ┌──────────────────▼───┐   ┌────────▼────────────────────────────────────┐
-│ ./auth               │   │            API Gateway (YARP in C#)         │
-│ Identity Service     │   └───┬──────┬──────┬──────┬──────┬──────┬──────┘
-│ (standalone, own     │       │      │      │      │      │      │
-│  solution & kernel)  │     Bank  Trans- Budget  Goal  Alert  Billing   ./backend
-│ JWKS / OIDC discovery│     Sync  action  Svc    Svc    Svc    Svc
-└──────────┬───────────┘     Svc   Svc
-           │                   │      │      │      │      │      │
-          PG                  PG     PG     PG     PG   Redis   PG
-                                                         +PG   +Stripe
+│ ./auth               │   │ ./gateway  API Gateway (YARP in C#)         │── Redis (planned): revoked
+│ Identity Service     │◀──│ validates access token (JWKS), routes,      │   sessions, user plans
+│ (standalone, own     │   │ issues an internal token per service        │
+│  solution & kernel)  │   └───┬──────┬──────┬──────┬──────┬──────┬──────┘
+│ JWKS / OIDC discovery│       │      │      │      │      │      │   Bearer internal token
+│ Vaultly.Identity.    │     Bank  Trans- Budgets Goals Alerts Billing  (aud = that service)
+│ PublicTypes          │     Sync  actions
+└──────────┬───────────┘       │      │      │      │      │      │
+           │                  PG     PG     PG     PG   Redis   PG
+          PG                                             +PG   +Stripe
            └──────────────── RabbitMQ (integration events) ─────────┘
+           every domain service builds on ./core (Vaultly.Core, Vaultly.Core.Authentication)
 ```
 
 **Repository layout**
 - `./web` — web app. `src/web`: React SPA, Feature-Sliced Design with a `domain` layer instead of `entities`
-  (one `domain/<context>` slice per backend bounded context, e.g. `domain/identity` ↔ `./auth`).
+  (one `domain/<context>` slice per service's bounded context, e.g. `domain/identity` ↔ `./auth`).
   `src/api`: C# web API (backend-for-frontend) — browser gets only an HttpOnly session cookie, tokens live in Redis,
   `/api/*` is forwarded to the gateway with the session's bearer token.
-- `./backend` — domain microservices; each is a bounded context in **tactical DDD + CQRS**
-  (`Domain` / `Application` with `Commands` + `Queries` / `Infrastructure` / `Api`).
-- `./auth` — Identity service, **completely separate** from `./backend` (own solution, shared kernel, DB),
-  same tactical DDD + CQRS rules. Backend services only validate its JWTs via JWKS and consume its events.
+- `./gateway` — API gateway (YARP): the only entry to the domain services. Validates Identity's access tokens, applies
+  route policies (signed in / admin / anonymous for webhooks), forwards each request with a short-lived internal token
+  whose audience is the called service. Planned: instant session revocation and plan-based feature gates/rate limits.
+- `./core` — `Vaultly.Core` (DDD building blocks) and `Vaultly.Core.Authentication` (internal token validation),
+  referenced by every domain service.
+- Domain services — one top-level folder each, named after what it does (`./bank-sync`, `./transactions`,
+  `./budgets`, `./goals`, `./alerts`, `./billing`, `./admin`); each is a bounded context in **tactical DDD + CQRS**
+  (`Domain` / `Application` with `Commands` + `Queries` / `Infrastructure` / `Api`), with its own solution, compose
+  file, CI workflow and database. Never a generic `./backend`.
+- `./auth` — Identity service, **completely separate** (own solution, shared kernel, DB), same tactical DDD + CQRS
+  rules. Owns `Vaultly.Identity.PublicTypes` (claims, `UserRole`, later its integration events) and
+  `Vaultly.Identity.ApiContracts` (its HTTP API models).
+- Code shared between services lives in one project owned by one service (`PublicTypes`, `ApiContracts`) and is
+  referenced, never copied; it would become NuGet packages only if the repository were split.
 
 | Service | Responsibility | DB |
 |---|---|---|
 | **Identity** (`./auth`) | Auth, users, sessions, 2FA | Postgres |
-| **Bank Sync** | Plaid/TrueLayer connection, webhooks, account balances | Postgres |
-| **Transaction** | Transaction store, categorization, search, enrichment | Postgres |
-| **Budget** | Budget rules, consumption tracking, rollover | Postgres |
-| **Goal** | Savings goals, contributions, progress | Postgres |
-| **Alert** | Rules engine, notification delivery, digests | Postgres + Redis |
-| **Billing** | Stripe subscriptions, feature gating, webhooks | Postgres |
-| **Admin** | Platform oversight, reads via events | Postgres |
+| **Gateway** (`./gateway`) | Single entry, token validation, internal tokens, routing; later revocation, plan gates, rate limits | Redis (planned) |
+| **Bank Sync** (`./bank-sync`) | Plaid/TrueLayer connection, webhooks, account balances | Postgres |
+| **Transactions** (`./transactions`) | Transaction store, categorization, search, enrichment | Postgres |
+| **Budgets** (`./budgets`) | Budget rules, consumption tracking, rollover | Postgres |
+| **Goals** (`./goals`) | Savings goals, contributions, progress | Postgres |
+| **Alerts** (`./alerts`) | Rules engine, notification delivery, digests | Postgres + Redis |
+| **Billing** (`./billing`) | Stripe subscriptions, plans, webhooks | Postgres |
+| **Admin** (`./admin`) | Platform oversight, reads via events | Postgres |
 
 ---
 
@@ -186,16 +199,16 @@
 
 ---
 
-**Important**: Backend (`./backend`) and auth (`./auth`) follow tactical DDD with CQRS. Frontend follows Feature-Sliced Design with a `domain` layer instead of `entities`.
+**Important**: Domain services and auth (`./auth`) follow tactical DDD with CQRS. Frontend follows Feature-Sliced Design with a `domain` layer instead of `entities`.
 
 ### 🔴 Phase 1 — Foundation (Weeks 1–3)
 *Goal: Docker running, auth solid, user can register*
 
 **Infrastructure**
 - Docker Compose — all service containers, Postgres instances, RabbitMQ, Redis
-- YARP API Gateway with routing config
-- Backend C# solution (`backend/src/Vaultly.slnx`, one project set per service) + separate auth solution (`auth/src/Vaultly.Auth.slnx`)
-- Shared NuGet packages (JWT helpers, RabbitMQ base, middleware)
+- YARP API Gateway (`./gateway`): access token validation, routing config, internal tokens per service ✅
+- One solution per service (`auth/src/Vaultly.Auth.slnx`, `gateway/src/Vaultly.Gateway.slnx`, `core/src/Vaultly.Core.slnx`, one per domain service)
+- Shared projects: `Vaultly.Identity.PublicTypes` ✅, `Vaultly.Identity.ApiContracts` ✅, `Vaultly.Core` + `Vaultly.Core.Authentication` ✅, later RabbitMQ base, middleware
 - CI pipeline (GitHub Actions — build + test on PR)
 
 **Identity Service**
@@ -319,7 +332,7 @@
 - Stripe subscription setup (Free / Pro / Annual)
 - Stripe billing portal integration
 - Webhook handler (subscription created, cancelled, payment failed)
-- Feature flag system tied to subscription tier
+- Feature flag system tied to subscription tier (gateway: user plan cached from Billing events, routes gated by plan)
 - Grace period logic on failed payment
 - Downgrade flow (data retained, features locked)
 
@@ -375,7 +388,8 @@
 **Cross-cutting**
 - Serilog + Seq for centralized logging
 - Health check endpoints per service
-- Rate limiting
+- Rate limiting (gateway, per user and plan)
+- Instant session revocation at the gateway (Identity session events → Redis)
 - GDPR data export endpoint
 - Full audit log
 - Admin panel — users, subscriptions, platform health

@@ -62,14 +62,14 @@ docs: add frontend agent guidance and skills (#3)
 - Use sentence-style lowercase wording after the prefix
 - Describe the outcome, not the implementation mechanics
 - Avoid trailing punctuation
-- Prefer a concrete scope such as `frontend`, `backend`, `identity service`, or `agent guidance`
+- Prefer a concrete scope such as `frontend`, `gateway`, `identity service`, or `agent guidance`; never the generic `backend`
 
 Good:
 
 ```text
 feat: add identity service with Google OAuth (#2)
 docs: add frontend agent guidance and skills (#3)
-chore: scaffold backend solution (#2)
+chore: scaffold gateway solution (#2)
 ```
 
 Less good:

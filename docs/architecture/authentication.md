@@ -28,26 +28,30 @@ flowchart LR
     end
 
     Google["Google<br/>(identity provider)"]
-    Backend["Backend gateway<br/>backend/"]
+    GW["API gateway<br/>gateway/"]
+    SVC["Domain services<br/>(Accounts, Budgets, …)"]
 
     SPA -- "same-origin /api/* + X-CSRF<br/>cookie: vaultly-session" --> BFF
     BFF --> Redis
     BFF -- "/token, /revoke (client secret)<br/>/sessions (bearer)" --> AUTH
-    BFF -- "Bearer access token" --> Backend
+    BFF -- "Bearer access token" --> GW
+    GW -- "Bearer internal token<br/>(aud = that service)" --> SVC
     AUI -- "/api/authorization-requests" --> AUTH
     AUTH --> ADB
     AUTH <-- "OAuth 2.0 + PKCE" --> Google
-    Backend -. "validates JWT via JWKS" .-> AUTH
+    GW -. "validates access token via JWKS" .-> AUTH
+    SVC -. "validate internal token via JWKS" .-> GW
 ```
 
 | Participant | Where | Responsibility |
 |---|---|---|
 | Web SPA | `web/src/web` | The app and its public landing page. Calls only same-origin `/api/*`. No sign-in screen, no tokens; sign-in starts only when the user clicks "Log in". |
-| Web API (BFF) | `web/src/api` | Confidential OIDC client `vaultly-web`. Owns the browser session, stores tokens in Redis, forwards API calls to the backend with a bearer token. |
+| Web API (BFF) | `web/src/api` | Confidential OIDC client `vaultly-web`. Owns the browser session, stores tokens in Redis, forwards API calls to the gateway with the access token. |
 | Auth service | `auth/src` | OAuth 2.0 / OIDC authorization server: `/authorize`, `/token`, `/revoke`, `/logout`, SSO session, JWT signing. |
 | Auth UI | `auth/web` | The auth service's own login pages (`/login`, `/error`, `/logged-out`) and admin console (`/admin`), hosted by their own web server, which proxies the auth API paths. |
 | Google | – | Identity provider used by the auth service. |
-| Backend gateway | `backend/` | Business APIs; trusts JWTs issued by the auth service. |
+| API gateway | `gateway/` | Single entry to the domain services: validates the auth service's access tokens, routes by path, replaces the access token with a short-lived internal token for the one service it calls. |
+| Domain services | one folder each | Business APIs; accept only internal tokens the gateway issued for them (`Vaultly.Core.Authentication`). |
 
 ## What is stored where
 
@@ -61,7 +65,8 @@ flowchart LR
 | `Session` | Identity DB | User sign-in = SSO session (12 h), owns auth codes and refresh tokens |
 | `AuthCode` | Identity DB | Hashed, single use, 2 min, bound to client + redirect URI + PKCE challenge |
 | `RefreshToken` | Identity DB | Hashed, rotated on every use, 30 days |
-| Access token | JWT (RS256) | 15 min, claims `sub` (user), `sid` (session), `role` (`user` or `admin`); validated with `/.well-known/jwks.json` |
+| Access token | JWT (RS256) | 15 min, claims `sub` (user), `sid` (session), `role` (`user` or `admin`), `email`, `name`, `amr`; `aud` `vaultly.api`; validated by the gateway with the auth service's `/.well-known/jwks.json`. Claim names and roles: `Vaultly.Identity.PublicTypes` |
+| Internal token | JWT (RS256), never leaves the server side | Issued by the gateway per forwarded request: `iss` gateway, `aud` = the called service, only `sub`, `sid`, `role`; at most 5 min and never past the access token's expiry; validated with the gateway's `/.well-known/jwks.json` |
 | User role | Identity DB | `user` (default) or `admin`; admins use the admin console. At least one admin always remains |
 | Password | Identity DB | Only a salted PBKDF2 hash, plus the count of failed sign-ins and the end of a lockout |
 | Sign-in settings | Identity DB | One row listing the sign-in methods admins switched off; every other method is on |
@@ -152,7 +157,8 @@ sequenceDiagram
     participant BFF as Web API (BFF)
     participant R as Redis
     participant A as Auth service
-    participant B as Backend gateway
+    participant G as API gateway
+    participant S as Domain service
 
     SPA->>BFF: GET /api/budgets (cookie vaultly-session, X-CSRF: 1)
     Note over BFF: missing X-CSRF header gives 400
@@ -173,13 +179,24 @@ sequenceDiagram
         Note over SPA: route guard returns to the landing page<br/>("Log in" is silent if SSO is still active)
     end
     opt session still active
-        BFF->>B: GET /budgets, Authorization: Bearer access token, no cookies
-        B-->>BFF: 200
+        BFF->>G: GET /budgets, Authorization: Bearer access token, no cookies
+        Note over G: validate access token (issuer, audience, signature, expiry)<br/>route policy (signed in / admin / anonymous)<br/>401/403 as problem details, nothing forwarded
+        G->>S: GET /budgets, Authorization: Bearer internal token (aud = budgets)
+        Note over S: accept only the gateway's tokens for this service
+        S-->>G: 200
+        G-->>BFF: 200
         BFF-->>SPA: 200 (streamed through YARP)
     end
 ```
 
 Reusing an already rotated refresh token is treated as theft: the auth service revokes the whole session.
+
+The gateway never forwards the access token: a service only ever holds a token whose audience is that service, so a
+leaked internal token is useless anywhere else and expires within minutes. Routes are configured in the gateway's
+`ReverseProxy` section; the cluster id of a route is the service's name and its tokens' audience. A route without an
+`AuthorizationPolicy` requires a signed-in user, `admin` requires the `admin` role, `anonymous` (for webhooks) lets
+anyone through and the service verifies the request itself. Revoking a session takes effect at the gateway only
+when the access token expires (at most 15 min); instant revocation is planned (session events → gateway).
 
 ## 4. Sign-out
 
@@ -349,7 +366,8 @@ stateDiagram-v2
 | Refresh token replay | Rotation on every use; reuse revokes the whole session | `RefreshSessionHandler` |
 | Redis dump | Keys are hashed session ids, payloads encrypted | `DistributedWebSessionStore` |
 | DB leak | Only hashes of codes, refresh tokens and SSO tokens are stored | Identity domain |
-| Token leakage to the backend | BFF strips cookies and the CSRF header before forwarding | `BackendApiTransformer` |
+| Token leakage to the services | BFF strips cookies and the CSRF header before forwarding; the gateway replaces the access token with an internal token for the one service it calls | `GatewayRequestTransformer`, `InternalTokens.AddInternalTokenTransform` |
+| A service reached with a token meant for another one | Internal tokens carry the called service as audience; services validate issuer, audience, signature and expiry | `InternalTokenIssuer`, `Vaultly.Core.Authentication` |
 
 ## What the user sees when something fails
 
@@ -380,9 +398,14 @@ stateDiagram-v2
 | `Auth:PublicOrigin` | web API | – | Callback and post-logout URLs are built from it |
 | `Auth:LoginTimeoutMinutes`, `Auth:AccessTokenRefreshSkewSeconds` | web API | 10, 60 | |
 | `ConnectionStrings:Redis` | web API | `localhost:6379` | Required outside Development |
+| `Web:GatewayBaseUrl` | web API | Development: `http://localhost:5000` | `/api/x` is forwarded to `{GatewayBaseUrl}/x`; Docker: `http://gateway:8080` |
+| `UserTokens:Issuer`, `UserTokens:Audience`, `UserTokens:JwksUrl` | gateway | Development: `http://localhost:5096`, `vaultly.api`, its JWKS | JWKS fetched directly (not via discovery, which names the browser-facing URL); Docker: `http://identity-api:8080/.well-known/jwks.json` |
+| `InternalTokens:Issuer`, `InternalTokens:LifetimeMinutes` | gateway | `vaultly-gateway`, 5 | |
+| `InternalTokens:SigningKeyPem` / `SigningKeyPemFilePath` | gateway | `.secrets/gateway-signing-key.pem` (auto-generated in Development) | Secret; never logged |
+| `InternalTokens:Issuer`, `InternalTokens:Audience`, `InternalTokens:JwksUrl` | domain service | – | The gateway's issuer, the service's cluster id, the gateway's `/.well-known/jwks.json` |
 | `Database:MigrateOnStartup` | auth | `false` (Development: `true`) | Applies EF Core migrations to the Identity DB on startup; single-instance setups only |
 
-Local development ports: web SPA 5173 (proxies `/api` to 5180), web API 5180, auth service 5096, auth UI 5174
+Local development ports: web SPA 5173 (proxies `/api` to 5180), web API 5180, gateway 5000, auth service 5096, auth UI 5174
 (proxies auth API paths to 5096). The Docker Compose stack (root `README.md`) uses the same ports and topology:
 nginx containers take the place of the two Vite dev servers.
 
@@ -397,7 +420,12 @@ its API share one origin for cookies.
 | BFF login, callback, logout, user, sessions | `web/src/api/Vaultly.Web.Api/Features/Auth/AuthEndpoints.cs` |
 | BFF session, refresh, lock, Redis store | `web/src/api/Vaultly.Web.Api/Features/Auth/Sessions/` |
 | BFF client of the auth service | `web/src/api/Vaultly.Web.Api/Features/Auth/IdentityService/IdentityServiceClient.cs` |
-| API forwarding to the backend | `web/src/api/Vaultly.Web.Api/Features/Web/ApiProxy/` |
+| API forwarding to the gateway | `web/src/api/Vaultly.Web.Api/Features/Web/ApiProxy/` |
+| Gateway: access token validation, policies | `gateway/src/Vaultly.Gateway/UserTokens/` |
+| Gateway: internal tokens, their JWKS | `gateway/src/Vaultly.Gateway/InternalTokens/` |
+| Service side: internal token validation | `core/src/Vaultly.Core.Authentication/` |
+| Token claim names, roles | `auth/src/Vaultly.Identity.PublicTypes/` (referenced by the gateway and core) |
+| `/token`, `/revoke`, `/sessions` request/response models | `auth/src/Vaultly.Identity.ApiContracts/` (referenced by the BFF) |
 | Auth HTTP endpoints | `auth/src/Vaultly.Identity.Api/Api/OAuthEndpoints.cs`, `AdminEndpoints.cs` (admin console) |
 | Auth use cases (CQRS) | `auth/src/Vaultly.Identity.Application/Commands/*`, `Queries/*` |
 | Auth domain rules | `AuthorizationRequest`, `Session`, `AuthCode`, `CodeChallenge` in `auth/src/Vaultly.Identity.Domain` |
