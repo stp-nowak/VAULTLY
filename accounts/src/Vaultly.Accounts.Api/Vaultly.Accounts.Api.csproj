@@ -19,7 +19,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
     <!-- Microsoft.AspNetCore.OpenApi brings 2.0.0, which has a known vulnerability (GHSA-v5pm-xwqc-g5wc). -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.13.1" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.3">
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="11.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
