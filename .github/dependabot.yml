@@ -2,7 +2,8 @@ version: 2
 
 # At most two version-update PRs per ecosystem each week: one for minor and patch updates, one for major updates
 # (which may need code changes). Security updates are grouped into one PR per ecosystem as soon as an advisory is
-# published. Docker images are not updated here: their tags (`10.0`, `17-alpine`) already float to the latest patch,
+# published. Docker images are not updated here (their vulnerabilities are reported by the `image` job of
+# `workflows/vulnerabilities.yml`): their tags (`10.0`, `17-alpine`) already float to the latest patch,
 # and a new major (.NET, Node, Postgres) is a deliberate platform upgrade, not a routine bump.
 updates:
   - package-ecosystem: nuget
