@@ -110,6 +110,45 @@
     mask-image: radial-gradient(circle at center, rgb(0 0 0 / 0.8), transparent 85%);
   }
 
+  /*
+   * Thin scrollbars in the line colour on a transparent track, without arrows; the one under the pointer gets
+   * lighter. Chromium draws arrows with the standard properties, so it gets the -webkit- ones and Firefox the
+   * standard ones.
+   */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: var(--color-line-strong);
+  }
+
+  :hover::-webkit-scrollbar-thumb {
+    background: rgb(243 221 190 / 0.4);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-color: var(--color-line-strong) transparent;
+      scrollbar-width: thin;
+    }
+
+    *:hover {
+      scrollbar-color: rgb(243 221 190 / 0.4) transparent;
+    }
+  }
+
   h1,
   h2 {
     font-family: var(--font-display);

@@ -76,3 +76,13 @@ export async function fetchJson<T>(input: string, init?: RequestInit): Promise<T
 
   return payload as T;
 }
+
+/** HTTP status of a failed call, or `null` when it failed before an answer (network) or not in `fetchJson`. */
+export function statusOf(error: unknown): number | null {
+  return error instanceof HttpError ? error.status : null;
+}
+
+/** Sends `body` as JSON with {@link fetchJson}. */
+export function sendJson<T>(input: string, method: 'POST' | 'PUT', body: unknown): Promise<T> {
+  return fetchJson<T>(input, { body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' }, method });
+}

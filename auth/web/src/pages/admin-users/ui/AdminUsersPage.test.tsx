@@ -41,7 +41,7 @@ describe('AdminUsersPage', () => {
     const table = await screen.findByRole('table', { name: 'Users' });
     const [, adaRow, graceRow] = within(table).getAllByRole('row');
     expect(within(adaRow!).getByText('Ada Lovelace')).toBeInTheDocument();
-    expect(within(adaRow!).getByRole('combobox', { name: 'Role of ada@example.com' })).toHaveValue('admin');
+    expect(within(adaRow!).getByRole('combobox', { name: 'Role of ada@example.com' })).toHaveTextContent('Admin');
     expect(within(adaRow!).getByText('google')).toBeInTheDocument();
     expect(within(adaRow!).getByText('20 Nov 2026')).toBeInTheDocument();
     expect(within(graceRow!).getByText('Not signed in yet')).toBeInTheDocument();

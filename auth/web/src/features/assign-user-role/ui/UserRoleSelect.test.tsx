@@ -1,11 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import type { UserSummary } from '@/domain/user';
-import { server } from '@/shared/test';
+import { pickOption, server } from '@/shared/test';
 
 import { UserRoleSelect } from './UserRoleSelect';
 
@@ -39,7 +38,7 @@ describe('UserRoleSelect', () => {
     );
     renderSelect();
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Role of grace@example.com' }), 'admin');
+    await pickOption(screen.getByRole('combobox', { name: 'Role of grace@example.com' }), 'Admin');
 
     await expect.poll(() => body).toEqual({ id: 'u-2', role: 'admin' });
   });
@@ -51,17 +50,17 @@ describe('UserRoleSelect', () => {
     renderSelect({ ...grace, role: 'admin' });
     const select = screen.getByRole('combobox', { name: 'Role of grace@example.com' });
 
-    await userEvent.selectOptions(select, 'user');
+    await pickOption(select, 'User');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('At least one admin must remain.');
-    expect(select).toHaveValue('admin');
+    expect(select).toHaveTextContent('Admin');
   });
 
   it('shows a generic message for other failures', async () => {
     server.use(http.put('*/api/admin/users/:id/role', () => new HttpResponse(null, { status: 500 })));
     renderSelect();
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'admin');
+    await pickOption(screen.getByRole('combobox'), 'Admin');
 
     expect(await screen.findByRole('alert')).toHaveTextContent("The role couldn't be changed. Please try again.");
   });

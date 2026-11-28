@@ -11,8 +11,9 @@ import { createAppRouter } from '../router';
  * QueryClient. The session comes from the MSW handler for `GET /api/auth/user`.
  */
 export function renderApp(initialEntry: string) {
-  // jsdom does not implement scrolling; the router's scroll restoration calls it on every navigation.
+  // jsdom does not implement scrolling; the router scrolls the window and the app content on every navigation.
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+  Element.prototype.scrollTo ??= () => undefined;
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createAppRouter(createMemoryHistory({ initialEntries: [initialEntry] }));

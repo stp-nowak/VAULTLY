@@ -1,8 +1,15 @@
 export const en = {
   nav: {
-    budgets: 'Budgets (soon)',
+    accounts: 'Accounts',
+    overview: 'Overview',
+    budgets: 'Budgets',
     label: 'Primary',
+    soon: 'Coming soon',
+    transactions: 'Transactions',
+  },
+  userMenu: {
+    label: 'Account',
+    open: 'Account menu of {{name}}',
     settings: 'Settings',
-    transactions: 'Transactions (soon)',
   },
 } as const;

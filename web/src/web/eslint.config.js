@@ -15,9 +15,15 @@ const fsdLayers = ['app', 'pages', 'widgets', 'features', 'domain', 'shared']
 /** Layers split into slices; other layers must use a slice's public API (`index.ts`) only. */
 const slicedLayers = ['pages', 'widgets', 'features', 'domain']
 
+/**
+ * Folders that group the slices of one business context (`features/transaction/record`); each slice inside keeps its
+ * own public API.
+ */
+const sliceGroups = { features: ['account', 'transaction'] }
+
 const deepSliceImports = slicedLayers.map((layer) => ({
-  group: [`@/${layer}/*/**`],
-  message: `Import from the slice public API (@/${layer}/<slice>), not from its internals.`,
+  group: [`@/${layer}/*/**`, ...(sliceGroups[layer] ?? []).map((group) => `!@/${layer}/${group}/*`)],
+  message: `Import from the slice public API (@/${layer}/<slice> or @/${layer}/<group>/<slice>), not from its internals.`,
 }))
 
 /** Builds the import restrictions for files living in the given layer. */

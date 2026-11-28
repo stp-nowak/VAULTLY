@@ -16,9 +16,10 @@ describe('LanguageSelect', () => {
     render(<LanguageSelect languages={['en', 'pl']} />);
 
     const select = screen.getByRole('combobox', { name: 'Language' });
-    expect(select).toHaveValue('en');
+    expect(select).toHaveTextContent('English');
 
-    await user.selectOptions(select, 'polski');
+    await user.click(select);
+    await user.click(screen.getByRole('option', { name: 'polski' }));
 
     expect(changeLanguage).toHaveBeenCalledExactlyOnceWith('pl');
   });

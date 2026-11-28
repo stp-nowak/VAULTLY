@@ -13,24 +13,63 @@ describe('Select', () => {
     { disabled: true, label: 'Owner', value: 'owner' },
   ] as const;
 
-  it('renders its options in a labelled native select whose wrapper takes className', () => {
+  it('shows the picked option in a labelled combobox whose wrapper takes className', () => {
     const { container } = render(<Select aria-label="Role" className="w-36" defaultValue="admin" options={roles} />);
 
     const select = screen.getByRole('combobox', { name: 'Role' });
-    expect(select).toHaveValue('admin');
-    expect(select.className).toContain('appearance-none');
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['User', 'Admin', 'Owner']);
-    expect(screen.getByRole('option', { name: 'Owner' })).toBeDisabled();
+    expect(select).toHaveTextContent('Admin');
+    expect(select).toHaveAttribute('aria-expanded', 'false');
     expect(container.firstElementChild?.className).toContain('w-36');
+
+    fireEvent.click(select);
+
+    expect(screen.getByRole('listbox', { name: 'Role' })).toBeInTheDocument();
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['User', 'Admin', 'Owner']);
+    expect(screen.getByRole('option', { name: 'Admin' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: 'Owner' })).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('reports the picked value', () => {
+  it('reports the option picked with the pointer and closes', () => {
     const onValueChange = vi.fn();
     render(<Select aria-label="Role" defaultValue="user" onValueChange={onValueChange} options={roles} />);
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Role' }), { target: { value: 'admin' } });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Role' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Admin' }));
 
     expect(onValueChange).toHaveBeenCalledExactlyOnceWith('admin');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Role' })).toHaveTextContent('Admin');
+  });
+
+  it('picks with the keyboard and skips disabled options', () => {
+    const onValueChange = vi.fn();
+    render(<Select aria-label="Role" defaultValue="user" onValueChange={onValueChange} options={roles} />);
+
+    const select = screen.getByRole('combobox', { name: 'Role' });
+    for (const key of ['ArrowDown', 'ArrowDown', 'ArrowDown']) {
+      fireEvent.keyDown(select, { key });
+    }
+
+    expect(select).toHaveAttribute('aria-activedescendant', screen.getByRole('option', { name: 'Admin' }).id);
+
+    fireEvent.keyDown(select, { key: 'Enter' });
+
+    expect(onValueChange).toHaveBeenCalledExactlyOnceWith('admin');
+  });
+
+  it('closes on Escape and when focus leaves without picking', () => {
+    const onValueChange = vi.fn();
+    render(<Select aria-label="Role" defaultValue="user" onValueChange={onValueChange} options={roles} />);
+
+    const select = screen.getByRole('combobox');
+    fireEvent.click(select);
+    fireEvent.keyDown(select, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+    fireEvent.click(select);
+    fireEvent.blur(select);
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(onValueChange).not.toHaveBeenCalled();
   });
 });
 

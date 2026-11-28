@@ -1,6 +1,10 @@
 /** Generic texts used across slices (namespace `common`). Slice-specific texts live in the slice's own `i18n/`. */
 export const en = {
   actions: {
+    cancel: 'Cancel',
+    close: 'Close',
+    save: 'Save',
+    saving: 'Saving…',
     tryAgain: 'Try again',
   },
   brand: {
