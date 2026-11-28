@@ -239,7 +239,7 @@
 **Accounts Service** (`./accounts`)
 - Manual accounts: open with type, currency and opening balance, rename, close, list ✅
 - Net worth per currency ✅
-- Balance changes through manual transactions (Transactions events over RabbitMQ), balance history
+- Balance changes through manual transactions (posting saga over RabbitMQ), balance history ✅
 
 **Bank Sync Service**
 - Plaid sandbox setup (or TrueLayer for EU)
@@ -251,7 +251,7 @@
 - Disconnect account flow
 
 **Transaction Service**
-- Manual transactions on manual accounts; Accounts updates the balance from their events
+- Manual transactions on manual accounts: record, change, delete; Accounts applies each to the balance through a saga ✅
 - Transaction ingestion from Bank Sync (via RabbitMQ)
 - Auto-categorization engine (rule-based first, then improvable)
 - Merchant name enrichment

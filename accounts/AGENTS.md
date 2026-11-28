@@ -10,12 +10,14 @@ route `/accounts`, cluster and token audience `accounts`), built on `../core`; r
 |---|---|
 | Accounts | Open a manual account (name, type `checking` / `savings` / `credit_card` / `cash`, ISO 4217 currency, signed opening balance), rename, close, list, show one |
 | Ownership | An account belongs to the token's `sub`; another user's account answers 404, never 403, so nobody learns which accounts exist |
-| Balance | Signed, debt is negative; starts at the opening balance. It will change only through transactions (`./transactions`, over RabbitMQ) — never set by hand |
+| Balance | Signed, debt is negative; starts at the opening balance and changes only through transactions (`../transactions`), never set by hand |
+| Postings | Takes `PostTransaction` (record, change or delete one transaction) from Transactions' posting saga and answers `TransactionPosted`, or `TransactionDeclined` when the account is unknown or foreign, closed, or in another currency. One `Posting` per transaction remembers what it adds to the balance and the last applied step, so a repeated step only repeats the answer ([`docs/architecture/transaction-posting.md`](../docs/architecture/transaction-posting.md)) |
+| Balance history | The balance at the end of each day with a transaction, from the opening balance |
 | Net worth | Per currency of the open accounts: assets (positive balances), liabilities (debts as a positive amount), their difference; no exchange rates |
 | Events for other services | `AccountOpened` (owner, currency), `AccountClosed`, both with the account's version, published from `Vaultly.Accounts.PublicTypes/Events` through Rebus (queue `accounts`) |
 
-Not here: bank connections (`./bank-sync` later feeds accounts), transactions, budgets, goals, alerts, exchange rates,
-households.
+Not here: bank connections (`./bank-sync` later feeds accounts), the transactions themselves (`../transactions`),
+budgets, goals, alerts, exchange rates, households.
 
 ## Endpoints
 All require the gateway's internal token; the browser reaches them as `/api/accounts…` through the web API.
@@ -29,6 +31,7 @@ account, 409 closed account.
 | `GET /accounts/{id}` | One account |
 | `PUT /accounts/{id}/name` `{ name }` | Renames it; 204 |
 | `POST /accounts/{id}/close` | Closes it; 204. A closed account cannot be changed |
+| `GET /accounts/{id}/balances?from=&to=` | `[{ date, balance }]`: the balance at the end of each day with a transaction, oldest first |
 | `GET /accounts/net-worth` | `[{ currency, assets, liabilities, netWorth }]`, ordered by currency |
 | `GET /health/live`, `/health/ready` | Anonymous; ready = the database answers |
 
@@ -49,17 +52,22 @@ account, 409 closed account.
 accounts/src/
 ├── Vaultly.Accounts.slnx
 ├── Vaultly.Accounts.Domain/
-│   └── Accounts/                       # Account aggregate (with its version), AccountId, OwnerId, AccountName, AccountType,
-│                                       #   AccountClosedException, IAccountRepository; Events/ (AccountOpened, AccountClosed)
-├── Vaultly.Accounts.PublicTypes/       # Events/ other services subscribe to: AccountOpened, AccountClosed
+│   ├── Accounts/                       # Account aggregate (with its version, ApplyPosting), AccountId, OwnerId, AccountName,
+│   │                                   #   AccountType, AccountClosedException, IAccountRepository; Events/
+│   └── Postings/                       # Posting (what one transaction adds to the balance), TransactionId, IPostingRepository
+├── Vaultly.Accounts.PublicTypes/       # Events/ other services subscribe to: AccountOpened, AccountClosed;
+│                                       #   Commands/: PostTransaction and its replies TransactionPosted, TransactionDeclined
 ├── Vaultly.Accounts.Application/       # CQRS on Vaultly.Core.Messaging
 │   └── Features/
 │       ├── Accounts/                   # AccountDto, IAccountReadService, AccountNotFoundException (shared by the area),
 │       │                               #   AccountEventsPublisher; OpenAccount, RenameAccount, CloseAccount,
-│       │                               #   GetAccounts, GetAccount
+│       │                               #   GetAccounts, GetAccount, GetBalanceHistory
+│       ├── Postings/PostTransaction/   # applies one step; returns the decline reason or null
 │       └── NetWorth/GetNetWorth/       # Query, Handler, CurrencyNetWorthDto, INetWorthReadService
 ├── Vaultly.Accounts.Infrastructure/    # EF Core (Npgsql)
 │   ├── Accounts/                       # AccountRepository, AccountReadService, AccountConfiguration
+│   ├── Postings/                       # PostingRepository, PostingConfiguration, BalanceHistoryReadService,
+│   │                                   #   PostTransactionMessageHandler (Rebus: command in, reply out)
 │   └── Persistence/                    # AccountsDbContext, design-time factory, migrations
 ├── Vaultly.Accounts.Api/               # Minimal API → ISender; Endpoints/, Http/ (JSON, problems, health), Contracts/
 ├── Vaultly.Accounts.Domain.Tests/
