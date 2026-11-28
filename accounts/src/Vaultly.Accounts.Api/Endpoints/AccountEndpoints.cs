@@ -8,6 +8,7 @@ using Vaultly.Accounts.Api.Contracts;
 using Vaultly.Accounts.Application.Features.Accounts;
 using Vaultly.Accounts.Application.Features.Accounts.CloseAccount;
 using Vaultly.Accounts.Application.Features.Accounts.GetAccount;
+using Vaultly.Accounts.Application.Features.Accounts.GetBalanceHistory;
 using Vaultly.Accounts.Application.Features.Accounts.GetAccounts;
 using Vaultly.Accounts.Application.Features.Accounts.OpenAccount;
 using Vaultly.Accounts.Application.Features.Accounts.RenameAccount;
@@ -26,6 +27,7 @@ public static class AccountEndpoints
         accounts.MapGet("/{id:guid}", GetAccountAsync);
         accounts.MapPut("/{id:guid}/name", RenameAccountAsync);
         accounts.MapPost("/{id:guid}/close", CloseAccountAsync);
+        accounts.MapGet("/{id:guid}/balances", GetBalanceHistoryAsync);
         return app;
     }
 
@@ -59,6 +61,10 @@ public static class AccountEndpoints
         await sender.Send(new RenameAccountCommand(user.GetUserId(), id, request.Name), cancellationToken);
         return TypedResults.NoContent();
     }
+
+    internal static async Task<Ok<IReadOnlyList<DailyBalanceDto>>> GetBalanceHistoryAsync(
+        Guid id, ClaimsPrincipal user, ISender sender, CancellationToken cancellationToken, DateOnly? from = null, DateOnly? to = null)
+        => TypedResults.Ok(await sender.Send(new GetBalanceHistoryQuery(user.GetUserId(), id, from, to), cancellationToken));
 
     internal static async Task<NoContent> CloseAccountAsync(
         Guid id, ClaimsPrincipal user, ISender sender, CancellationToken cancellationToken)

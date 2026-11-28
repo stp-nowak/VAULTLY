@@ -76,6 +76,17 @@ public sealed class Account : AggregateRoot
         RaiseDomainEvent(new AccountClosed(Id, OwnerId, Version));
     }
 
+    /// <summary>
+    /// Replaces what one transaction adds to the balance: <paramref name="previousEffect"/> is what it added so far,
+    /// <paramref name="newEffect"/> what it adds from now on (0 once deleted).
+    /// </summary>
+    public void ApplyPosting(decimal previousEffect, decimal newEffect)
+    {
+        EnsureOpen();
+        Balance += newEffect - previousEffect;
+        Version++;
+    }
+
     private void EnsureOpen()
     {
         if (IsClosed)
