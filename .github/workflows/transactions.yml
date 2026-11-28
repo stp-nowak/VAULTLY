@@ -1,0 +1,62 @@
+name: Transactions service
+
+# Runs only when the Transactions service, the projects it references or this workflow change. Other projects have
+# their own workflows, so builds of different projects run in parallel.
+on:
+  pull_request:
+    paths:
+      - 'transactions/**'
+      - 'accounts/src/Vaultly.Accounts.PublicTypes/**'
+      - 'core/src/**'
+      - '!core/src/*.Tests/**'
+      - 'auth/src/Vaultly.Identity.PublicTypes/**'
+      - '.github/workflows/transactions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'transactions/**'
+      - 'accounts/src/Vaultly.Accounts.PublicTypes/**'
+      - 'core/src/**'
+      - '!core/src/*.Tests/**'
+      - 'auth/src/Vaultly.Identity.PublicTypes/**'
+      - '.github/workflows/transactions.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: transactions/src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore Vaultly.Transactions.slnx
+      - run: dotnet build Vaultly.Transactions.slnx --no-restore --configuration Release
+      - run: dotnet test Vaultly.Transactions.slnx --no-build --configuration Release
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: >-
+          docker build
+          --build-context core=core/src
+          --build-context accounts-public-types=accounts/src/Vaultly.Accounts.PublicTypes
+          --build-context identity-public-types=auth/src/Vaultly.Identity.PublicTypes
+          transactions/src

@@ -12,4 +12,5 @@ include:
   - auth/docker-compose.yml
   - gateway/docker-compose.yml
   - accounts/docker-compose.yml
+  - transactions/docker-compose.yml
   - web/docker-compose.yml
