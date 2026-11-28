@@ -1,7 +1,8 @@
 name: Vulnerability report
 
 # Reports known vulnerabilities in NuGet and pnpm dependencies in each job's summary and fails on high or critical
-# ones. The weekly run catches advisories published after the dependencies were added.
+# ones; scans the Docker images without failing. The weekly run catches advisories published after the dependencies
+# were added.
 on:
   pull_request:
   push:
@@ -96,3 +97,78 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - run: pnpm audit --audit-level high
+
+  # Report only: base image findings are fixed upstream, so they must not block PRs. Results are listed in the job
+  # summary and under Security → Code scanning, one category per image.
+  image:
+    name: Image (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: auth
+            build: --build-context core=core/src auth/src
+          - name: auth-web
+            build: --file auth/web/Dockerfile .
+          - name: gateway
+            build: --build-context identity-public-types=auth/src/Vaultly.Identity.PublicTypes gateway/src
+          - name: accounts
+            build: >-
+              --build-context core=core/src
+              --build-context identity-public-types=auth/src/Vaultly.Identity.PublicTypes
+              accounts/src
+          - name: transactions
+            build: >-
+              --build-context core=core/src
+              --build-context accounts-public-types=accounts/src/Vaultly.Accounts.PublicTypes
+              --build-context identity-public-types=auth/src/Vaultly.Identity.PublicTypes
+              transactions/src
+          - name: web-api
+            build: --build-context identity-api-contracts=auth/src/Vaultly.Identity.ApiContracts web/src/api
+          - name: web-spa
+            build: --file web/src/web/Dockerfile .
+          - name: postgres
+            image: postgres:17-alpine
+          - name: redis
+            image: redis:7-alpine
+          - name: rabbitmq
+            image: rabbitmq:4-management-alpine
+    env:
+      IMAGE: ${{ matrix.image || format('vaultly-{0}:scan', matrix.name) }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: matrix.build
+        run: docker build --tag "$IMAGE" ${{ matrix.build }}
+      # Pinned to a commit: trivy-action tags were once force-pushed to malicious code.
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: ${{ env.IMAGE }}
+          ignore-unfixed: true
+          format: sarif
+          output: trivy.sarif
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy.sarif
+          category: image:${{ matrix.name }}
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          skip-setup-trivy: true
+          image-ref: ${{ env.IMAGE }}
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH,MEDIUM
+          format: table
+          output: trivy.txt
+      - name: Report vulnerable packages
+        run: |
+          {
+            echo "### Image: $IMAGE"
+            echo '```'
+            cat trivy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
