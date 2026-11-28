@@ -17,7 +17,11 @@ COPY packages/ui packages/ui
 COPY web/src/web web/src/web
 RUN pnpm --filter @vaultly/web build
 
-FROM nginxinc/nginx-unprivileged:stable-alpine
+FROM nginxinc/nginx-unprivileged:mainline-alpine
+# The base image is rebuilt less often than Alpine ships security fixes.
+USER root
+RUN apk upgrade --no-cache
+USER 101
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 COPY web/src/web/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /repo/web/src/web/dist /usr/share/nginx/html
