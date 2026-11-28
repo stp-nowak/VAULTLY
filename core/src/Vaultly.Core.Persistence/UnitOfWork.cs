@@ -11,7 +11,13 @@ namespace Vaultly.Core.Persistence;
 public class UnitOfWork<TDbContext>(TDbContext dbContext, IPublisher publisher) : IUnitOfWork
     where TDbContext : DbContext
 {
-    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    protected TDbContext DbContext => dbContext;
+
+    public virtual Task SaveChangesAsync(CancellationToken cancellationToken)
+        => SaveAndPublishDomainEventsAsync(cancellationToken);
+
+    /// <summary>Saves, publishes the raised domain events, then saves what their handlers changed.</summary>
+    protected async Task SaveAndPublishDomainEventsAsync(CancellationToken cancellationToken)
     {
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -30,6 +36,11 @@ public class UnitOfWork<TDbContext>(TDbContext dbContext, IPublisher publisher) 
             {
                 await publisher.Publish(domainEvent, cancellationToken);
             }
+        }
+
+        if (dbContext.ChangeTracker.HasChanges())
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 }
