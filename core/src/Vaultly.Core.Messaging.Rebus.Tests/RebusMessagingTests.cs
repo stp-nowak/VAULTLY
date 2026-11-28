@@ -25,7 +25,7 @@ public sealed class RebusMessagingTests
     private const string NotesQueue = "notes";
     private const string ListenerQueue = "listener";
 
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:19-alpine").Build();
     private readonly RabbitMqContainer _rabbitMq = new RabbitMqBuilder("rabbitmq:4-management-alpine").Build();
     private readonly List<ServiceProvider> _services = [];
 

@@ -21,7 +21,7 @@ public sealed class TransactionPagesTests
     private static readonly OwnerId Owner = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
     private static readonly DateOnly Day = new(2026, 11, 20);
 
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:19-alpine").Build();
 
     [OneTimeSetUp]
     public async Task StartDatabase()

@@ -4,7 +4,7 @@
 #   docker build --build-context core=core/src --build-context identity-public-types=auth/src/Vaultly.Identity.PublicTypes -t vaultly-accounts-api accounts/src
 # Projects keep their repository paths below /repo so the relative project references resolve.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /repo/accounts/src
 COPY --from=core Vaultly.Core/Vaultly.Core.csproj /repo/core/src/Vaultly.Core/
 COPY --from=core Vaultly.Core.Persistence/Vaultly.Core.Persistence.csproj /repo/core/src/Vaultly.Core.Persistence/
@@ -25,7 +25,7 @@ COPY --from=identity-public-types *.cs /repo/auth/src/Vaultly.Identity.PublicTyp
 COPY . .
 RUN dotnet publish Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj --configuration Release --no-restore -p:OpenApiGenerateDocuments=false --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app/publish .
 USER $APP_UID

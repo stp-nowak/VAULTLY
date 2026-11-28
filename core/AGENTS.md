@@ -105,7 +105,7 @@
 - Full rules and templates: `ddd` skill (`/.claude/skills/ddd`).
 
 ## C# Instructions
-- Latest C# (currently C# 14), `net10.0`, nullable reference types enabled, primary constructors.
+- Latest C# (currently C# 15), `net11.0`, nullable reference types enabled, primary constructors.
 - Comments: follow the root `AGENTS.md` rule — minimal; `<summary>` only on public API types/members where it adds
   information; inline comments only for genuinely non-obvious reasons.
 - Test-driven development; `test-writer` skill (NUnit).
