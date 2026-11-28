@@ -37,8 +37,10 @@ src/
 │       └── index.ts          # Public API
 ├── widgets/                  # Large self-contained UI blocks (app shell, sidebars, dashboards)
 │   └── [widget]/ui, model, index.ts
-├── features/                 # User actions that bring business value (login, logout, add-transaction)
-│   └── [feature]/ui, model, api, lib, index.ts
+├── features/                 # User actions that bring business value (login, logout, transaction/record)
+│   ├── [feature]/ui, model, api, lib, index.ts
+│   └── [group]/[feature]/    # Slices of one business context grouped in a folder: account/{open,rename,close},
+│                             #   transaction/{record,change,delete}; each keeps its own public API
 ├── domain/                   # (FSD "entities") Business model per bounded context, mirrors backend DDD
 │   └── [context]/            # e.g. identity  ↔  auth/ Identity service
 │       ├── model/            # Types, state/context, selectors (aggregates & value-like types)
@@ -61,6 +63,8 @@ Layers, highest to lowest: `app → pages → widgets → features → domain �
 - **Slices on the same layer must not import each other** (`features/login` cannot import `features/logout`).
   Move shared code down a layer (usually to `domain` or `shared`).
 - Import other slices **only through their public API**: `@/domain/identity`, never `@/domain/identity/model/...`.
+  A grouped slice's public API is `@/features/<group>/<slice>` (`@/features/transaction/record`); a new group is
+  added to `sliceGroups` in `eslint.config.js`. Its i18n namespace is its path (`'features/transaction/record'`).
 - Inside a slice use **relative imports**; across slices/layers use the `@/` alias.
 - `shared` and `app` have no slices — import their segments directly (`@/shared/api`, `@/shared/test`); primitive UI comes from `@vaultly/ui`.
 - If a `domain` slice genuinely needs another one (e.g. `budget` references `transaction`), use the FSD
@@ -80,7 +84,18 @@ Layers, highest to lowest: `app → pages → widgets → features → domain �
 ### Domain ↔ service mapping
 
 - One `domain/[context]` slice per bounded context (service). Keep names aligned:
-  `domain/identity` ↔ `auth/` (Identity service), `domain/transaction` ↔ Transaction service, etc.
+  `domain/identity` ↔ `auth/` (Identity service), `domain/account` ↔ `accounts/`, `domain/transaction` ↔
+  `transactions/`, etc.
+- Screens: `/app` overview (net worth and accounts, at most 3 of each with "View all"), `/app/accounts` (every
+  account, closed on request, open one), `/app/accounts/$accountId` (balance, balance history chart, new
+  transaction, rename, close, its transactions), `/app/net-worth` (every currency), `/app/transactions?accountId&from&to`
+  (all transactions, new transaction), `/app/settings` (sessions). Forms open in a `Dialog` from a button. `/app` is a
+  layout route: the guard and `AppShell` around an `<Outlet />`. `AppShell` fills the window: a rail of icons (a
+  bottom bar on phones) and the top bar with the user menu (initials → name, email, Settings, Log out) stay put, only
+  `#app-content` scrolls (the router's `scrollToTopSelectors`).
+- A transaction is `pending` until Accounts applies it (`../../../docs/architecture/transaction-posting.md`): the
+  list (`transactionsQueryOptions`, cursor pages via `useInfiniteQuery`) asks again every second while one is
+  pending, and `widgets/transaction-list` refreshes account balances once none is.
 - Use the service's ubiquitous language in type and function names (`Session`, `Budget`, `Goal`).
 - Commands of a service (write side) are triggered from `features`; queries (read side) are exposed as
   TanStack Query options/hooks from `domain/[context]/api`.
@@ -101,7 +116,14 @@ disabling the test. `pnpm --filter @vaultly/web deps:circular` writes a JSON rep
 - Always use `strict: true` in `tsconfig.json`
 - Prefer `interface` for object shapes, `type` for unions/intersections
 - Never use `any` — use `unknown` + type guards when type is truly unknown
-- Define API response types in the owning slice (`domain/[context]/model/types.ts`); generic HTTP types in `shared/api`
+- API types of the domain services are **generated, never written by hand**: each service commits its OpenAPI contract
+  (`accounts/openapi/accounts.json`, `transactions/openapi/transactions.json`, written on every build) and
+  `pnpm --filter @vaultly/web api:types` (`scripts/apiTypes.mjs`, json-schema-to-typescript over the contract's
+  `components.schemas`, no paths) turns it into plain types in `domain/[context]/api/generated/*.ts`
+  (`export interface AccountDto`, C# enums as string unions, never TS `enum`). `domain/[context]/model/types.ts` only
+  names them (`type Account = AccountDto`). Responses are trusted, not parsed: `fetchJson<Account[]>(…)`. CI
+  regenerates the types and fails when they differ from the committed ones; a contract change then fails the
+  typecheck wherever the SPA no longer fits it. Generic HTTP types live in `shared/api`
 - Use `satisfies` operator to validate objects against types without widening
 - Export types separately from values (`export type { Foo }`)
 

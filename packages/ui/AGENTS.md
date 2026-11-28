@@ -14,13 +14,14 @@ src/
 ├── styles.css        # @theme tokens (colors, fonts, tracking, shadows, animations), @utility bg-panel, base layer, @source
 ├── lib/cn.ts         # clsx + tailwind-merge
 ├── icons/            # SVG graphics in the current text color: BrandMark (logo), ChevronDownIcon, CloseIcon,
-│                     #   MenuIcon, SearchIcon
+│                     #   MenuIcon, SearchIcon, SettingsIcon, LogOutIcon
 ├── components/       # React primitives, one folder per kind:
 │   ├── actions/      #   Button
 │   ├── data/         #   Badge, InfoTile, Table
 │   ├── feedback/     #   StatusNotice
-│   ├── forms/        #   SearchField, Select, Switch, TextField
+│   ├── forms/        #   SearchField, Select (own listbox, not a native select), Switch, TextField
 │   ├── layout/       #   Card, CenteredScreen
+│   ├── overlays/     #   Dialog (modal panel in a portal)
 │   └── typography/   #   Eyebrow
 └── index.ts          # Public API — the only entry point apps import from
 ```

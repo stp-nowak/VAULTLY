@@ -36,6 +36,9 @@ account, 409 closed account.
 | `GET /health/live`, `/health/ready` | Anonymous; ready = the database answers |
 
 ## Commands
+- The API's OpenAPI contract is written to `accounts/openapi/accounts.json` on every build (`Microsoft.Extensions.ApiDescription.Server`)
+  and committed: the web SPA generates its types from it, and CI fails while the committed copy differs from the code.
+  JSON numbers are strict (never strings), enums are `snake_case` strings.
 - from `accounts/src`: `dotnet build Vaultly.Accounts.slnx`, `dotnet test Vaultly.Accounts.slnx`
 - `dotnet run --project Vaultly.Accounts.Api` — http://localhost:5101; needs Postgres on 5433
   (`docker compose -f accounts/docker-compose.yml up -d accounts-db`) and, to be called, the gateway on 5000
