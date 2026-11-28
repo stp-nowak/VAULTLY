@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
     <ProjectReference Include="../../../core/src/Vaultly.Core/Vaultly.Core.csproj" />
     <ProjectReference Include="../Vaultly.Identity.PublicTypes/Vaultly.Identity.PublicTypes.csproj" />
   </ItemGroup>
