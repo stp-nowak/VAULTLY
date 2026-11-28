@@ -4,7 +4,7 @@
 #   docker build -f auth/web/Dockerfile -t vaultly-identity-web .
 # Runtime: AUTH_API_PROXY_TARGET = base URL of the Identity API, e.g. http://identity-api:8080
 
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /repo
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
