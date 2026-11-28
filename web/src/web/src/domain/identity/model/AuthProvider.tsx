@@ -17,24 +17,32 @@ const signedOutState: AuthState = { errorMessage: null, sessionId: null, status:
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(initialAuthState);
+  // Route guards run before React re-renders with the new state, so they read the latest one from here.
+  const latestState = useRef<AuthState>(initialAuthState);
   const initialization = useRef<Promise<void> | null>(null);
+
+  const changeState = useCallback((next: AuthState) => {
+    latestState.current = next;
+    setState(next);
+  }, []);
 
   const loadCurrentUser = useCallback(async () => {
     try {
       const current = await getCurrentUser();
-      setState(
+      changeState(
         current
           ? { errorMessage: null, sessionId: current.sessionId, status: 'authenticated', user: current.user }
           : signedOutState,
       );
     } catch (error) {
-      setState({ ...signedOutState, errorMessage: resolveErrorMessage(error, 'Unable to restore the current session.') });
+      changeState({ ...signedOutState, errorMessage: resolveErrorMessage(error, 'Unable to restore the current session.') });
     }
-  }, []);
+  }, [changeState]);
 
   const ensureReady = useCallback(async () => {
     initialization.current ??= loadCurrentUser();
     await initialization.current;
+    return latestState.current;
   }, [loadCurrentUser]);
 
   useEffect(() => {
@@ -47,9 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     const logoutUrl = await logoutRequest();
-    setState(signedOutState);
+    changeState(signedOutState);
     navigateToUrl(logoutUrl);
-  }, []);
+  }, [changeState]);
 
   const value = useMemo<AuthContextValue>(
     () => ({ ...state, ensureReady, isAuthenticated: state.status === 'authenticated', login, logout }),
