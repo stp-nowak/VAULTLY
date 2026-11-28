@@ -31,7 +31,7 @@ Each service has its own compose file with only what that service alone needs, s
 | `docker compose -f auth/docker-compose.yml up --build` | Identity API, login UI, Identity Postgres | 5096, 5174, 5432 |
 | `docker compose -f web/docker-compose.yml up --build` | web SPA, web API, its Redis | 5173, 5180, 6379 |
 | `docker compose -f gateway/docker-compose.yml up --build` | API gateway | 5000 |
-| `docker compose -f accounts/docker-compose.yml up --build` | Accounts API, Accounts Postgres | 5101, 5433 |
+| `docker compose -f accounts/docker-compose.yml up --build` | Accounts API, Accounts Postgres (needs RabbitMQ from `infra`) | 5101, 5433 |
 | `docker compose -f infra/docker-compose.yml up` | shared infrastructure: RabbitMQ (`vaultly` / `vaultly`) | 5672, 15672 (management UI) |
 
 - All files belong to one Compose project (`vaultly`), so whatever combination runs shares a network. Starting one

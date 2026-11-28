@@ -3,22 +3,26 @@
 ## Scope
 - `./core` holds what every domain service (Accounts, Transactions, Budgets, Goals, Alerts, Billing, Admin) and the
   identity service (`./auth`) build on, referenced with a relative `ProjectReference`:
-  - `Vaultly.Core` — tactical DDD building blocks: `AggregateRoot`, `DomainEvent`, `DomainException`, `IUnitOfWork`;
-    CQRS markers in `Vaultly.Core.Messaging` (`ICommand`, `ICommand<T>`, `IQuery<T>`, `ICommandHandler<..>`,
-    `IQueryHandler<..>`, MediatR underneath); `WireNames` (the `snake_case` spelling of enums outside the code).
+  - `Vaultly.Core` — tactical DDD building blocks: `AggregateRoot`, `DomainEvent`, `DomainException`,
+    `InvalidValueException`, `IUnitOfWork`; `Amounts/` (`Currency`: one ISO 4217 code, `Money`: a signed amount with at
+    most 4 decimal places, below 10^15, stored as `numeric(19,4)`); CQRS markers in `Vaultly.Core.Messaging`
+    (`ICommand`, `ICommand<T>`, `IQuery<T>`, `ICommandHandler<..>`, `IQueryHandler<..>`, MediatR underneath) and
+    `IMessageBus` (messages to other services); `WireNames` (the `snake_case` spelling of enums outside the code).
     Pure C# (MediatR only), so a `Domain` project may reference it.
   - `Vaultly.Core.Persistence` — EF Core: `UnitOfWork<TDbContext>` (saves, then publishes the saved aggregates'
     domain events), `MigrateDatabaseAsync<TDbContext>()`, `WireNameConverter<TEnum>` (enum columns as `WireNames`),
     `UsePostgres(connectionString)` (every service registers its DbContext with it, never `UseNpgsql` directly: it
     switches off Npgsql's GSS encryption attempt, which needs a Kerberos library the runtime images lack).
     Only `Infrastructure` projects reference it.
+  - `Vaultly.Core.Messaging.Rebus` — messaging between services with Rebus over RabbitMQ; see Messaging below. Only
+    `Infrastructure` projects reference it.
   - `Vaultly.Core.Authentication` — `AddInternalTokenAuthentication`: a service accepts only the internal tokens the
     gateway (`./gateway`) issued for it (issuer = gateway, audience = the service's cluster id, keys from the
     gateway's `/.well-known/jwks.json`); every endpoint requires one unless it is `AllowAnonymous`. Claims and roles
     are read with `Vaultly.Identity.PublicTypes` (`IdentityClaims`, `UserRole`). Only `Api` projects reference it.
   - `Vaultly.Core.Testing` — for test projects only: `CqrsConventions` (derive a `[TestFixture]` from it in each
-    service's application tests) and `TestGateway` (serves a signing key as JWKS and issues internal tokens, so API
-    tests run the real authentication).
+    service's application tests), `TestGateway` (serves a signing key as JWKS and issues internal tokens, so API
+    tests run the real authentication) and `RecordingMessageBus` (keeps what an API test publishes).
 - No business logic here. A type belongs here only when several services need the very same thing.
 - Domain services live in their own top-level folders named after what they do (e.g. `./accounts`), never under
   `./core`. `Vaultly.Core*` references no service project except `Vaultly.Identity.PublicTypes`, which itself
@@ -28,7 +32,8 @@
 
 ## Commands
 - from `core/src`: `dotnet build Vaultly.Core.slnx` — build
-- from `core/src`: `dotnet test Vaultly.Core.slnx` — run tests
+- from `core/src`: `dotnet test Vaultly.Core.slnx` — run tests (the messaging tests start Postgres and RabbitMQ with
+  Testcontainers, so Docker must run)
 - A change here changes every domain service: build and test them in the same change.
 
 ## Architecture of a domain service: tactical DDD + CQRS
@@ -39,7 +44,7 @@
   aggregate, named in the plural (`Accounts/`, `Users/`; a folder named like its class would clash with it), holding
   the aggregate, its entities, value objects, enums, events, exceptions and its repository port
   (`I<Aggregate>Repository`), one type per file. A type several concepts use sits with the concept that owns it;
-  only domain-wide basics (e.g. `InvalidValueException`) sit in the project root. No `Aggregates/`, `ValueObjects/`,
+  only domain-wide basics sit in the project root (`InvalidValueException`, `Money` and `Currency` come from core). No `Aggregates/`, `ValueObjects/`,
   `Events/`, `Exceptions/` folders. When an aggregate folder grows, its parts get sub-folders by sub-concept — an
   entity with its id, value objects, exceptions and events (`Sessions/RefreshTokens/`, `Users/Passwords/`) — while
   the root, its id and repository stay at the top. A separate aggregate is never nested. Inside any concept folder,
@@ -62,7 +67,9 @@
   `IEntityTypeConfiguration<Account>`); an external client sits with the concept it serves (`ExternalLogin/`).
   `Persistence/` holds only what spans concepts: the DbContext (`ApplyConfigurationsFromAssembly`), its design-time
   factory and the migrations. Never `Repositories/`, `ReadServices/`, `ExternalServices/`, `Options/` folders.
-  `UnitOfWork<TDbContext>` and `WireNameConverter` come from `Vaultly.Core.Persistence`.
+  `UnitOfWork<TDbContext>` and `WireNameConverter` come from `Vaultly.Core.Persistence`; a service that sends
+  messages uses `OutboxUnitOfWork<TDbContext>` from `Vaultly.Core.Messaging.Rebus` instead. Rebus message handlers
+  (`IHandleMessages<T>`) sit with the concept they serve and only forward to a command.
 - **Api**: minimal API endpoints send commands/queries through `ISender`; composition root only; authentication via
   `Vaultly.Core.Authentication`. The service is reached only through the gateway (add its route and cluster to the
   gateway's `ReverseProxy` section; the cluster id is the service's `InternalTokens:Audience`).
@@ -71,6 +78,26 @@
   `CqrsConventionTests : CqrsConventions` fixture (`Vaultly.Core.Testing`; example:
   `accounts/src/Vaultly.Accounts.Application.Tests/CqrsConventionTests.cs`).
 - Reference service: `./accounts`.
+
+## Messaging between services
+- Services never call each other's databases; they exchange messages through RabbitMQ with Rebus
+  (`Vaultly.Core.Messaging.Rebus`, the same library and code as on Azure Service Bus, only the transport differs).
+- Contracts live in the owning service's `PublicTypes`: `Events/` (past tense, published to every subscribed
+  service) and `Commands/` (imperative, sent to the one service that owns them, which defines them). Plain records
+  of primitives (`Guid`, `string` currency code, `decimal`, enums), no domain types. Never change one in place once
+  it has shipped: add a new one.
+- Application code uses only `IMessageBus` (`PublishAsync`, `SendAsync`, `SendLocalAsync`, `ReplyAsync`), usually
+  from a domain event handler: the aggregate raises a domain event, the handler publishes the integration event.
+- `AddRebusMessaging(configuration, new MessagingEndpoint("<service>", "<DbConnectionName>") { Subscriptions,
+  CommandOwners, Sagas })` in Infrastructure: one input queue per service (`accounts`), retries up to 5 times, then
+  `<service>.error`; outbox, sagas and timeouts in the service's database (tables `rebus_*`, created by Rebus);
+  enums as `snake_case`. `ConnectionStrings:RabbitMq`; `Messaging:Enabled = false` in API tests, which register a
+  `RecordingMessageBus`.
+- Delivery: messages sent while handling an API request go to the outbox in the same transaction as the aggregate
+  and leave only if it commits. A message handler's messages are sent after it finishes and before the incoming
+  message is acknowledged (the outbox step is removed for handlers because of rebus-org/Rebus.PostgreSql#55, see
+  `RebusMessaging.SendFromHandlersOnCommit`). Either way delivery is at least once: **every handler must be
+  idempotent** (upsert by id, ignore versions it has already seen).
 - Full rules and templates: `ddd` skill (`/.claude/skills/ddd`).
 
 ## C# Instructions

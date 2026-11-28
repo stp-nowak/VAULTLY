@@ -74,7 +74,8 @@ ServiceName/
 │   │   └── Lines/                  #   a part of the aggregate with its own types gets a sub-folder
 │   │       ├── OrderLine.cs        #     (entity, its id, value objects, exceptions, events);
 │   │       └── OrderLineId.cs      #     a separate aggregate is never nested
-│   └── InvalidValueException.cs    # Only domain-wide basics sit in the root; no Aggregates/, ValueObjects/,
+│   └── (root)                      # Only domain-wide basics sit in the root (InvalidValueException, Money and
+│                                   #   Currency come from Vaultly.Core); no Aggregates/, ValueObjects/,
 │                                   #   Events/, Exceptions/ folders
 │
 ├── Application/                    # Orchestration layer (CQRS). Depends on Domain only.
@@ -669,38 +670,21 @@ public static class DependencyInjection
 
 ## Integration Events (Cross-Service)
 
-Integration events are published to the message bus after a transaction commits. They are different
-from domain events — they cross service boundaries and must be serialization-safe.
+Integration events cross service boundaries over Rebus (RabbitMQ locally); they leave only if the work
+that raised them commits (outbox). They are different from domain events: plain records of primitives in the owning
+service's `PublicTypes/Events`, told apart from domain events by namespace, never changed once shipped. Every
+handler of one must be idempotent, delivery is at least once. Full rules: `core/AGENTS.md`, Messaging.
 
 ```csharp
-// Vaultly.Contracts project — shared DTOs only, no domain logic
-public record TransactionImportedIntegrationEvent
-{
-    public Guid TransactionId { get; init; }
-    public Guid UserId { get; init; }
-    public decimal Amount { get; init; }
-    public string Currency { get; init; }
-    public string Category { get; init; }
-    public DateTime OccurredAt { get; init; }
-}
+// Vaultly.Accounts.PublicTypes/Events/AccountOpened.cs — no domain types, no references
+public sealed record AccountOpened(Guid AccountId, Guid OwnerId, string Currency, int Version);
 
-// In Transaction service — publish after domain event fires
-public class TransactionImportedHandler : INotificationHandler<TransactionImported>
+// Application — publish after the domain event fires (IMessageBus from Vaultly.Core.Messaging)
+public sealed class AccountEventsPublisher(IMessageBus bus) : INotificationHandler<AccountOpened>
 {
-    private readonly IMessageBus _bus;
-
-    public async Task Handle(TransactionImported evt, CancellationToken ct)
-    {
-        await _bus.PublishAsync(new TransactionImportedIntegrationEvent
-        {
-            TransactionId = evt.TransactionId,
-            UserId = evt.UserId,
-            Amount = evt.Amount.Amount,
-            Currency = evt.Amount.Currency,
-            Category = evt.Category.Value,
-            OccurredAt = evt.OccurredAt
-        });
-    }
+    public Task Handle(AccountOpened notification, CancellationToken cancellationToken)
+        => bus.PublishAsync(new Published.AccountOpened(
+            notification.AccountId.Value, notification.OwnerId.Value, notification.Currency.Code, notification.Version));
 }
 ```
 

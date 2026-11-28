@@ -12,7 +12,7 @@ route `/accounts`, cluster and token audience `accounts`), built on `../core`; r
 | Ownership | An account belongs to the token's `sub`; another user's account answers 404, never 403, so nobody learns which accounts exist |
 | Balance | Signed, debt is negative; starts at the opening balance. It will change only through transactions (`./transactions`, over RabbitMQ) — never set by hand |
 | Net worth | Per currency of the open accounts: assets (positive balances), liabilities (debts as a positive amount), their difference; no exchange rates |
-| Domain events | `AccountOpened`, `AccountClosed` (in process today; integration events on RabbitMQ come with transactions) |
+| Events for other services | `AccountOpened` (owner, currency), `AccountClosed`, both with the account's version, published from `Vaultly.Accounts.PublicTypes/Events` through Rebus (queue `accounts`) |
 
 Not here: bank connections (`./bank-sync` later feeds accounts), transactions, budgets, goals, alerts, exchange rates,
 households.
@@ -37,7 +37,7 @@ account, 409 closed account.
 - `dotnet run --project Vaultly.Accounts.Api` — http://localhost:5101; needs Postgres on 5433
   (`docker compose -f accounts/docker-compose.yml up -d accounts-db`) and, to be called, the gateway on 5000
 - Docker: `docker compose -f accounts/docker-compose.yml up --build` (from the repo root) — API (5101) and Postgres
-  (5433). Image: `src/Dockerfile` with the named contexts `core` (= `core/src`) and `identity-public-types`.
+  (5433); it sends messages through RabbitMQ (`infra/docker-compose.yml`, or the root compose file for everything). Image: `src/Dockerfile` with the named contexts `core` (= `core/src`) and `identity-public-types`.
 - Database schema = EF Core migrations in `src/Vaultly.Accounts.Infrastructure/Persistence/Migrations`. After a model
   change, from `accounts/src`:
   `dotnet ef migrations add <Name> --project Vaultly.Accounts.Infrastructure --startup-project Vaultly.Accounts.Infrastructure --output-dir Persistence/Migrations`
@@ -49,13 +49,14 @@ account, 409 closed account.
 accounts/src/
 ├── Vaultly.Accounts.slnx
 ├── Vaultly.Accounts.Domain/
-│   ├── Accounts/                       # Account aggregate, AccountId, OwnerId, AccountName, AccountType, Currency, Money,
-│   │                                   #   AccountClosedException, IAccountRepository; Events/ (AccountOpened, AccountClosed)
-│   └── InvalidValueException.cs
+│   └── Accounts/                       # Account aggregate (with its version), AccountId, OwnerId, AccountName, AccountType,
+│                                       #   AccountClosedException, IAccountRepository; Events/ (AccountOpened, AccountClosed)
+├── Vaultly.Accounts.PublicTypes/       # Events/ other services subscribe to: AccountOpened, AccountClosed
 ├── Vaultly.Accounts.Application/       # CQRS on Vaultly.Core.Messaging
 │   └── Features/
-│       ├── Accounts/                   # AccountDto, IAccountReadService, AccountNotFoundException (shared by the area);
-│       │                               #   OpenAccount, RenameAccount, CloseAccount, GetAccounts, GetAccount
+│       ├── Accounts/                   # AccountDto, IAccountReadService, AccountNotFoundException (shared by the area),
+│       │                               #   AccountEventsPublisher; OpenAccount, RenameAccount, CloseAccount,
+│       │                               #   GetAccounts, GetAccount
 │       └── NetWorth/GetNetWorth/       # Query, Handler, CurrencyNetWorthDto, INetWorthReadService
 ├── Vaultly.Accounts.Infrastructure/    # EF Core (Npgsql)
 │   ├── Accounts/                       # AccountRepository, AccountReadService, AccountConfiguration
@@ -71,4 +72,6 @@ accounts/src/
 - Every query and command carries the owner (`OwnerId` from `GetUserId()`); repositories and read services always
   filter by it.
 - Amounts are `decimal` with at most 4 decimal places (`numeric(19,4)`); currencies are validated ISO 4217 codes.
-- API tests host the real service behind `TestGateway` (`Vaultly.Core.Testing`) on an in-memory database.
+- API tests host the real service behind `TestGateway` (`Vaultly.Core.Testing`) on an in-memory database, with
+  messaging off and a `RecordingMessageBus`.
+- Every change to an account raises its `Version`; events carry it so copies elsewhere can ignore late ones.
