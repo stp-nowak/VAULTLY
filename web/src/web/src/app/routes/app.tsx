@@ -1,14 +1,14 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { DashboardPage } from '@/pages/dashboard';
+import { AppLayout } from '@/app/layouts/AppLayout';
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async ({ context, location }) => {
-    await context.auth.ensureReady();
+    const auth = await context.auth.ensureReady();
 
-    if (!context.auth.isAuthenticated) {
+    if (auth.status !== 'authenticated') {
       throw redirect({ to: '/', search: { returnUrl: location.href } });
     }
   },
-  component: DashboardPage,
+  component: AppLayout,
 });

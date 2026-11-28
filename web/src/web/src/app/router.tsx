@@ -2,6 +2,7 @@ import { createRouter, type RouterHistory } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { AuthContextValue } from '@/domain/identity';
+import { appContentId } from '@/widgets/app-shell';
 
 import { routeTree } from './routeTree.gen';
 
@@ -22,6 +23,7 @@ export function createAppRouter(history?: RouterHistory) {
     defaultPreloadStaleTime: 0,
     history,
     scrollRestoration: true,
+    scrollToTopSelectors: [`#${appContentId}`],
   });
 }
 

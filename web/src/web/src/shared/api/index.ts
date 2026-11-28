@@ -1,1 +1,1 @@
-export { CSRF_HEADER, fetchJson, HttpError } from './http';
+export { CSRF_HEADER, fetchJson, HttpError, sendJson, statusOf } from './http';

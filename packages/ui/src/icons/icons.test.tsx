@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { BrandMark } from './BrandMark';
 import { ChevronDownIcon } from './ChevronDownIcon';
 import { CloseIcon } from './CloseIcon';
+import { LogOutIcon } from './LogOutIcon';
 import { MenuIcon } from './MenuIcon';
 import { SearchIcon } from './SearchIcon';
+import { SettingsIcon } from './SettingsIcon';
 
 describe('BrandMark', () => {
   it('is decorative unless it gets a title', () => {
@@ -27,12 +29,14 @@ describe.each([
   ['ChevronDownIcon', ChevronDownIcon],
   ['MenuIcon', MenuIcon],
   ['CloseIcon', CloseIcon],
+  ['SettingsIcon', SettingsIcon],
+  ['LogOutIcon', LogOutIcon],
 ])('%s', (_, Icon) => {
   it('is decorative and merges className', () => {
-    const { container } = render(<Icon className="size-6" />);
+    const { container } = render(<Icon className="size-7" />);
 
     const icon = container.querySelector('svg');
     expect(icon).toHaveAttribute('aria-hidden', 'true');
-    expect(icon?.getAttribute('class')).toContain('size-6');
+    expect(icon?.getAttribute('class')).toContain('size-7');
   });
 });

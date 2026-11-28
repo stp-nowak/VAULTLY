@@ -98,5 +98,12 @@ describe('app routes', () => {
       expect(router.state.location.pathname).toBe('/app');
       expect(screen.queryByRole('button', { name: 'Log in' })).not.toBeInTheDocument();
     });
+
+    it('opens a page deep inside the app straight away', async () => {
+      const { router } = renderApp('/app/settings');
+
+      expect(await screen.findByRole('heading', { name: 'Your sign-in' })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/app/settings');
+    });
   });
 });
