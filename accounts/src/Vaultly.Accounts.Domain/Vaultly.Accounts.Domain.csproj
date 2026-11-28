@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="15.0.0" />
     <ProjectReference Include="../../../core/src/Vaultly.Core/Vaultly.Core.csproj" />
   </ItemGroup>
 </Project>

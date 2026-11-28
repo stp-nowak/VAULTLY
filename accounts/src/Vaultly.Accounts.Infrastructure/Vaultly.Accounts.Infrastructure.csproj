@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="15.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
     <!-- Pinned to the Design package's version: Design is private, so without this the API would ship the older
          Relational assembly that Npgsql brings in and fail to load at runtime. -->
