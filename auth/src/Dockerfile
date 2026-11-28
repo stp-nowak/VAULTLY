@@ -19,7 +19,7 @@ COPY --from=core Vaultly.Core.Persistence/ /repo/core/src/Vaultly.Core.Persisten
 COPY . .
 RUN dotnet publish Vaultly.Identity.Api/Vaultly.Identity.Api.csproj --configuration Release --no-restore --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app/publish .
 # Home of the JWT signing key (Identity:JwtPrivateKeyPemFilePath). Owned by the app user so a volume mounted here
