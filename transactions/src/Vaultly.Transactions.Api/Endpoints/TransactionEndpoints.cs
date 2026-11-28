@@ -32,14 +32,17 @@ public static class TransactionEndpoints
         return app;
     }
 
-    internal static async Task<Ok<IReadOnlyList<TransactionDto>>> GetTransactionsAsync(
+    internal static async Task<Ok<TransactionPageDto>> GetTransactionsAsync(
         ClaimsPrincipal user,
         ISender sender,
         CancellationToken cancellationToken,
         Guid? accountId = null,
         DateOnly? from = null,
-        DateOnly? to = null)
-        => TypedResults.Ok(await sender.Send(new GetTransactionsQuery(user.GetUserId(), accountId, from, to), cancellationToken));
+        DateOnly? to = null,
+        string? cursor = null,
+        int? limit = null)
+        => TypedResults.Ok(await sender.Send(
+            new GetTransactionsQuery(user.GetUserId(), accountId, from, to, cursor, limit), cancellationToken));
 
     internal static async Task<Created<TransactionDto>> RecordTransactionAsync(
         RecordTransactionRequest request, ClaimsPrincipal user, ISender sender, CancellationToken cancellationToken)

@@ -23,7 +23,7 @@ transaction or account, 409 closed account, a pending or rejected transaction, o
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /transactions?accountId=&from=&to=` | The user's transactions (deleted ones left out), newest day first |
+| `GET /transactions?accountId=&from=&to=&limit=&cursor=` | One page of the user's transactions (deleted ones left out), newest day first and, within a day, newest recorded first: `{ items, nextCursor }`. `limit` 1–200 (default 50); pass `nextCursor` back as `cursor` for the next page, `null` on the last. An invalid cursor or limit is 400 |
 | `POST /transactions` `{ accountId, amount, bookedOn, description, note }` | Records one; 201 with it (`status: pending`) and `Location` |
 | `GET /transactions/{id}` | One transaction: `status` (`pending` / `posted` / `rejected`), `pendingStep`, `declineReason` |
 | `PUT /transactions/{id}` `{ amount, bookedOn, description, note }` | 202 when the amount or day changed (pending), 204 when only the text did |
@@ -31,7 +31,8 @@ transaction or account, 409 closed account, a pending or rejected transaction, o
 | `GET /health/live`, `/health/ready` | Anonymous; ready = the database answers |
 
 ## Commands
-- from `transactions/src`: `dotnet build Vaultly.Transactions.slnx`, `dotnet test Vaultly.Transactions.slnx`
+- from `transactions/src`: `dotnet build Vaultly.Transactions.slnx`, `dotnet test Vaultly.Transactions.slnx` (the page
+  tests start Postgres with Testcontainers, so Docker must run)
 - `dotnet run --project Vaultly.Transactions.Api` — http://localhost:5102; needs Postgres on 5434
   (`docker compose -f transactions/docker-compose.yml up -d transactions-db`), RabbitMQ on 5672
   (`docker compose -f infra/docker-compose.yml up -d`), Accounts to answer the saga and, to be called, the gateway
@@ -82,3 +83,7 @@ transactions/src/
 - Amounts and currencies are core's `Money` and `Currency`; a transaction is always in its account's currency.
 - API tests host the real service behind `TestGateway` on an in-memory database with messaging off; they drive the
   saga's outcome by sending `ConfirmPosting` / `DeclinePosting` directly.
+- Lists page with a cursor (keyset), never with an offset: the cursor is the last row's day and its `Sequence` (a
+  database identity column, shadow property of `Transaction`), so pages neither skip nor repeat rows while
+  transactions are added. The in-memory database does not generate `Sequence`, so ordering within a day is tested on
+  Postgres (`TransactionPagesTests`).

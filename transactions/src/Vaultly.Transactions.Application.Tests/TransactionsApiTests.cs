@@ -132,9 +132,10 @@ public sealed class TransactionsApiTests
         Assert.Multiple(async () =>
         {
             var mine = await _client.GetFromJsonAsync<JsonElement>($"/transactions?accountId={AccountId}");
-            Assert.That(mine.EnumerateArray().Select(x => x.GetProperty("id").GetGuid()), Is.EqualTo(new[] { id }));
-            Assert.That((await _client.GetFromJsonAsync<JsonElement>($"/transactions?accountId={Guid.NewGuid()}")).GetArrayLength(), Is.Zero);
-            Assert.That((await otherUser.GetFromJsonAsync<JsonElement>("/transactions")).GetArrayLength(), Is.Zero);
+            Assert.That(mine.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetGuid()), Is.EqualTo(new[] { id }));
+            Assert.That(mine.GetProperty("nextCursor").ValueKind, Is.EqualTo(JsonValueKind.Null));
+            Assert.That((await _client.GetFromJsonAsync<JsonElement>($"/transactions?accountId={Guid.NewGuid()}")).GetProperty("items").GetArrayLength(), Is.Zero);
+            Assert.That((await otherUser.GetFromJsonAsync<JsonElement>("/transactions")).GetProperty("items").GetArrayLength(), Is.Zero);
             Assert.That((await otherUser.GetAsync($"/transactions/{id}")).StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         });
     }
@@ -153,6 +154,41 @@ public sealed class TransactionsApiTests
             Assert.That(closed.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
             Assert.That(unknown.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         });
+    }
+
+    [Test]
+    public async Task List_PagesWithTheNextCursor_UntilThereIsNone()
+    {
+        var recorded = new List<Guid>();
+        foreach (var day in new[] { "2026-11-20", "2026-11-21", "2026-11-22" })
+        {
+            var response = await _client.PostAsJsonAsync("/transactions", new { accountId = AccountId, amount = -10m, bookedOn = day, description = "Shop" });
+            recorded.Add((await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+        }
+
+        var first = await _client.GetFromJsonAsync<JsonElement>("/transactions?limit=2");
+        var cursor = first.GetProperty("nextCursor").GetString();
+        var second = await _client.GetFromJsonAsync<JsonElement>($"/transactions?limit=2&cursor={cursor}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetGuid()),
+                Is.EqualTo(new[] { recorded[2], recorded[1] }));
+            Assert.That(second.GetProperty("items").EnumerateArray().Select(x => x.GetProperty("id").GetGuid()),
+                Is.EqualTo(new[] { recorded[0] }));
+            Assert.That(second.GetProperty("nextCursor").ValueKind, Is.EqualTo(JsonValueKind.Null));
+        });
+    }
+
+    [TestCase("cursor=not-a-cursor")]
+    [TestCase("cursor=bm9wZQ")]
+    [TestCase("limit=0")]
+    [TestCase("limit=201")]
+    public async Task List_WithAnInvalidCursorOrLimit_IsABadRequest(string query)
+    {
+        var response = await _client.GetAsync($"/transactions?{query}");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     private static IEnumerable<TestCaseData> InvalidTransactions()
