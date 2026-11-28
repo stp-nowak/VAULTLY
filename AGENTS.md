@@ -13,8 +13,10 @@ Mono repo:
 - `./gateway` `Vaultly.Gateway` (C#, YARP) — single entry to the domain services: validates Identity access tokens,
   routes by path, gives each service its own short-lived internal token
 - `./core` — projects every domain service and the identity service build on: `Vaultly.Core` (DDD building blocks,
-  CQRS messaging, `WireNames`), `Vaultly.Core.Persistence` (EF Core unit of work, migrations), `Vaultly.Core.Authentication`
-  (internal token validation), `Vaultly.Core.Testing` (CQRS convention tests, test gateway)
+  `Money`/`Currency`, CQRS messaging, `WireNames`), `Vaultly.Core.Persistence` (EF Core unit of work, migrations),
+  `Vaultly.Core.Messaging.Rebus` (messages between services: Rebus on RabbitMQ with an outbox),
+  `Vaultly.Core.Authentication` (internal token validation), `Vaultly.Core.Testing` (CQRS convention tests, test
+  gateway, recording message bus)
 - `./accounts` `Vaultly.Accounts` — the user's financial accounts, balances and net worth (first domain service)
 - Domain services (Accounts, Transactions, Budgets, …): one top-level folder per service, named after what it does
   (e.g. `./accounts`), never a generic `backend` — tactical DDD + CQRS (C#), rules in `./core/AGENTS.md`

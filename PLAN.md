@@ -209,7 +209,7 @@
 - Docker Compose — all service containers, Postgres instances, RabbitMQ, Redis
 - YARP API Gateway (`./gateway`): access token validation, routing config, internal tokens per service ✅
 - One solution per service (`auth/src/Vaultly.Auth.slnx`, `gateway/src/Vaultly.Gateway.slnx`, `core/src/Vaultly.Core.slnx`, one per domain service)
-- Shared projects: `Vaultly.Identity.PublicTypes` ✅, `Vaultly.Identity.ApiContracts` ✅, `Vaultly.Core` (+ CQRS messaging) + `Vaultly.Core.Persistence` + `Vaultly.Core.Authentication` + `Vaultly.Core.Testing` ✅, later RabbitMQ base, middleware
+- Shared projects: `Vaultly.Identity.PublicTypes` ✅, `Vaultly.Identity.ApiContracts` ✅, `Vaultly.Core` (+ CQRS messaging) + `Vaultly.Core.Persistence` + `Vaultly.Core.Authentication` + `Vaultly.Core.Testing` ✅, messaging with Rebus on RabbitMQ (`Vaultly.Core.Messaging.Rebus`) ✅, later middleware
 - CI pipeline (GitHub Actions — build + test on PR)
 
 **Identity Service**
