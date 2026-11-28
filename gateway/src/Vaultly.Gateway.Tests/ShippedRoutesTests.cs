@@ -18,6 +18,7 @@ public sealed class ShippedRoutesTests
         .Build();
 
     [TestCase("accounts", "/accounts/{**catch-all}")]
+    [TestCase("transactions", "/transactions/{**catch-all}")]
     public void Service_IsRoutedByItsPathPrefix_ToItsOwnCluster(string service, string path)
     {
         var route = Settings.GetSection($"ReverseProxy:Routes:{service}");
