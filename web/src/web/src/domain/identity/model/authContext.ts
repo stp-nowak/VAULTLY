@@ -12,8 +12,11 @@ export interface AuthState {
 }
 
 export interface AuthContextValue extends AuthState {
-  /** Resolves once the initial session check (`GET /api/auth/user`) has finished. */
-  ensureReady: () => Promise<void>;
+  /**
+   * Resolves once the initial session check (`GET /api/auth/user`) has finished, with the state as it is then. Route
+   * guards must use this result: the router context still holds the value from before the check.
+   */
+  ensureReady: () => Promise<AuthState>;
   isAuthenticated: boolean;
   /** Full-page navigation to the web API login endpoint. */
   login: (returnUrl?: string) => void;

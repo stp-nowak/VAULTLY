@@ -11,9 +11,9 @@ interface LandingSearch {
 export const Route = createFileRoute('/')({
   validateSearch: (search): LandingSearch => ({ returnUrl: readLocalPath(search.returnUrl) }),
   beforeLoad: async ({ context }) => {
-    await context.auth.ensureReady();
+    const auth = await context.auth.ensureReady();
 
-    if (context.auth.isAuthenticated) {
+    if (auth.status === 'authenticated') {
       throw redirect({ to: '/app' });
     }
   },

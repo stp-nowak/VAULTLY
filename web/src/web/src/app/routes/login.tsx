@@ -16,9 +16,9 @@ export const Route = createFileRoute('/login')({
     returnUrl: readLocalPath(search.returnUrl),
   }),
   beforeLoad: async ({ context, search }) => {
-    await context.auth.ensureReady();
+    const auth = await context.auth.ensureReady();
 
-    if (context.auth.isAuthenticated) {
+    if (auth.status === 'authenticated') {
       throw redirect({ to: '/app' });
     }
 
