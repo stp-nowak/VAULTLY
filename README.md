@@ -9,7 +9,8 @@ Personal Finance &amp; Budget Intelligence Platform
 - `gateway/` - API gateway (YARP): single entry to the domain services, validates Identity tokens, issues internal tokens per service
 - `core/` - `Vaultly.Core`, `Vaultly.Core.Persistence`, `Vaultly.Core.Authentication` and `Vaultly.Core.Testing`,
   referenced by the domain services and the identity service
-- `accounts/` - accounts service: the user's financial accounts, balances and net worth
+- `accounts/` - accounts service: the user's financial accounts, balances, balance history and net worth
+- `transactions/` - transactions service: transactions on manual accounts, posted to Accounts' balances by a saga
 - every domain service (tactical DDD + CQRS) has its own top-level folder named after what it does
 
 ## Run with Docker
@@ -32,6 +33,7 @@ Each service has its own compose file with only what that service alone needs, s
 | `docker compose -f web/docker-compose.yml up --build` | web SPA, web API, its Redis | 5173, 5180, 6379 |
 | `docker compose -f gateway/docker-compose.yml up --build` | API gateway | 5000 |
 | `docker compose -f accounts/docker-compose.yml up --build` | Accounts API, Accounts Postgres (needs RabbitMQ from `infra`) | 5101, 5433 |
+| `docker compose -f transactions/docker-compose.yml up --build` | Transactions API, Transactions Postgres (needs RabbitMQ from `infra`) | 5102, 5434 |
 | `docker compose -f infra/docker-compose.yml up` | shared infrastructure: RabbitMQ (`vaultly` / `vaultly`) | 5672, 15672 (management UI) |
 
 - All files belong to one Compose project (`vaultly`), so whatever combination runs shares a network. Starting one
@@ -51,6 +53,7 @@ Each service has its own compose file with only what that service alone needs, s
 ## Documentation
 
 - [Authentication & authorization flow](docs/architecture/authentication.md) — end-to-end sign-in, SSO, token refresh and sign-out with diagrams
+- [Transaction posting](docs/architecture/transaction-posting.md) — how a transaction reaches the account balance: the posting saga, compensation, delivery guarantees
 
 ## Auth service configuration
 

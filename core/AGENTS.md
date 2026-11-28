@@ -83,11 +83,15 @@
 - Services never call each other's databases; they exchange messages through RabbitMQ with Rebus
   (`Vaultly.Core.Messaging.Rebus`, the same library and code as on Azure Service Bus, only the transport differs).
 - Contracts live in the owning service's `PublicTypes`: `Events/` (past tense, published to every subscribed
-  service) and `Commands/` (imperative, sent to the one service that owns them, which defines them). Plain records
+  service) and `Commands/` (imperative, sent to the one service that owns them, which defines them, together with
+  the replies it answers them with, e.g. `PostTransaction` → `TransactionPosted` / `TransactionDeclined`). Plain records
   of primitives (`Guid`, `string` currency code, `decimal`, enums), no domain types. Never change one in place once
   it has shipped: add a new one.
 - Application code uses only `IMessageBus` (`PublishAsync`, `SendAsync`, `SendLocalAsync`, `ReplyAsync`), usually
   from a domain event handler: the aggregate raises a domain event, the handler publishes the integration event.
+- A process across services is a Rebus saga (`Saga<TData>`, `MessagingEndpoint.Sagas = true`) in the service that
+  drives it; it only carries messages and sends commands, the rules and the compensation stay in the aggregates.
+  Example: `transactions/src/Vaultly.Transactions.Infrastructure/Postings/TransactionPostingSaga.cs`.
 - `AddRebusMessaging(configuration, new MessagingEndpoint("<service>", "<DbConnectionName>") { Subscriptions,
   CommandOwners, Sagas })` in Infrastructure: one input queue per service (`accounts`), retries up to 5 times, then
   `<service>.error`; outbox, sagas and timeouts in the service's database (tables `rebus_*`, created by Rebus);
