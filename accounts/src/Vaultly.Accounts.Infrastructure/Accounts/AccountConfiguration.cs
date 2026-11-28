@@ -36,6 +36,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .IsRequired();
         entity.Property(x => x.OpeningBalance).HasPrecision(Money.Precision, Money.Scale);
         entity.Property(x => x.Balance).HasPrecision(Money.Precision, Money.Scale);
+        entity.Property(x => x.Version).IsConcurrencyToken();
         entity.HasIndex(x => x.OwnerId);
     }
 }

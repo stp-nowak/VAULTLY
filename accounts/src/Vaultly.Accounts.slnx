@@ -4,6 +4,7 @@
     <Project Path="Vaultly.Accounts.Application/Vaultly.Accounts.Application.csproj" />
     <Project Path="Vaultly.Accounts.Domain/Vaultly.Accounts.Domain.csproj" />
     <Project Path="Vaultly.Accounts.Infrastructure/Vaultly.Accounts.Infrastructure.csproj" />
+    <Project Path="Vaultly.Accounts.PublicTypes/Vaultly.Accounts.PublicTypes.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Vaultly.Accounts.Application.Tests/Vaultly.Accounts.Application.Tests.csproj" />

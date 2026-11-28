@@ -1,4 +1,5 @@
-# Accounts service with everything only it needs: API and database.
+# Accounts service with everything only it needs: API and database. It sends and receives messages through RabbitMQ
+# (../infra/docker-compose.yml).
 #   docker compose -f accounts/docker-compose.yml up --build
 # It accepts only tokens from the gateway (../gateway/docker-compose.yml), which needs the Identity service.
 # Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
@@ -34,12 +35,17 @@ services:
       # Development: plain-http localhost setup, migrations applied on startup.
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__AccountsDb: Host=accounts-db;Database=vaultly_accounts;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://vaultly:vaultly@rabbitmq:5672
       InternalTokens__JwksUrl: http://gateway:8080/.well-known/jwks.json
     ports:
       - "127.0.0.1:5101:8080"
     depends_on:
       accounts-db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+        # Defined in infra/docker-compose.yml: present when started from the root compose file.
+        required: false
 
 volumes:
   accounts-db-data:

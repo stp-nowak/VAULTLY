@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Vaultly.Accounts.Infrastructure.Persistence;
+using Vaultly.Core.Messaging;
 using Vaultly.Core.Testing;
 
 namespace Vaultly.Accounts.Application.Tests;
@@ -19,6 +20,8 @@ internal sealed class AccountsApiFactory : WebApplicationFactory<Program>
 
     public TestGateway Gateway { get; } = new("accounts");
 
+    public RecordingMessageBus Bus { get; } = new();
+
     public HttpClient ClientFor(Guid userId)
     {
         var client = CreateClient();
@@ -29,6 +32,7 @@ internal sealed class AccountsApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Messaging:Enabled", "false");
         foreach (var (key, value) in Gateway.Configuration)
         {
             builder.UseSetting(key, value);
@@ -39,6 +43,7 @@ internal sealed class AccountsApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<AccountsDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<AccountsDbContext>>();
             services.AddDbContext<AccountsDbContext>(options => options.UseInMemoryDatabase(_databaseName));
+            services.AddSingleton<IMessageBus>(Bus);
             Gateway.ServeKeys(services);
         });
     }
