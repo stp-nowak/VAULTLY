@@ -47,6 +47,13 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore Vaultly.Transactions.slnx
       - run: dotnet build Vaultly.Transactions.slnx --no-restore --configuration Release
+      # The build writes the API's OpenAPI contract; the web SPA generates its types from the committed copy.
+      - name: OpenAPI contract is committed
+        run: |
+          if ! git diff --exit-code -- ../openapi; then
+            echo "::error::transactions/openapi changed: build the API locally and commit it"
+            exit 1
+          fi
       - run: dotnet test Vaultly.Transactions.slnx --no-build --configuration Release
 
   image:

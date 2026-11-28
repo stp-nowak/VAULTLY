@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "deps:circular": "tsx src/app/circularDependencies/circularDependenciesReport.ts",
-    "i18n:where": "tsx --tsconfig tsconfig.app.json src/app/translationChecks/whereTranslation.ts"
+    "i18n:where": "tsx --tsconfig tsconfig.app.json src/app/translationChecks/whereTranslation.ts",
+    "api:types": "node scripts/apiTypes.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
@@ -45,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "jsdom": "^28.1.0",
+    "json-schema-to-typescript": "15.0.4",
     "madge": "8.0.0",
     "msw": "^2.12.10",
     "tailwindcss": "^4.3.5",

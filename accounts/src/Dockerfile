@@ -23,7 +23,7 @@ COPY --from=core Vaultly.Core.Authentication/ /repo/core/src/Vaultly.Core.Authen
 COPY --from=core Vaultly.Core.Messaging.Rebus/ /repo/core/src/Vaultly.Core.Messaging.Rebus/
 COPY --from=identity-public-types *.cs /repo/auth/src/Vaultly.Identity.PublicTypes/
 COPY . .
-RUN dotnet publish Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj --configuration Release --no-restore --output /app/publish
+RUN dotnet publish Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj --configuration Release --no-restore -p:OpenApiGenerateDocuments=false --output /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app

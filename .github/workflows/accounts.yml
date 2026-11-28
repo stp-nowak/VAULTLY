@@ -45,6 +45,13 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore Vaultly.Accounts.slnx
       - run: dotnet build Vaultly.Accounts.slnx --no-restore --configuration Release
+      # The build writes the API's OpenAPI contract; the web SPA generates its types from the committed copy.
+      - name: OpenAPI contract is committed
+        run: |
+          if ! git diff --exit-code -- ../openapi; then
+            echo "::error::accounts/openapi changed: build the API locally and commit it"
+            exit 1
+          fi
       - run: dotnet test Vaultly.Accounts.slnx --no-build --configuration Release
 
   image:

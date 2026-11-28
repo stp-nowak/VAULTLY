@@ -25,7 +25,7 @@ COPY --from=accounts-public-types Commands/ /repo/accounts/src/Vaultly.Accounts.
 COPY --from=accounts-public-types Events/ /repo/accounts/src/Vaultly.Accounts.PublicTypes/Events/
 COPY --from=identity-public-types *.cs /repo/auth/src/Vaultly.Identity.PublicTypes/
 COPY . .
-RUN dotnet publish Vaultly.Transactions.Api/Vaultly.Transactions.Api.csproj --configuration Release --no-restore --output /app/publish
+RUN dotnet publish Vaultly.Transactions.Api/Vaultly.Transactions.Api.csproj --configuration Release --no-restore -p:OpenApiGenerateDocuments=false --output /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app

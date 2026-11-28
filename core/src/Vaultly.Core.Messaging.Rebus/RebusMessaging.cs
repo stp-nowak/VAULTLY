@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -28,6 +29,9 @@ public static class RebusMessaging
         Converters = { new JsonStringEnumConverter(WireNames.Policy, allowIntegerValues: false) }
     };
 
+    // The build writes each API's OpenAPI document by starting the app inside this tool; no broker is around then.
+    private static bool IsWritingOpenApiDocument => Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
+
     /// <summary>
     /// Connects the service to RabbitMQ through Rebus and registers <see cref="IMessageBus"/>. Handlers
     /// (<c>IHandleMessages&lt;T&gt;</c>) are registered by the service. With <c>Messaging:Enabled = false</c> (API
@@ -38,7 +42,7 @@ public static class RebusMessaging
         IConfiguration configuration,
         MessagingEndpoint endpoint)
     {
-        if (!configuration.GetSection(SectionName).GetValue("Enabled", defaultValue: true))
+        if (!configuration.GetSection(SectionName).GetValue("Enabled", defaultValue: true) || IsWritingOpenApiDocument)
         {
             return services;
         }
