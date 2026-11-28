@@ -36,9 +36,10 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     await app.Services.MigrateDatabaseAsync<AccountsDbContext>();
 }
 
-app.UseExceptionHandler();
+// Request logging wraps the exception handler, so it logs the status the client gets (404, 409) and not a 500.
 app.UseSerilogRequestLogging(options => options.EnrichDiagnosticContext = (diagnostics, context) =>
     diagnostics.Set("UserId", context.User.FindFirst(IdentityClaims.UserId)?.Value));
+app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
