@@ -3,7 +3,7 @@
 #   docker build --build-context identity-public-types=auth/src/Vaultly.Identity.PublicTypes -t vaultly-gateway gateway/src
 # Projects keep their repository paths below /src so the relative project reference resolves.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 COPY --from=identity-public-types *.csproj auth/src/Vaultly.Identity.PublicTypes/
 COPY Vaultly.Gateway/Vaultly.Gateway.csproj gateway/src/Vaultly.Gateway/
