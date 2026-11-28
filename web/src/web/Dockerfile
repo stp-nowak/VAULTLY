@@ -4,7 +4,7 @@
 #   docker build -f web/src/web/Dockerfile -t vaultly-web-spa .
 # Runtime: API_PROXY_TARGET = base URL of the web API, e.g. http://web-api:8080
 
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /repo
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
