@@ -25,7 +25,7 @@ COPY --from=identity-public-types *.cs /repo/auth/src/Vaultly.Identity.PublicTyp
 COPY . .
 RUN dotnet publish Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj --configuration Release --no-restore -p:OpenApiGenerateDocuments=false --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app/publish .
 USER $APP_UID
