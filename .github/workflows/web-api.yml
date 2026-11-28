@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 11.0.x
       - run: dotnet restore Vaultly.Web.Api.slnx
       - run: dotnet build Vaultly.Web.Api.slnx --no-restore --configuration Release
       - run: dotnet test Vaultly.Web.Api.slnx --no-build --configuration Release

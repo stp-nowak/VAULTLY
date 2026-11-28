@@ -38,5 +38,5 @@ Vaultly.Gateway/
   by hand. The Docker image gets that project as the named build context `identity-public-types`.
 - Adding a service = a route + cluster in `ReverseProxy` (cluster id = the service's name and token audience).
 - Never forward the user's access token or log any token or the signing key.
-- C#: latest language version, `net10.0`, nullable, primary constructors, minimal comments (root rule), Serilog,
+- C#: latest language version, `net11.0`, nullable, primary constructors, minimal comments (root rule), Serilog,
   NUnit tests (`GatewayFactory` hosts the gateway with Identity's keys and the services stubbed).

@@ -45,7 +45,7 @@ Vaultly.Web.Api/
   payloads or spell its form fields here. Map them to this API's own models (`IdentityTokenSet`, `AuthenticatedUser`)
   where they are stored or returned to the SPA.
 - New config goes into the owning feature's options class with data-annotation validation (`ValidateOnStart`).
-- C#: latest language version, `net10.0`, nullable enabled, primary constructors, minimal comments (root rule),
+- C#: latest language version, `net11.0`, nullable enabled, primary constructors, minimal comments (root rule),
   Serilog for logging, NUnit + Moq tests (integration tests via `WebApiFactory`, Redis replaced by memory cache).
 - Known limitation: token refresh is serialised per session **within one instance** (`SessionRefreshLock`).
   Run one instance or use sticky sessions until a Redis-based lock is added.

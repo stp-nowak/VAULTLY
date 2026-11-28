@@ -3,7 +3,7 @@
 #   docker build --build-context core=core/src -t vaultly-identity-api auth/src
 # Projects keep their repository paths below /repo so the relative project reference resolves.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /repo/auth/src
 COPY --from=core Vaultly.Core/Vaultly.Core.csproj /repo/core/src/Vaultly.Core/
 COPY --from=core Vaultly.Core.Persistence/Vaultly.Core.Persistence.csproj /repo/core/src/Vaultly.Core.Persistence/
@@ -19,7 +19,7 @@ COPY --from=core Vaultly.Core.Persistence/ /repo/core/src/Vaultly.Core.Persisten
 COPY . .
 RUN dotnet publish Vaultly.Identity.Api/Vaultly.Identity.Api.csproj --configuration Release --no-restore --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app/publish .
 # Home of the JWT signing key (Identity:JwtPrivateKeyPemFilePath). Owned by the app user so a volume mounted here

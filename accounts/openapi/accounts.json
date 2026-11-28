@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.1",
+  "openapi": "3.2.0",
   "info": {
     "title": "Vaultly.Accounts.Api | v1",
     "version": "1.0.0"
@@ -423,10 +423,10 @@
   },
   "tags": [
     {
-      "name": "NetWorthEndpoints"
+      "name": "AccountEndpoints"
     },
     {
-      "name": "AccountEndpoints"
+      "name": "NetWorthEndpoints"
     }
   ]
 }

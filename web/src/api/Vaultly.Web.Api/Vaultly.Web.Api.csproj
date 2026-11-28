@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Vaultly.Web.Api</RootNamespace>
@@ -8,9 +8,9 @@
 
   <ItemGroup>
     <!-- Redis-backed IDistributedCache: server-side store for per-session tokens. -->
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="11.0.0" />
     <!-- Shares Data Protection keys between API instances so encrypted sessions/cookies survive restarts. -->
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="10.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="11.0.0" />
     <!-- YARP forwarder: streams /api/* calls to the backend with the session's bearer token attached. -->
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />

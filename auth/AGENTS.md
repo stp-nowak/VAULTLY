@@ -150,7 +150,7 @@ auth/
   (registered in `IdentityEndpoints`), never inline in `Program.cs`.
 
 ## C# Instructions
-- Latest C# (currently C# 14), `net10.0`, nullable reference types enabled.
+- Latest C# (currently C# 15), `net11.0`, nullable reference types enabled.
 - Prefer primary constructors.
 - Fixed option sets (roles, statuses, error codes, grant types) are enums, never strings. Their outside spelling is
   the `snake_case` member name: JSON via the global `JsonStringEnumConverter` (`ApiJson`, integers rejected), EF
