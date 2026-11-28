@@ -1,4 +1,4 @@
-namespace Vaultly.Accounts.Domain.Accounts;
+namespace Vaultly.Core.Amounts;
 
 /// <summary>A signed amount in one currency; a debt is negative.</summary>
 public sealed record Money

@@ -1,3 +1,5 @@
+using Vaultly.Core;
+
 namespace Vaultly.Identity.Domain.OAuthStates;
 
 public sealed record CodeVerifier

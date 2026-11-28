@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 
+using Vaultly.Core;
+
 namespace Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 
 /// <summary>

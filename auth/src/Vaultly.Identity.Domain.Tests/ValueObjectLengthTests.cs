@@ -1,5 +1,6 @@
 using NUnit.Framework;
 
+using Vaultly.Core;
 using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 using Vaultly.Identity.Domain.Users;
 

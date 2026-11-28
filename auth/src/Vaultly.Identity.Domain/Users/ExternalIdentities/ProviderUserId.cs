@@ -1,3 +1,5 @@
+using Vaultly.Core;
+
 namespace Vaultly.Identity.Domain.Users.ExternalIdentities;
 
 public sealed record ProviderUserId

@@ -6,9 +6,9 @@ using Vaultly.Accounts.Application.Features.Accounts;
 using Vaultly.Accounts.Application.Features.Accounts.CloseAccount;
 using Vaultly.Accounts.Application.Features.Accounts.OpenAccount;
 using Vaultly.Accounts.Application.Features.Accounts.RenameAccount;
-using Vaultly.Accounts.Domain;
 using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core;
+using Vaultly.Core.Amounts;
 
 namespace Vaultly.Accounts.Application.Tests;
 

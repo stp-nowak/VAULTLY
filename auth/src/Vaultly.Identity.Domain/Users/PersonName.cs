@@ -1,3 +1,5 @@
+using Vaultly.Core;
+
 namespace Vaultly.Identity.Domain.Users;
 
 public sealed record PersonName

@@ -1,3 +1,5 @@
+using Vaultly.Core;
+
 namespace Vaultly.Identity.Domain.Users.Passwords;
 
 /// <summary>A one-way, salted hash of a user's password in the hasher's own format.</summary>

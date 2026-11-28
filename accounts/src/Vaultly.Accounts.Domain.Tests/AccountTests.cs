@@ -3,6 +3,8 @@ using NUnit.Framework;
 
 using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Accounts.Domain.Accounts.Events;
+using Vaultly.Core;
+using Vaultly.Core.Amounts;
 
 namespace Vaultly.Accounts.Domain.Tests;
 

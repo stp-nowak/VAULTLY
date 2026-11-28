@@ -8,5 +8,6 @@
   <Folder Name="/tests/">
     <Project Path="Vaultly.Core.Authentication.Tests/Vaultly.Core.Authentication.Tests.csproj" />
     <Project Path="Vaultly.Core.Persistence.Tests/Vaultly.Core.Persistence.Tests.csproj" />
+    <Project Path="Vaultly.Core.Tests/Vaultly.Core.Tests.csproj" />
   </Folder>
 </Solution>
