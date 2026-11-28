@@ -12,7 +12,7 @@ COPY --from=identity-public-types *.cs auth/src/Vaultly.Identity.PublicTypes/
 COPY Vaultly.Gateway/ gateway/src/Vaultly.Gateway/
 RUN dotnet publish gateway/src/Vaultly.Gateway/Vaultly.Gateway.csproj --configuration Release --no-restore --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app/publish .
 # Home of the internal token signing key (InternalTokens:SigningKeyPemFilePath). Owned by the app user so a volume
