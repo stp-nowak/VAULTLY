@@ -6,6 +6,7 @@ using Vaultly.Accounts.Application.Features.NetWorth.GetNetWorth;
 using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Accounts.Infrastructure.Accounts;
 using Vaultly.Accounts.Infrastructure.Persistence;
+using Vaultly.Core.Amounts;
 
 namespace Vaultly.Accounts.Application.Tests;
 

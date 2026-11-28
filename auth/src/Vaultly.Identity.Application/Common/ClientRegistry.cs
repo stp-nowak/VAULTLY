@@ -3,8 +3,8 @@ using System.Text;
 
 using Microsoft.Extensions.Options;
 
+using Vaultly.Core;
 using Vaultly.Identity.Application.Options;
-using Vaultly.Identity.Domain;
 using Vaultly.Identity.Domain.AuthorizationRequests.Clients;
 
 namespace Vaultly.Identity.Application.Common;

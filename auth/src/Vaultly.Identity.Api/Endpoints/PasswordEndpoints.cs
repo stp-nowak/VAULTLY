@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 
 using MediatR;
 
+using Vaultly.Core;
 using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Http;
 using Vaultly.Identity.Application.Common;

@@ -7,6 +7,7 @@ using Moq;
 
 using NUnit.Framework;
 
+using Vaultly.Core;
 using Vaultly.Identity.Api.Contracts;
 using Vaultly.Identity.Api.Endpoints;
 using Vaultly.Identity.Api.Http;

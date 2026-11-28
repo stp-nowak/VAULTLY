@@ -1,4 +1,5 @@
 using Vaultly.Core;
+using Vaultly.Core.Amounts;
 
 namespace Vaultly.Accounts.Domain.Accounts.Events;
 

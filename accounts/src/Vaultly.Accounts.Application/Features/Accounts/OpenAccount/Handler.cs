@@ -1,5 +1,6 @@
 using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Core;
+using Vaultly.Core.Amounts;
 using Vaultly.Core.Messaging;
 
 namespace Vaultly.Accounts.Application.Features.Accounts.OpenAccount;

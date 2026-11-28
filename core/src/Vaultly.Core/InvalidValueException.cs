@@ -1,6 +1,4 @@
-using Vaultly.Core;
-
-namespace Vaultly.Identity.Domain;
+namespace Vaultly.Core;
 
 public sealed class InvalidValueException : DomainException
 {

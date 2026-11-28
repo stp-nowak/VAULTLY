@@ -1,3 +1,5 @@
+using Vaultly.Core;
+
 namespace Vaultly.Accounts.Domain.Accounts;
 
 public sealed record AccountName

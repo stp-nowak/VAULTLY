@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Vaultly.Accounts.Domain.Accounts;
+using Vaultly.Core.Amounts;
 using Vaultly.Core.Persistence;
 
 namespace Vaultly.Accounts.Infrastructure.Accounts;

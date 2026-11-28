@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using System.Globalization;
 
-namespace Vaultly.Accounts.Domain.Accounts;
+namespace Vaultly.Core.Amounts;
 
 /// <summary>An ISO 4217 currency code that some country uses, e.g. <c>PLN</c>.</summary>
 public sealed record Currency
