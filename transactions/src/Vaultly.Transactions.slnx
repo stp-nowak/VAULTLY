@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Vaultly.Transactions.Api/Vaultly.Transactions.Api.csproj" />
+    <Project Path="Vaultly.Transactions.Application/Vaultly.Transactions.Application.csproj" />
+    <Project Path="Vaultly.Transactions.Domain/Vaultly.Transactions.Domain.csproj" />
+    <Project Path="Vaultly.Transactions.Infrastructure/Vaultly.Transactions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Vaultly.Transactions.Application.Tests/Vaultly.Transactions.Application.Tests.csproj" />
+    <Project Path="Vaultly.Transactions.Domain.Tests/Vaultly.Transactions.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

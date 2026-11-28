@@ -1,0 +1,52 @@
+# Transactions service with everything only it needs: API and database. It talks to Accounts through RabbitMQ
+# (../infra/docker-compose.yml).
+#   docker compose -f transactions/docker-compose.yml up --build
+# It accepts only tokens from the gateway (../gateway/docker-compose.yml), which needs the Identity service.
+# Shares the `vaultly` project (and so its network) with the other Vaultly compose files; see ../docker-compose.yml.
+name: vaultly
+
+services:
+  transactions-db:
+    container_name: vaultly-transactions-db
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vaultly_transactions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - transactions-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Over TCP: the image's init-time temporary server answers on the socket only, before the real server is up.
+      test: ["CMD-SHELL", "pg_isready --host 127.0.0.1 --username postgres --dbname vaultly_transactions"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  transactions-api:
+    container_name: vaultly-transactions-api
+    build:
+      context: src
+      additional_contexts:
+        core: ../core/src
+        accounts-public-types: ../accounts/src/Vaultly.Accounts.PublicTypes
+        identity-public-types: ../auth/src/Vaultly.Identity.PublicTypes
+    environment:
+      # Development: plain-http localhost setup, migrations applied on startup.
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__TransactionsDb: Host=transactions-db;Database=vaultly_transactions;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://vaultly:vaultly@rabbitmq:5672
+      InternalTokens__JwksUrl: http://gateway:8080/.well-known/jwks.json
+    ports:
+      - "127.0.0.1:5102:8080"
+    depends_on:
+      transactions-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+        # Defined in infra/docker-compose.yml: present when started from the root compose file.
+        required: false
+
+volumes:
+  transactions-db-data:
