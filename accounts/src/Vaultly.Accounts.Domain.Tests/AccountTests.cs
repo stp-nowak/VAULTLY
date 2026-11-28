@@ -1,6 +1,5 @@
 using NUnit.Framework;
 
-
 using Vaultly.Accounts.Domain.Accounts;
 using Vaultly.Accounts.Domain.Accounts.Events;
 using Vaultly.Core;
@@ -69,6 +68,24 @@ public sealed class AccountTests
             Assert.That(account.ClosedAt, Is.EqualTo(Now.AddDays(1)));
             Assert.That(account.IsClosed, Is.True);
             Assert.That(account.DomainEvents.Single(), Is.TypeOf<AccountClosed>());
+        });
+    }
+
+    [Test]
+    public void EveryChange_RaisesTheVersion_ThatTheEventsCarry()
+    {
+        var account = Open();
+        var opened = (AccountOpened)account.DomainEvents.Single();
+        account.ClearDomainEvents();
+
+        account.Rename(new AccountName("Savings pot"));
+        account.Close(Now);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(opened.Version, Is.EqualTo(1));
+            Assert.That(account.Version, Is.EqualTo(3));
+            Assert.That(((AccountClosed)account.DomainEvents.Single()).Version, Is.EqualTo(3));
         });
     }
 

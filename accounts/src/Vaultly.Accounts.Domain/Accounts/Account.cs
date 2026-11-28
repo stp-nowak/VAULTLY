@@ -34,6 +34,9 @@ public sealed class Account : AggregateRoot
 
     public bool IsClosed => ClosedAt is not null;
 
+    /// <summary>Counts the changes of the account, starting at 1 when it is opened.</summary>
+    public int Version { get; private set; }
+
     public static Account Open(OwnerId ownerId, AccountName name, AccountType type, Money openingBalance, DateTimeOffset now)
     {
         if (!Enum.IsDefined(type))
@@ -50,10 +53,11 @@ public sealed class Account : AggregateRoot
             Currency = openingBalance.Currency,
             OpeningBalance = openingBalance.Amount,
             Balance = openingBalance.Amount,
-            OpenedAt = now
+            OpenedAt = now,
+            Version = 1
         };
 
-        account.RaiseDomainEvent(new AccountOpened(account.Id, ownerId, type, account.Currency));
+        account.RaiseDomainEvent(new AccountOpened(account.Id, ownerId, type, account.Currency, account.Version));
         return account;
     }
 
@@ -61,13 +65,15 @@ public sealed class Account : AggregateRoot
     {
         EnsureOpen();
         Name = name;
+        Version++;
     }
 
     public void Close(DateTimeOffset now)
     {
         EnsureOpen();
         ClosedAt = now;
-        RaiseDomainEvent(new AccountClosed(Id, OwnerId));
+        Version++;
+        RaiseDomainEvent(new AccountClosed(Id, OwnerId, Version));
     }
 
     private void EnsureOpen()

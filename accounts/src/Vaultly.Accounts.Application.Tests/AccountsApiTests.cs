@@ -4,6 +4,8 @@ using System.Text.Json;
 
 using NUnit.Framework;
 
+using Vaultly.Accounts.PublicTypes.Events;
+
 namespace Vaultly.Accounts.Application.Tests;
 
 [TestFixture]
@@ -110,6 +112,19 @@ public sealed class AccountsApiTests
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
             Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/problem+json"));
         });
+    }
+
+    [Test]
+    public async Task OpeningAndClosing_TellOtherServices()
+    {
+        var account = await OpenIdAsync("Wallet", "cash", "pln", 0m);
+        await _client.PostAsync($"/accounts/{account}/close", content: null);
+
+        Assert.That(_factory.Bus.Messages, Is.EqualTo(new object[]
+        {
+            new AccountOpened(account, UserId, "PLN", Version: 1),
+            new AccountClosed(account, UserId, Version: 2)
+        }));
     }
 
     [Test]

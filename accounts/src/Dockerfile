@@ -9,15 +9,18 @@ WORKDIR /repo/accounts/src
 COPY --from=core Vaultly.Core/Vaultly.Core.csproj /repo/core/src/Vaultly.Core/
 COPY --from=core Vaultly.Core.Persistence/Vaultly.Core.Persistence.csproj /repo/core/src/Vaultly.Core.Persistence/
 COPY --from=core Vaultly.Core.Authentication/Vaultly.Core.Authentication.csproj /repo/core/src/Vaultly.Core.Authentication/
+COPY --from=core Vaultly.Core.Messaging.Rebus/Vaultly.Core.Messaging.Rebus.csproj /repo/core/src/Vaultly.Core.Messaging.Rebus/
 COPY --from=identity-public-types *.csproj /repo/auth/src/Vaultly.Identity.PublicTypes/
 COPY Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj Vaultly.Accounts.Api/
 COPY Vaultly.Accounts.Application/Vaultly.Accounts.Application.csproj Vaultly.Accounts.Application/
 COPY Vaultly.Accounts.Domain/Vaultly.Accounts.Domain.csproj Vaultly.Accounts.Domain/
 COPY Vaultly.Accounts.Infrastructure/Vaultly.Accounts.Infrastructure.csproj Vaultly.Accounts.Infrastructure/
+COPY Vaultly.Accounts.PublicTypes/Vaultly.Accounts.PublicTypes.csproj Vaultly.Accounts.PublicTypes/
 RUN dotnet restore Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj
 COPY --from=core Vaultly.Core/ /repo/core/src/Vaultly.Core/
 COPY --from=core Vaultly.Core.Persistence/ /repo/core/src/Vaultly.Core.Persistence/
 COPY --from=core Vaultly.Core.Authentication/ /repo/core/src/Vaultly.Core.Authentication/
+COPY --from=core Vaultly.Core.Messaging.Rebus/ /repo/core/src/Vaultly.Core.Messaging.Rebus/
 COPY --from=identity-public-types *.cs /repo/auth/src/Vaultly.Identity.PublicTypes/
 COPY . .
 RUN dotnet publish Vaultly.Accounts.Api/Vaultly.Accounts.Api.csproj --configuration Release --no-restore --output /app/publish
