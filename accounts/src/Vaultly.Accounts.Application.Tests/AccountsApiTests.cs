@@ -128,6 +128,19 @@ public sealed class AccountsApiTests
     }
 
     [Test]
+    public async Task BalanceHistory_OfANewAccount_IsEmpty_AndOfAnotherUsersAccount_NotFound()
+    {
+        var account = await OpenIdAsync("Wallet", "cash", "PLN", 0m);
+        using var otherUser = _factory.ClientFor(OtherUserId);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((await _client.GetFromJsonAsync<JsonElement>($"/accounts/{account}/balances?from=2026-01-01")).GetArrayLength(), Is.Zero);
+            Assert.That((await otherUser.GetAsync($"/accounts/{account}/balances")).StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        });
+    }
+
+    [Test]
     public async Task AnotherUsersAccount_IsNotFound()
     {
         var account = await OpenIdAsync("Wallet", "cash", "PLN", 0m);

@@ -70,6 +70,43 @@ namespace Vaultly.Accounts.Infrastructure.Persistence.Migrations
 
                     b.ToTable("Accounts");
                 });
+
+            modelBuilder.Entity("Vaultly.Accounts.Domain.Postings.Posting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
+
+                    b.Property<DateOnly>("BookedOn")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("LastStepId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "BookedOn");
+
+                    b.ToTable("Postings");
+                });
+
+            modelBuilder.Entity("Vaultly.Accounts.Domain.Postings.Posting", b =>
+                {
+                    b.HasOne("Vaultly.Accounts.Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 #pragma warning restore 612, 618
         }
     }
