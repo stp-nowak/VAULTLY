@@ -2,11 +2,13 @@
   <Folder Name="/src/">
     <Project Path="Vaultly.Core/Vaultly.Core.csproj" />
     <Project Path="Vaultly.Core.Authentication/Vaultly.Core.Authentication.csproj" />
+    <Project Path="Vaultly.Core.Messaging.Rebus/Vaultly.Core.Messaging.Rebus.csproj" />
     <Project Path="Vaultly.Core.Persistence/Vaultly.Core.Persistence.csproj" />
     <Project Path="Vaultly.Core.Testing/Vaultly.Core.Testing.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Vaultly.Core.Authentication.Tests/Vaultly.Core.Authentication.Tests.csproj" />
+    <Project Path="Vaultly.Core.Messaging.Rebus.Tests/Vaultly.Core.Messaging.Rebus.Tests.csproj" />
     <Project Path="Vaultly.Core.Persistence.Tests/Vaultly.Core.Persistence.Tests.csproj" />
     <Project Path="Vaultly.Core.Tests/Vaultly.Core.Tests.csproj" />
   </Folder>
