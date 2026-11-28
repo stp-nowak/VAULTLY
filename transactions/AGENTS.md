@@ -31,6 +31,9 @@ transaction or account, 409 closed account, a pending or rejected transaction, o
 | `GET /health/live`, `/health/ready` | Anonymous; ready = the database answers |
 
 ## Commands
+- The API's OpenAPI contract is written to `transactions/openapi/transactions.json` on every build (`Microsoft.Extensions.ApiDescription.Server`)
+  and committed: the web SPA generates its types from it, and CI fails while the committed copy differs from the code.
+  JSON numbers are strict (never strings), enums are `snake_case` strings.
 - from `transactions/src`: `dotnet build Vaultly.Transactions.slnx`, `dotnet test Vaultly.Transactions.slnx` (the page
   tests start Postgres with Testcontainers, so Docker must run)
 - `dotnet run --project Vaultly.Transactions.Api` — http://localhost:5102; needs Postgres on 5434
