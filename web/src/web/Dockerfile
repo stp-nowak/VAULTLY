@@ -6,7 +6,8 @@
 
 FROM node:26-alpine AS build
 WORKDIR /repo
-RUN corepack enable
+# Node 25+ no longer bundles corepack; it provides the pnpm version pinned in package.json "packageManager".
+RUN npm install --global corepack@0.36.0 && corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ui/package.json packages/ui/
 COPY auth/web/package.json auth/web/
