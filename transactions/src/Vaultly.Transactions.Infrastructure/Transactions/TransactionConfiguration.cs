@@ -10,6 +10,12 @@ namespace Vaultly.Transactions.Infrastructure.Transactions;
 
 internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 {
+    /// <summary>
+    /// Database-generated, ever-growing number of each transaction: the order transactions were recorded in, unique, so
+    /// pages of the list (cursor = day + sequence) never skip or repeat transactions of the same day.
+    /// </summary>
+    public const string Sequence = nameof(Sequence);
+
     private const int EnumMaxLength = 20;
 
     public void Configure(EntityTypeBuilder<Transaction> entity)
@@ -48,7 +54,8 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
             .HasConversion(new WireNameConverter<DeclineReason>())
             .HasMaxLength(EnumMaxLength);
         entity.Property(x => x.Version).IsConcurrencyToken();
-        entity.HasIndex(x => new { x.OwnerId, x.BookedOn });
+        entity.Property<long>(Sequence).UseIdentityAlwaysColumn();
+        entity.HasIndex(nameof(Transaction.OwnerId), nameof(Transaction.BookedOn), Sequence);
         entity.HasIndex(x => x.AccountId);
     }
 }

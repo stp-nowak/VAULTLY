@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -44,7 +45,9 @@ namespace Vaultly.Transactions.Infrastructure.Persistence.Migrations
                     PostedBookedOn = table.Column<DateOnly>(type: "date", nullable: false),
                     DeclineReason = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     RecordedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    Version = table.Column<int>(type: "integer", nullable: false)
+                    Version = table.Column<int>(type: "integer", nullable: false),
+                    Sequence = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn)
                 },
                 constraints: table =>
                 {
@@ -57,9 +60,9 @@ namespace Vaultly.Transactions.Infrastructure.Persistence.Migrations
                 column: "AccountId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Transactions_OwnerId_BookedOn",
+                name: "IX_Transactions_OwnerId_BookedOn_Sequence",
                 table: "Transactions",
-                columns: new[] { "OwnerId", "BookedOn" });
+                columns: new[] { "OwnerId", "BookedOn", "Sequence" });
         }
 
         /// <inheritdoc />

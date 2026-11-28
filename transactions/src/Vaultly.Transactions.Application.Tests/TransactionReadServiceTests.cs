@@ -47,13 +47,14 @@ public sealed class TransactionReadServiceTests
         Add(foreign, Day);
         await _dbContext.SaveChangesAsync();
 
-        var all = await _readService.GetTransactionsAsync(Owner, wallet.Id, null, null, CancellationToken.None);
-        var fromSecondDay = await _readService.GetTransactionsAsync(Owner, null, Day.AddDays(1), null, CancellationToken.None);
+        var all = await _readService.GetTransactionsAsync(Owner, wallet.Id, null, null, null, 10, CancellationToken.None);
+        var fromSecondDay = await _readService.GetTransactionsAsync(Owner, null, Day.AddDays(1), null, null, 10, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
-            Assert.That(all.Select(x => x.Id), Is.EqualTo(new[] { newer.Id.Value, older.Id.Value }));
-            Assert.That(fromSecondDay.Select(x => x.Id), Is.EqualTo(new[] { newer.Id.Value }));
+            Assert.That(all.Items.Select(x => x.Id), Is.EqualTo(new[] { newer.Id.Value, older.Id.Value }));
+            Assert.That(all.Next, Is.Null);
+            Assert.That(fromSecondDay.Items.Select(x => x.Id), Is.EqualTo(new[] { newer.Id.Value }));
         });
     }
 

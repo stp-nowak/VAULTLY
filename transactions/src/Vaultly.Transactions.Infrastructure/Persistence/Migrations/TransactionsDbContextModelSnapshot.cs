@@ -101,6 +101,12 @@ namespace Vaultly.Transactions.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("RecordedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("Sequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Sequence"));
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -114,7 +120,7 @@ namespace Vaultly.Transactions.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("OwnerId", "BookedOn");
+                    b.HasIndex("OwnerId", "BookedOn", "Sequence");
 
                     b.ToTable("Transactions");
                 });
