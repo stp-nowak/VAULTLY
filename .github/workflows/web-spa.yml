@@ -7,6 +7,8 @@ on:
     paths:
       - 'web/src/web/**'
       - 'packages/ui/**'
+      - 'accounts/openapi/**'
+      - 'transactions/openapi/**'
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
@@ -17,6 +19,8 @@ on:
     paths:
       - 'web/src/web/**'
       - 'packages/ui/**'
+      - 'accounts/openapi/**'
+      - 'transactions/openapi/**'
       - 'package.json'
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
@@ -44,6 +48,15 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # API types are generated from the services' OpenAPI contracts; a contract change the SPA has not picked up
+      # fails here, and the typecheck in build fails where the SPA no longer matches it.
+      - run: pnpm --filter @vaultly/web api:types
+      - name: API types match the contracts
+        run: |
+          if ! git diff --exit-code -- 'web/src/web/src/**/generated/*.ts'; then
+            echo "::error::API types are out of date: run pnpm --filter @vaultly/web api:types and commit"
+            exit 1
+          fi
       - run: pnpm --filter @vaultly/web lint
       - run: pnpm --filter @vaultly/web test
       - run: pnpm --filter @vaultly/web build

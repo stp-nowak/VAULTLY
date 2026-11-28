@@ -21,6 +21,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TransactionsProblems>();
 builder.Services.ConfigureHttpJsonOptions(options => ApiJson.Configure(options.SerializerOptions));
