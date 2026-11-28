@@ -3,7 +3,7 @@
 #   docker build --build-context identity-api-contracts=auth/src/Vaultly.Identity.ApiContracts -t vaultly-web-api web/src/api
 # Projects keep their repository paths below /src so the relative project reference resolves.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 COPY --from=identity-api-contracts *.csproj auth/src/Vaultly.Identity.ApiContracts/
 COPY Vaultly.Web.Api/Vaultly.Web.Api.csproj web/src/api/Vaultly.Web.Api/
