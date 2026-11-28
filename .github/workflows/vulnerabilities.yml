@@ -140,7 +140,7 @@ jobs:
     env:
       IMAGE: ${{ matrix.image || format('vaultly-{0}:scan', matrix.name) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - if: matrix.build
         run: docker build --tag "$IMAGE" ${{ matrix.build }}
       # Pinned to a commit: trivy-action tags were once force-pushed to malicious code.
