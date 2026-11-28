@@ -1,0 +1,98 @@
+name: Vulnerability report
+
+# Reports known vulnerabilities in NuGet and pnpm dependencies in each job's summary and fails on high or critical
+# ones. The weekly run catches advisories published after the dependencies were added.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  nuget:
+    name: NuGet (${{ matrix.solution }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        solution:
+          - core/src/Vaultly.Core.slnx
+          - auth/src/Vaultly.Auth.slnx
+          - gateway/src/Vaultly.Gateway.slnx
+          - accounts/src/Vaultly.Accounts.slnx
+          - transactions/src/Vaultly.Transactions.slnx
+          - web/src/api/Vaultly.Web.Api.slnx
+    env:
+      SOLUTION: ${{ matrix.solution }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore "$SOLUTION"
+      - name: Report vulnerable packages
+        run: |
+          dotnet list "$SOLUTION" package --vulnerable --include-transitive --format json > nuget-vulnerabilities.json
+          jq -r --arg solution "$SOLUTION" '
+            [ .projects[]
+              | (.path | split("/") | last) as $project
+              | .frameworks[]?
+              | (.topLevelPackages[]?, .transitivePackages[]?)
+              | . as $package
+              | .vulnerabilities[]
+              | [$project, $package.id, $package.resolvedVersion, .severity, .advisoryurl] ] | unique as $rows
+            | "### NuGet: \($solution)\n",
+              (if ($rows | length) == 0
+               then "No known vulnerable packages."
+               else ("| Project | Package | Version | Severity | Advisory |\n|---|---|---|---|---|",
+                     ($rows[] | "| \(.[0]) | \(.[1]) | \(.[2]) | \(.[3]) | \(.[4]) |"))
+               end)
+          ' nuget-vulnerabilities.json >> "$GITHUB_STEP_SUMMARY"
+          blocking=$(jq '[.. | .severity? // empty | select(. == "High" or . == "Critical")] | length' nuget-vulnerabilities.json)
+          if [ "$blocking" -gt 0 ]; then
+            echo "::error::$blocking high or critical vulnerabilities in $SOLUTION"
+            exit 1
+          fi
+
+  pnpm:
+    name: pnpm workspace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm version comes from "packageManager" in the root package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Report vulnerable packages
+        run: |
+          {
+            echo '### pnpm workspace'
+            echo '```'
+            pnpm audit || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - run: pnpm audit --audit-level high
